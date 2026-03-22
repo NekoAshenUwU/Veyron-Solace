@@ -1,0 +1,3116 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>BeingFine Team · FinelyCup｜代理账本（离线本地 v4）</title>
+  <style>
+    :root{
+      --bg:#070812;
+      --card: rgba(18, 20, 34, .78);
+      --card2: rgba(12, 14, 26, .72);
+      --text:#eaf0ff;
+      --muted:#aeb7d6;
+      --line: rgba(80, 92, 150, .28);
+      --accent:#8b5cf6;
+      --accent2:#22c55e;
+      --warn:#f59e0b;
+      --danger:#ef4444;
+      --shadow: 0 14px 40px rgba(0,0,0,.38);
+      --r: 18px;
+      --pad: 14px;
+      --pad2: 18px;
+      --max: 1020px;
+      --cute1: #ff6aa2;
+      --cute2: #7dd3fc;
+      --cute3: #a7f3d0;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+    [data-theme="cute"]{
+      --bg:#fff7fb;
+      --card: rgba(255, 255, 255, .88);
+      --card2: rgba(255, 255, 255, .82);
+      --text:#1b1b2a;
+      --muted:#6b6f86;
+      --line: rgba(32, 36, 62, .10);
+      --accent:#ff4d92;
+      --accent2:#10b981;
+      --warn:#f59e0b;
+      --danger:#ef4444;
+      --shadow: 0 12px 36px rgba(18, 20, 40, .12);
+      --cute1:#ff4d92;
+      --cute2:#7c3aed;
+      --cute3:#06b6d4;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      color:var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", "Microsoft YaHei", Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      background:
+        radial-gradient(900px 520px at 14% -10%, rgba(139,92,246,.26), transparent 60%),
+        radial-gradient(820px 520px at 118% 18%, rgba(34,197,94,.16), transparent 55%),
+        radial-gradient(820px 520px at 65% 110%, rgba(125,211,252,.14), transparent 60%),
+        var(--bg);
+      padding-bottom: calc(180px + env(safe-area-inset-bottom));
+    }
+    [data-theme="cute"] body{
+      background:
+        radial-gradient(900px 520px at 14% -10%, rgba(255,77,146,.20), transparent 60%),
+        radial-gradient(820px 520px at 118% 18%, rgba(6,182,212,.14), transparent 55%),
+        radial-gradient(820px 520px at 50% 110%, rgba(124,58,237,.10), transparent 60%),
+        var(--bg);
+    }
+    header{
+      position: sticky; top:0; z-index: 9;
+      backdrop-filter: blur(16px);
+      background: color-mix(in srgb, var(--bg) 78%, transparent);
+      border-bottom: 1px solid var(--line);
+    }
+    .wrap{max-width: var(--max); margin: 0 auto; padding: 14px 14px;}
+    .topbar{display:flex; align-items:center; gap:12px; justify-content:space-between;}
+    .brand{display:flex; gap:10px; align-items:center; min-width:0;}
+    .logo{
+      width:40px; height:40px; border-radius: 16px;
+      background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 92%, white 8%), color-mix(in srgb, var(--cute2) 78%, white 22%));
+      box-shadow: var(--shadow);
+      position:relative;
+      overflow:hidden;
+    }
+    .logo:after{
+      content:"✦";
+      position:absolute; right:10px; top:8px;
+      opacity:.55;
+      font-weight:900;
+      transform: rotate(12deg);
+    }
+    [data-theme="cute"] .logo:after{content:"🐾";}
+    .title{display:flex; flex-direction:column; gap:2px; min-width:0;}
+    .title h1{
+      font-size:15px; margin:0; letter-spacing:.2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    .title p{margin:0; font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      font-size:12px; color:var(--muted);
+      padding:8px 10px; border:1px solid var(--line);
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--card) 80%, transparent);
+      user-select:none;
+      white-space:nowrap;
+    }
+    .pill b{color:var(--text); font-weight:800;}
+    .pill .dot{width:8px;height:8px;border-radius:999px;background:var(--accent2); display:inline-block; box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent2) 20%, transparent);}
+    .btn{
+      appearance:none; border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--card) 82%, transparent);
+      color:var(--text);
+      padding: 10px 12px;
+      border-radius: 14px;
+      font-weight: 750;
+      cursor: pointer;
+      display:inline-flex; align-items:center; gap:8px;
+      user-select:none;
+      box-shadow: 0 8px 22px rgba(0,0,0,.12);
+    }
+    [data-theme="cute"] .btn{box-shadow: 0 8px 22px rgba(18, 20, 40, .10);}
+    .btn:active{transform: translateY(1px);}
+    .btn.primary{
+      border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+      background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 92%, white 8%), color-mix(in srgb, var(--accent) 50%, transparent));
+    }
+    .btn.good{
+      border-color: color-mix(in srgb, var(--accent2) 55%, transparent);
+      background: linear-gradient(135deg, color-mix(in srgb, var(--accent2) 90%, white 10%), color-mix(in srgb, var(--accent2) 42%, transparent));
+    }
+    .btn.warn{
+      border-color: color-mix(in srgb, var(--warn) 55%, transparent);
+      background: linear-gradient(135deg, color-mix(in srgb, var(--warn) 88%, white 12%), color-mix(in srgb, var(--warn) 42%, transparent));
+    }
+    .btn.danger{
+      border-color: color-mix(in srgb, var(--danger) 55%, transparent);
+      background: linear-gradient(135deg, color-mix(in srgb, var(--danger) 88%, white 12%), color-mix(in srgb, var(--danger) 42%, transparent));
+    }
+    .btn.ghost{background: rgba(255,255,255,.06); box-shadow:none; border:1px solid rgba(255,255,255,.22); color: var(--text);} .btn.ghost:active{transform:scale(.98);}
+    main{padding: 12px 0;}
+    .grid{display:grid; gap:12px;}
+    .card{
+      background: linear-gradient(180deg, var(--card), var(--card2));
+      border: 1px solid var(--line);
+      border-radius: var(--r);
+      box-shadow: var(--shadow);
+    }
+    .card .hd{
+      display:flex; align-items:center; justify-content:space-between;
+      padding: var(--pad2);
+      border-bottom: 1px solid var(--line);
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .card .hd h2{margin:0; font-size:14px;}
+    .card .hd .sub{margin:0; font-size:12px; color:var(--muted);}
+    .card .bd{padding: var(--pad2);}
+    .row{display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;}
+    .row > *{flex:1 1 180px;}
+    label{display:block; font-size:12px; color:var(--muted); margin: 0 0 8px;}
+    input, select, textarea{
+      width:100%;
+      padding: 12px 12px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--bg) 78%, transparent);
+      color:var(--text);
+      outline: none;
+    }
+    [data-theme="cute"] input, [data-theme="cute"] select, [data-theme="cute"] textarea{
+      background: rgba(255,255,255,.88);
+      color: var(--text);
+    }
+    textarea{min-height: 88px; resize: vertical;}
+    input[type="date"]{padding: 10px 12px;}
+    .muted{color:var(--muted)}
+    .divider{height:1px; background: var(--line); margin: 12px 0;}
+    .kpi{display:flex; gap:12px; flex-wrap:wrap;}
+    .kpi .box{
+      flex: 1 1 200px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--bg) 72%, transparent);
+    }
+    [data-theme="cute"] .kpi .box{background: rgba(255,255,255,.72);}
+    .kpi .box .t{font-size:12px; color:var(--muted); margin:0 0 6px;}
+    .kpi .box .v{font-size:18px; font-weight:900; margin:0;}
+    .money{font-family: var(--mono);}
+    .pos{color: var(--accent2);}
+    .neg{color: var(--danger);}
+    .warnc{color: var(--warn);}
+    .tag{
+      font-size:11px; padding: 4px 8px; border-radius: 999px;
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--card) 72%, transparent);
+      color: var(--muted);
+      user-select:none;
+      white-space:nowrap;
+    }
+    .list{display:grid; gap:10px;}
+    .item{
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--bg) 74%, transparent);
+      border-radius: 16px;
+      padding: 12px 14px;
+      display:flex; justify-content:space-between; gap:12px;
+      cursor: pointer;
+      align-items:flex-start;
+    }
+    [data-theme="cute"] .item{background: rgba(255,255,255,.74);}
+    .item:active{transform: translateY(1px);}
+    .item .a{display:flex; flex-direction:column; gap:6px; min-width: 0;}
+    .item .a .name{font-weight:900; font-size:14px; margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+    .item .a .meta{font-size:12px; color:var(--muted); margin:0; display:flex; gap:8px; flex-wrap:wrap;}
+    .item .b{display:flex; flex-direction:column; gap:6px; align-items:flex-end;}
+    .hint{font-size:12px; color:var(--muted); margin: 8px 0 0;}
+    .small{font-size:12px;}
+    .seg{
+      display:flex; gap:8px; padding:6px;
+      border:1px solid var(--line);
+      border-radius: 16px;
+      background: color-mix(in srgb, var(--card) 72%, transparent);
+    }
+    .seg .sbtn{
+      flex:1;
+      padding: 10px 10px;
+      border-radius: 12px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      cursor:pointer;
+      font-weight: 900;
+      user-select:none;
+    }
+    .seg .sbtn.active{
+      color: var(--text);
+      border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+      background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 42%, transparent), color-mix(in srgb, var(--card) 72%, transparent));
+    }
+    .fab{
+      position: fixed;
+      right: 16px;
+      bottom: 94px;
+      z-index: 9;
+      border-radius: 999px;
+      padding: 12px 16px;
+      box-shadow: var(--shadow);
+    }
+    .bottomnav{
+      position: fixed; left:0; right:0; bottom:0; z-index: 10;
+      background: color-mix(in srgb, var(--bg) 80%, transparent);
+      backdrop-filter: blur(16px);
+      border-top: 1px solid var(--line);
+      padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
+    }
+    .tabs{
+      max-width: var(--max); margin: 0 auto;
+      display:grid; grid-template-columns: repeat(6, 1fr);
+      gap: 8px;
+    }
+    .tab{
+      padding: 10px 8px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--card) 70%, transparent);
+      text-align:center;
+      font-size:12px;
+      color: var(--muted);
+      cursor:pointer;
+      user-select:none;
+      font-weight: 850;
+      white-space:nowrap;
+    }
+    .tab.active{
+      color: var(--text);
+      border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+      background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 42%, transparent), color-mix(in srgb, var(--card) 72%, transparent));
+    }
+    .modal{
+      position: fixed; inset:0; z-index: 1000;
+      display:none;
+      background: rgba(0,0,0,.58);
+      backdrop-filter: blur(6px);
+      padding: 14px 14px calc(14px + env(safe-area-inset-bottom));
+    }
+    [data-theme="cute"] .modal{background: rgba(18,20,40,.28);}
+    
+.modal.paper{align-items:flex-start;}
+.modal.paper .box{max-width:980px;}
+.modal.paper .sheet{
+  background:#fff !important;
+  color:#0b0b0b !important;
+  border-color:#e5e7eb !important;
+  box-shadow:0 18px 60px rgba(0,0,0,.35);
+}
+.modal.paper .shd, .modal.paper .sft{background:#f8fafc !important; border-color:#e5e7eb !important;}
+.modal.paper .sub{color:#475569 !important;}
+.modal.paper .table{border-color:#e5e7eb !important;}
+.modal.paper .table th{background:#f1f5f9 !important; color:#334155 !important;}
+.modal.paper .table td{border-color:#e5e7eb !important;}
+.modal.paper .pill{background:#f1f5f9 !important; border-color:#e5e7eb !important; color:#0f172a !important;}
+
+.modal.show{display:flex; align-items:flex-start; justify-content:center;}
+    .sheet{
+      width: min(var(--max), calc(100vw - 28px));
+      max-height: calc(100vh - 60px);
+      margin-top: 34px;
+      border-radius: 22px;
+      overflow:hidden;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, var(--card), color-mix(in srgb, var(--bg) 78%, transparent));
+      box-shadow: 0 20px 70px rgba(0,0,0,.55);
+      display:flex; flex-direction:column;
+    }
+    .shd{
+      padding: 14px 16px;
+      display:flex; align-items:center; justify-content:space-between;
+      gap:10px;
+      border-bottom: 1px solid var(--line);
+      flex-wrap:wrap;
+      flex: 0 0 auto;
+    }
+    .shd h3{margin:0; font-size:14px;}
+    .sbd{
+      padding: 16px 16px 22px;
+      overflow:auto;
+      -webkit-overflow-scrolling: touch;
+      flex: 1 1 auto;
+    }
+    .sft{
+      padding: 14px 16px calc(14px + env(safe-area-inset-bottom));
+      display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap;
+      border-top: 1px solid var(--line);
+      background: color-mix(in srgb, var(--bg) 74%, transparent);
+      flex: 0 0 auto;
+    }
+    [data-theme="cute"] .sft{background: rgba(255,255,255,.55);}
+
+    .table{
+      width:100%;
+      border-collapse: collapse;
+      font-size:12px;
+      overflow:hidden;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+    }
+    .table th, .table td{
+      padding: 10px 10px;
+      border-bottom: 1px solid var(--line);
+      text-align:left;
+      vertical-align: top;
+    }
+    .table th{
+      color: var(--muted);
+      font-weight: 900;
+      background: color-mix(in srgb, var(--bg) 74%, transparent);
+    }
+    [data-theme="cute"] .table th{background: rgba(255,255,255,.78);}
+    .table tr:last-child td{border-bottom:none;}
+
+    @media (min-width: 900px){
+      .fab{right: calc(50% - var(--max)/2 + 16px);}
+    }
+  
+/* ===== Statement fullscreen & print ===== */
+.statementOverlay{position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,.62); display:flex; flex-direction:column;}
+.statementSheet{margin:0; background:#fff; color:#0c0f14; border-radius:18px 18px 0 0; overflow:auto; -webkit-overflow-scrolling:touch; flex:1;}
+.statementTopbar{position:sticky; top:0; background:#fff; z-index:5; padding:12px 12px 10px; border-bottom:1px solid rgba(0,0,0,.08); display:flex; gap:10px; align-items:center; justify-content:space-between;}
+.statementTopbar .hint{font-size:12px; color:#667; line-height:1.2;}
+.statementTopbar .sbtn{padding:10px 14px; border-radius:14px; border:1px solid rgba(0,0,0,.12); background:#fff; font-weight:900;}
+.statementTopbar .sbtn.primary{background:#0d1728; color:#fff; border-color:#0d1728;}
+.statementBody{padding:14px 12px 22px;}
+.statementTitle{font-size:28px; font-weight:950; margin:6px 0 6px;}
+.statementMeta{font-size:14px; color:#111; margin-bottom:12px; display:flex; flex-wrap:wrap; gap:12px; font-weight:950;}
+.statementCards{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:10px 0 14px;}
+.statementCard{border:1px solid rgba(0,0,0,.08); border-radius:16px; padding:12px;}
+.statementCard .k{font-size:13px;color:#556;}
+.statementCard .v{font-size:28px;font-weight:950; margin-top:6px;}
+.statementCard .v.green{color:#0a7b55;}
+.statementCard .v.orange{color:#a45900;}
+.statementCard .v.red{color:#b10a0a;}
+.statementInput{width:100%; padding:10px 12px; border-radius:12px; border:1px solid rgba(0,0,0,.14); font-size:16px; margin-top:8px;}
+.statementTable{width:100%; border-collapse:separate; border-spacing:0; overflow:hidden; border-radius:14px; border:1px solid rgba(0,0,0,.10); table-layout:fixed;}
+.statementTable th{background:#f3f5f7; text-align:left; font-size:12px; padding:10px 10px; color:#334;}
+.statementTable td{padding:10px 10px; font-size:12px; vertical-align:top; border-top:1px solid rgba(0,0,0,.06);}
+.statementTable td.amount{font-weight:900; white-space:nowrap;}
+.statementTable td.calc{color:#556; white-space:nowrap;}
+.statementTable td.desc{word-break:break-word;}
+
+/* column widths (desktop) */
+.statementTable th.col-seq{width:44px;}
+.statementTable th.col-calc{width:110px;}
+.statementTable th.col-amt{width:116px;}
+.statementTable th.col-cum{width:116px;}
+
+.stmtDateRow td{background:#f7f8fa; color:#556; font-weight:950; font-size:12px; padding:8px 10px; border-top:1px solid rgba(0,0,0,.06);} 
+@media (max-width:420px){
+  .statementCard .v{font-size:24px;}
+  .statementTable td,.statementTable th{font-size:11px; padding:9px 8px;}
+  .statementTable th.col-seq{width:38px;}
+  .statementTable th.col-calc{width:74px;}
+  .statementTable th.col-amt{width:88px;}
+  .statementTable th.col-cum{width:88px;}
+  .statementTable td.calc{white-space:normal;}
+  .statementTopbar .hint{display:none;}
+}
+body.printing .wrap, body.printing .bottomnav, body.printing .fab, body.printing .toastwrap, body.printing .modal{display:none !important;}
+@media print{
+  body{background:#fff;}
+  .statementOverlay{position:static; inset:auto; background:#fff;}
+  .statementTopbar{display:none !important;}
+  .statementSheet{border-radius:0; overflow:visible;}
+  .statementBody{padding:12mm;}
+}
+
+
+/* Reports table header readability on mobile */
+.reportsTable th{
+  font-size: 12px;
+  line-height: 1.15;
+  padding: 10px 6px;
+  white-space: normal;
+}
+@media (max-width: 420px){
+  .reportsTable th{ font-size: 11px; }
+}
+</style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <div class="topbar">
+        <div class="brand">
+          <div class="logo" aria-hidden="true"></div>
+          <div class="title">
+            <h1>BeingFine Team · FinelyCup</h1>
+            <p>代理余额制 · 运费两段 · 利润单（老板看）/对账单（代理看） · 本地离线</p>
+          </div>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
+          <div class="pill" id="dbPill"><span class="dot"></span> <b>本地已连接</b></div>
+          <button class="btn" id="btnTheme">🌙 星河</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div id="view-home" class="view grid"></div>
+    <div id="view-flow" class="view grid" style="display:none"></div>
+    <div id="view-people" class="view grid" style="display:none"></div>
+    <div id="view-products" class="view grid" style="display:none"></div>
+    <div id="view-reports" class="view grid" style="display:none"></div>
+    <div id="view-backup" class="view grid" style="display:none"></div>
+  </main>
+
+  <button class="btn primary fab" id="fabAdd">＋ 新增</button>
+
+  <div class="bottomnav">
+    <div class="tabs">
+      <div class="tab active" data-tab="home">总览</div>
+      <div class="tab" data-tab="flow">流水</div>
+      <div class="tab" data-tab="people">代理</div>
+      <div class="tab" data-tab="products">商品</div>
+      <div class="tab" data-tab="reports">报表</div>
+      <div class="tab" data-tab="backup">备份</div>
+    </div>
+  </div>
+
+  <div class="modal" id="modal">
+    <div class="sheet">
+      <div class="shd">
+        <h3 id="modalTitle">编辑</h3>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+          <span class="tag" id="modalTag" style="display:none"></span>
+          <button class="btn" id="modalClose">关闭</button>
+        </div>
+      </div>
+      <div class="sbd" id="modalBody"></div>
+      <div class="sft" id="modalFoot"></div>
+    </div>
+  </div>
+
+<script>
+/* ===== Storage (Local only) ===== */
+const STORE_KEY = 'beingfine_finelycup_ledger_v4';
+const uid = ()=> Math.random().toString(16).slice(2) + Date.now().toString(16);
+const todayISO = ()=> new Date().toISOString().slice(0,10);
+// Robust date comparator: supports YYYY-MM-DD / YYYY/MM/DD / etc
+function _dateKey(s){
+  if(!s) return 0;
+  const m = String(s).match(/(\d{4})\D?(\d{1,2})\D?(\d{1,2})/);
+  if(!m) return 0;
+  const y = Number(m[1])||0;
+  const mo = Number(m[2])||0;
+  const d = Number(m[3])||0;
+  return y*10000 + mo*100 + d;
+}
+function cmpDate(a,b){
+  return _dateKey(a) - _dateKey(b);
+}
+const safe = (v)=> (v??'').toString().replace(/[<>&"]/g, s => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[s]));
+const fmtMoney = (n)=> (Number(n||0)).toFixed(2);
+
+// ---------- compatibility helpers (mobile chrome, older code paths) ----------
+function fmt2(n){
+  const x = Number(n ?? 0);
+  if (!isFinite(x)) return "0.00";
+  try{
+    return x.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2});
+  }catch(e){
+    return (Math.round(x*100)/100).toFixed(2);
+  }
+}
+function fmtRM(n){ return "RM " + fmt2(n); }
+// DOM helpers (some older versions used $ / $$)
+function $(sel, root){ return (root||document).querySelector(sel); }
+function $$(sel, root){ return Array.from((root||document).querySelectorAll(sel)); }
+// ---------------------------------------------------------------------------
+function loadStore(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    const d = raw ? JSON.parse(raw) : {};
+    d.settings ??= {theme:'galaxy'};
+    d.agents ??= [];
+    d.customers ??= [];
+    d.products ??= [];
+    d.orders ??= [];
+    d.transactions ??= [];
+    return d;
+  }catch(e){
+    return {settings:{theme:'galaxy'}, agents:[], customers:[], products:[], orders:[], transactions:[]};
+  }
+}
+function saveStore(d){ localStorage.setItem(STORE_KEY, JSON.stringify(d)); }
+let DB = loadStore();
+
+/* ===== Domain helpers ===== */
+const braSizes = ()=>{
+  const bands=[70,75,80,85,90], cups=['A','B','C','D'];
+  const out=[];
+  for(const b of bands){
+    for(const c of cups){
+      if(b===90 && (c==='A'||c==='B')) continue;
+      out.push(`${b}${c}`);
+    }
+  }
+  return out;
+};
+const letterSizes = ['S','M','L','XL','XXL','XXXL'];
+
+function byId(list,id){ return list.find(x=>x.id===id)||null; }
+function money(n){ return `RM ${fmtMoney(n)}`; }
+
+function orderItemsTotal(order, field){
+  // field: 'agentPriceMYR' | 'retailPriceMYR' etc
+  let sum = 0;
+  (order.items||[]).forEach(it=>{
+    const qty = Number(it.qty||0) || 0;
+    if(!qty) return;
+
+    // 兜底：单价=0 视为“自动”，改用商品默认价（若有）
+    let unit = Number(it[field] ?? 0) || 0;
+    if(unit <= 0){
+      const p = (DB.products||[]).find(p=>p.id===it.productId);
+      if(p){
+        const fb = Number(p[field] ?? 0) || 0;
+        if(fb>0) unit = fb;
+      }
+    }
+    sum += unit * qty;
+  });
+  return sum;
+}
+function agentOrderDebit(order){
+  const goods = orderItemsTotal(order,'agentPriceMYR');
+  const intl = Number(order.intlShipMYR||0);
+  return goods + intl*0.5;
+}
+function agentOrderProfit(order){
+  const goods = orderItemsTotal(order,'agentPriceMYR');
+  const cost  = orderItemsTotal(order,'costMYR');
+  const cn    = Number(order.cnShipMYR||0);
+  const fwd   = Number(order.fwdShipMYR||0);
+  const intl  = Number(order.intlShipMYR||0);
+  // 净利 = (代理价-进货价) - 国内运费(全扣) - 国际运费(我承担一半)
+  return goods - cost - (cn+fwd) - intl*0.5;
+}
+function retailOrderRevenue(order){
+  return orderItemsTotal(order,'retailPriceMYR');
+}
+function retailOrderProfit(order){
+  const sales = orderItemsTotal(order,'retailPriceMYR');
+  const cost = orderItemsTotal(order,'costMYR');
+  const cn = Number(order.cnShipMYR||0);
+  const fwd = Number(order.fwdShipMYR||0);
+  return sales - cost - cn - fwd;
+}
+
+function txSum(agentId){
+  return DB.transactions.filter(t=>t.agentId===agentId).reduce((s,t)=> s + Number(t.amountMYR||0), 0);
+}
+
+function ymd(d){
+  if(d==null) return '';
+  if(typeof d==='string'){
+    const s=d.trim();
+    if(!s) return '';
+    let m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if(m) return `${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
+    m=s.match(/^(\d{4})[\/\.](\d{1,2})[\/\.](\d{1,2})/);
+    if(m) return `${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
+    const dt=new Date(s);
+    if(!isNaN(dt.getTime())) return ymd(dt);
+    return '';
+  }
+  if(typeof d==='number'){
+    const dt=new Date(d);
+    if(!isNaN(dt.getTime())) return ymd(dt);
+    return '';
+  }
+  if(d instanceof Date){
+    if(isNaN(d.getTime())) return '';
+    const y=d.getFullYear();
+    const m=String(d.getMonth()+1).padStart(2,'0');
+    const day=String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${day}`;
+  }
+  if(typeof d==='object'){
+    const y=d.y ?? d.year;
+    const m=d.m ?? d.month;
+    const day=d.d ?? d.day;
+    if(y && m && day) return `${y}-${String(m).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+  }
+  return '';
+}
+
+function ymdShift(ymd, deltaDays){
+  // ymd: 'YYYY-MM-DD'
+  if(!ymd) return '';
+  const d = new Date(ymd + 'T00:00:00');
+  d.setDate(d.getDate() + deltaDays);
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+
+function txSumAsOf(agentId, ymdInclusive){
+  const k = _dateKey(ymdInclusive);
+  if(!k) return 0;
+  return (DB.transactions||[])
+    .filter(t=>t.agentId===agentId && _dateKey(t.date) && _dateKey(t.date) <= k)
+    .reduce((s,t)=>{
+      const amt = Number(t.amountMYR)||0;
+      if(t.kind==='DEBIT') return s - Math.abs(amt);
+      return s + amt;
+    },0);
+}
+
+function sumInRange(agentId, kinds, fromYmd, toYmd){
+  const fk = fromYmd ? _dateKey(fromYmd) : 0;
+  const tk = toYmd ? _dateKey(toYmd) : 99999999;
+  return (DB.transactions||[])
+    .filter(t=>t.agentId===agentId && kinds.includes(t.kind))
+    .filter(t=>{
+      const dk = _dateKey(t.date);
+      return dk && dk >= fk && dk <= tk;
+    })
+    .reduce((s,t)=>{
+      const amt = Number(t.amountMYR)||0;
+      if(t.kind==='DEBIT') return s + Math.abs(amt);
+      return s + amt;
+    },0);
+}
+
+function computeSettlement(agentId, fromYmd=null, toYmd=null){
+  // Returns settlement for a period.
+  // paid/unpaid are calculated for THIS period (not lifetime), but endBalance is as-of toYmd.
+  const startCut = fromYmd ? ymdShift(fromYmd, -1) : null;
+  const startBalance = fromYmd ? txSumAsOf(agentId, startCut) : 0;
+  const endBalance = toYmd ? txSumAsOf(agentId, toYmd) : txSum(agentId);
+
+  const due = sumInRange(agentId, ['DEBIT'], fromYmd, toYmd);
+  const inflow = sumInRange(agentId, ['TOPUP','ADJUST'], fromYmd, toYmd);
+
+  const oldOutstanding = Math.max(0, -startBalance);
+  const newOutstanding = Math.max(0, -endBalance);
+  const unpaid = Math.max(0, newOutstanding - oldOutstanding);
+  const paid = Math.max(0, due - unpaid);
+
+  return { startBalance, endBalance, due, inflow, paid, unpaid, oldOutstanding, newOutstanding };
+}
+
+
+/* ===== UI state ===== */
+const state = {
+  tab:'home',
+  flowMode:'ORDERS', // 'ORDERS' | 'FUNDS'
+  orderFilters:{type:'ALL', agentId:'ALL', from:'', to:'', q:''}
+};
+
+function el(id){ return document.getElementById(id); }
+function safeCall(fn, ...args){
+  try { return fn(...args); }
+  catch(e){
+    console.error(e);
+    alert('操作失败：' + (e && e.message ? e.message : String(e)));
+  }
+}
+
+function qs(sel, root=document){ return root.querySelector(sel); }
+function qsa(sel, root=document){ return Array.from(root.querySelectorAll(sel)); }
+
+// HTML escape helper for safe template injection
+function esc(v){
+  if (v === null || v === undefined) return '';
+  return String(v)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/\"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
+
+// Back-compat alias used throughout the file
+function escapeHtml(v){ return esc(v); }
+// Escape + allow line breaks
+function escBr(v){ return escapeHtml(v).replace(/\n/g,'<br>'); }
+
+// Robust numeric parser for RM inputs (accepts numbers or strings like "RM 25.00")
+function rmNum(v){
+  if (typeof v === 'number' && Number.isFinite(v)) return v;
+  const s = String(v ?? '').trim();
+  const n = Number(s.replace(/[^0-9.\-]/g,''));
+  return Number.isFinite(n) ? n : 0;
+}
+
+function toast(msg){
+  let t = document.createElement('div');
+  t.textContent = msg;
+  t.style.position='fixed';
+  t.style.left='50%';
+  t.style.bottom='86px';
+  t.style.transform='translateX(-50%)';
+  t.style.background='color-mix(in srgb, var(--card) 88%, transparent)';
+  t.style.border='1px solid var(--line)';
+  t.style.color='var(--text)';
+  t.style.padding='10px 12px';
+  t.style.borderRadius='14px';
+  t.style.zIndex='80';
+  t.style.boxShadow='var(--shadow)';
+  document.body.appendChild(t);
+  setTimeout(()=>{ t.style.opacity='0'; t.style.transition='opacity .25s'; }, 1200);
+  setTimeout(()=> t.remove(), 1600);
+}
+
+function modalOpen(title, bodyHTML, footHTML, tagText=null, opts=null){
+  el('modalTitle').textContent = title;
+  el('modalBody').innerHTML = bodyHTML;
+  el('modalFoot').innerHTML = footHTML || '';
+  const tag = el('modalTag');
+  if(tagText){ tag.style.display=''; tag.textContent = tagText; }
+  else{ tag.style.display='none'; tag.textContent=''; }
+  const m = el('modal');
+  m.classList.toggle('paper', !!(opts && opts.paper));
+  m.classList.add('show');
+  document.body.style.overflow='hidden';
+}
+function modalClose(){
+  const m = el('modal');
+  m.classList.remove('show');
+  m.classList.remove('paper');
+  document.body.style.overflow='';
+}
+el('modalClose').onclick = modalClose;
+el('modal').addEventListener('click', (e)=>{ if(e.target===el('modal')) modalClose(); });
+
+function applyTheme(theme){
+  document.documentElement.setAttribute('data-theme', theme);
+  DB.settings.theme = theme;
+  saveStore(DB);
+  el('btnTheme').textContent = theme==='cute' ? '🐾 猫爪' : '🌙 星河';
+}
+el('btnTheme').onclick = ()=>{
+  const cur = DB.settings.theme || 'galaxy';
+  applyTheme(cur==='cute' ? 'galaxy' : 'cute');
+  toast('主题已切换');
+};
+
+/* ===== Navigation ===== */
+qsa('.tab').forEach(t=>{
+  t.onclick = ()=>{
+    state.tab = t.dataset.tab;
+    render();
+  };
+});
+
+function showTab(name){
+  ['home','flow','people','products','reports','backup'].forEach(t=>{
+    const v = el('view-'+t);
+    if(v) v.style.display = (t===name) ? 'block' : 'none';
+  });
+  qsa('.tab').forEach(x=> x.classList.toggle('active', x.dataset.tab===name));
+}
+
+function setFab(){
+  const fab = el('fabAdd');
+  fab.onclick = ()=>{
+    if(state.tab==='flow'){
+      if(state.flowMode==='ORDERS') openOrderTypePicker();
+      else openFundEditor(null);
+      return;
+    }
+    if(state.tab==='people') { openAgentEditor(null); return; }
+    if(state.tab==='products') { openProductEditor(null); return; }
+    if(state.tab==='reports') { openStatementPicker(); return; }
+    if(state.tab==='home') { openOrderTypePicker(); return; }
+  };
+}
+
+/* ===== Render ===== */
+function render(){
+  showTab(state.tab);
+  setFab();
+
+  if(state.tab==='home') renderHome();
+  if(state.tab==='flow') renderFlow();
+  if(state.tab==='people') renderPeople();
+  if(state.tab==='products') renderProducts();
+  if(state.tab==='reports') renderReports();
+  if(state.tab==='backup') renderBackup();
+}
+
+function renderHome(){
+  const root = el('view-home');
+
+  const agentOrders = DB.orders.filter(o=>o.type==='AGENT');
+  const retailOrders = DB.orders.filter(o=>o.type==='RETAIL');
+
+  const agentGoods = agentOrders.reduce((s,o)=> s + orderItemsTotal(o,'agentPriceMYR'), 0);
+  const agentProfit = agentOrders.reduce((s,o)=> s + agentOrderProfit(o), 0);
+  const retailSales = retailOrders.reduce((s,o)=> s + retailOrderRevenue(o), 0);
+  const retailProfit = retailOrders.reduce((s,o)=> s + retailOrderProfit(o), 0);
+
+  const balances = DB.agents.map(a=>({a, bal: txSum(a.id)}));
+  const neg = balances.filter(x=> x.bal < -0.01).sort((x,y)=> x.bal - y.bal).slice(0,6);
+
+  root.innerHTML = `
+    <div class="card">
+      <div class="hd">
+        <div>
+          <h2>总览 ✦</h2>
+          <p class="sub">代理余额 · 代理利润（老板看） · 零售利润</p>
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn good" id="homeAddOrder">🧾 新增订单</button>
+          <button class="btn" id="homeAddFund">💳 充值/调整</button>
+        </div>
+      </div>
+      <div class="bd">
+        <div class="kpi">
+          <div class="box"><p class="t">代理单货款合计（MYR）</p><p class="v money">RM ${fmtMoney(agentGoods)}</p></div>
+          <div class="box"><p class="t">代理单毛利（扣运费后）</p><p class="v money ${agentProfit>=0?'pos':'neg'}">RM ${fmtMoney(agentProfit)}</p></div>
+          <div class="box"><p class="t">零售额合计（MYR）</p><p class="v money">RM ${fmtMoney(retailSales)}</p></div>
+          <div class="box"><p class="t">零售毛利（扣两段运费后）</p><p class="v money ${retailProfit>=0?'pos':'neg'}">RM ${fmtMoney(retailProfit)}</p></div>
+        </div>
+        <p class="hint">代理单：国内运费你承担 + 国际运费一人一半；零售单：国内+转运两段运费都由你承担。</p>
+        <div class="divider"></div>
+        <div class="row">
+          <div class="seg" style="max-width:520px;">
+            <button class="sbtn active" id="segTip">📌 数据提示</button>
+            <button class="sbtn" id="segA2HS">📲 添加到主屏幕</button>
+          </div>
+        </div>
+        <div id="homeTipBox" class="small muted" style="margin-top:10px; line-height:1.5;">
+          为了避免“订单突然不见”，建议用同一种方式打开本文件。不同打开入口（content:// / file:// / 其它查看器）会被安卓当成不同站点，数据不互通。你可以随时到【报表】生成对账单截图，或到【备份】导出 JSON 迁移。
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="hd">
+        <div>
+          <h2>欠款预警（余额为负）</h2>
+          <p class="sub">余额 < 0 代表该代理还欠你</p>
+        </div>
+        <div class="pill">共 <b>${neg.length}</b> 个</div>
+      </div>
+      <div class="bd">
+        <div class="list">
+          ${neg.length ? neg.map(x=>`
+            <div class="item" data-open-agent="${x.a.id}">
+              <div class="a">
+                <p class="name">🐾 ${safe(x.a.name)}</p>
+                <p class="meta"><span>余额为负</span><span>点开可看资金流水/对账</span></p>
+              </div>
+              <div class="b">
+                <div class="money neg">RM ${fmtMoney(x.bal)}</div>
+                <span class="tag" style="color:var(--warn)">需补款</span>
+              </div>
+            </div>
+          `).join('') : `<div class="muted">目前没有欠款代理。</div>`}
+        </div>
+      </div>
+    </div>
+  `;
+
+  qs('#homeAddOrder').onclick = openOrderTypePicker;
+  qs('#homeAddFund').onclick = ()=> openFundEditor(null);
+
+  qs('#segTip').onclick = ()=>{
+    qs('#segTip').classList.add('active');
+    qs('#segA2HS').classList.remove('active');
+    qs('#homeTipBox').innerHTML = '为了避免“订单突然不见”，建议用同一种方式打开本文件。不同打开入口（content:// / file:// / 其它查看器）会被安卓当成不同站点，数据不互通。你可以随时到【报表】生成对账单截图，或到【备份】导出 JSON 迁移。';
+  };
+  qs('#segA2HS').onclick = ()=>{
+    qs('#segA2HS').classList.add('active');
+    qs('#segTip').classList.remove('active');
+    qs('#homeTipBox').innerHTML = 'Chrome：右上角「⋮」菜单 → 「添加到主屏幕」或「安装应用」。以后从主屏幕图标进入，最稳定。';
+  };
+
+  qsa('[data-open-agent]').forEach(n=> n.onclick = ()=> openAgentDetail(n.getAttribute('data-open-agent')));
+}
+
+function renderFlow(){
+  const root = el('view-flow');
+
+  const seg = `
+    <div class="seg" style="max-width:520px;">
+      <button class="sbtn ${state.flowMode==='ORDERS'?'active':''}" id="segOrders">🧾 订单流水</button>
+      <button class="sbtn ${state.flowMode==='FUNDS'?'active':''}" id="segFunds">💳 资金流水</button>
+    </div>
+  `;
+
+  if(state.flowMode==='ORDERS'){
+    const orders = applyOrderFilters(DB.orders);
+
+    const agentOpts = ['<option value="ALL">全部代理</option>']
+      .concat(DB.agents.map(a=> `<option value="${a.id}" ${state.orderFilters.agentId===a.id?'selected':''}>${safe(a.name)}</option>`))
+      .join('');
+
+    const profitSum = orders.reduce((s,o)=> s + (o.type==='AGENT' ? agentOrderProfit(o) : retailOrderProfit(o)), 0);
+
+    root.innerHTML = `
+      <div class="card">
+        <div class="hd">
+          <div>
+            <h2>流水</h2>
+            <p class="sub">订单流水 + 资金流水（充值/调整/扣款）</p>
+          </div>
+          ${seg}
+        </div>
+        <div class="bd">
+          <div class="row">
+            <div>
+              <label>订单类型</label>
+              <select id="fType">
+                <option value="ALL">全部</option>
+                <option value="AGENT" ${state.orderFilters.type==='AGENT'?'selected':''}>代理单</option>
+                <option value="RETAIL" ${state.orderFilters.type==='RETAIL'?'selected':''}>零售单</option>
+              </select>
+            </div>
+            <div>
+              <label>代理（过滤代理单）</label>
+              <select id="fAgent">${agentOpts}</select>
+            </div>
+            <div>
+              <label>开始日期</label>
+              <input id="fFrom" type="date" value="${safe(state.orderFilters.from)}">
+            </div>
+            <div>
+              <label>结束日期</label>
+              <input id="fTo" type="date" value="${safe(state.orderFilters.to)}">
+            </div>
+            <div>
+              <label>搜索（SKU/尺码/颜色/备注）</label>
+              <input id="fQ" placeholder="例如：70C / 黑 / 腰封 / 补差" value="${safe(state.orderFilters.q)}">
+            </div>
+          </div>
+          <div class="divider"></div>
+          <div class="kpi">
+            <div class="box"><p class="t">筛选后订单数</p><p class="v money">${orders.length}</p></div>
+            <div class="box"><p class="t">毛利合计（老板看）</p><p class="v money ${profitSum>=0?'pos':'neg'}">RM ${fmtMoney(profitSum)}</p></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="hd">
+          <div>
+            <h2>订单明细</h2>
+            <p class="sub">点一条可编辑/删除；订单里已包含运费与当时价格（不会被之后调价影响）</p>
+          </div>
+          <button class="btn good" id="btnAddOrder">＋ 新增订单</button>
+        </div>
+        <div class="bd">
+          <div class="list">
+            ${orders.length ? orders.map(o=>{
+              const isA = o.type==='AGENT';
+              const who = isA ? (byId(DB.agents,o.agentId)?.name || '（未选代理）') : (byId(DB.customers,o.customerId)?.name || '（未选顾客）');
+              const title = isA ? `🧾 代理单 · ${who}` : `🍰 零售单 · ${who}`;
+              const amount = isA ? agentOrderDebit(o) : retailOrderRevenue(o);
+              const profit = isA ? agentOrderProfit(o) : retailOrderProfit(o);
+              const tag = isA ? `<span class="tag">扣 ${money(amount)}</span>` : `<span class="tag">收 ${money(amount)}</span>`;
+              const itemBrief = (o.items||[]).slice(0,2).map(it=> `${safe(it.sku||it.name||'')}${it.size?('·'+safe(it.size)):""}${it.color?('·'+safe(it.color)):""}×${Number(it.qty||0)}`).join('；');
+              const more = (o.items||[]).length>2 ? '…' : '';
+              return `
+                <div class="item" data-open-order="${o.id}">
+                  <div class="a">
+                    <p class="name">${safe(title)}</p>
+                    <p class="meta">
+                      <span>📅 ${safe(o.date||'')}</span>
+                      <span>🧺 ${o.items?.length||0} 行</span>
+                      ${itemBrief?`<span>${itemBrief}${more}</span>`:''}
+                    </p>
+                  </div>
+                  <div class="b">
+                    ${tag}
+                    <div class="money ${profit>=0?'pos':'neg'}">毛利 RM ${fmtMoney(profit)}</div>
+                  </div>
+                </div>
+              `;
+            }).join('') : `<div class="muted">还没有订单。点“新增订单”开始记第一笔。</div>`}
+          </div>
+        </div>
+      </div>
+    `;
+
+    qs('#segOrders').onclick = ()=>{ state.flowMode='ORDERS'; renderFlow(); };
+    qs('#segFunds').onclick = ()=>{ state.flowMode='FUNDS'; renderFlow(); };
+    qs('#btnAddOrder').onclick = openOrderTypePicker;
+
+    qs('#fType').onchange = (e)=>{ state.orderFilters.type = e.target.value; renderFlow(); };
+    qs('#fAgent').onchange = (e)=>{ state.orderFilters.agentId = e.target.value; renderFlow(); };
+    qs('#fFrom').onchange = (e)=>{ state.orderFilters.from = e.target.value; renderFlow(); };
+    qs('#fTo').onchange = (e)=>{ state.orderFilters.to = e.target.value; renderFlow(); };
+    qs('#fQ').oninput = (e)=>{ state.orderFilters.q = e.target.value; renderFlow(); };
+    qsa('[data-open-order]').forEach(n=> n.onclick = ()=> openOrderEditor(n.getAttribute('data-open-order')));
+    return;
+  }
+
+  // FUNDS
+  const txs = DB.transactions.slice().sort((a,b)=> (b.date||'').localeCompare(a.date||'') || (b.createdAt||0)-(a.createdAt||0));
+  root.innerHTML = `
+    <div class="card">
+      <div class="hd">
+        <div>
+          <h2>流水</h2>
+          <p class="sub">订单流水 + 资金流水（充值/调整/扣款）</p>
+        </div>
+        ${seg}
+      </div>
+      <div class="bd">
+        <div class="row">
+          <div>
+            <label>快速入口</label>
+            <button class="btn good" id="btnTopup">💳 代理充值</button>
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <button class="btn warn" id="btnAdjust">🧾 余额调整/期初欠款</button>
+          </div>
+        </div>
+        <p class="hint">你选择的规则：期初余额/欠款用“资金流水→调整”录入；订单会自动生成扣款流水。</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="hd">
+        <div>
+          <h2>资金流水</h2>
+          <p class="sub">TOPUP=充值（+）；ADJUST=调整（可正可负）；DEBIT=订单扣款（-，自动生成）</p>
+        </div>
+        <button class="btn" id="btnAddTx">＋ 新增流水</button>
+      </div>
+      <div class="bd">
+        <div class="list">
+          ${txs.length ? txs.map(t=>{
+            const a = byId(DB.agents,t.agentId);
+            const name = a?.name || '（未知代理）';
+            const cls = Number(t.amountMYR||0)>=0 ? 'pos' : 'neg';
+            const kindMap = {TOPUP:'充值', ADJUST:'调整', DEBIT:'扣款'};
+            const k = kindMap[t.kind] || t.kind;
+            const link = t.relatedOrderId ? `<span class="tag">关联订单</span>` : '';
+            return `
+              <div class="item" data-open-tx="${t.id}">
+                <div class="a">
+                  <p class="name">💳 ${safe(name)} · ${safe(k)}</p>
+                  <p class="meta">
+                    <span>📅 ${safe(t.date||'')}</span>
+                    ${t.note?`<span>📝 ${safe(t.note).slice(0,20)}${t.note.length>20?'…':''}</span>`:''}
+                  </p>
+                </div>
+                <div class="b">
+                  ${link}
+                  <div class="money ${cls}">${Number(t.amountMYR||0)>=0?'+':''}RM ${fmtMoney(t.amountMYR)}</div>
+                </div>
+              </div>
+            `;
+          }).join('') : `<div class="muted">还没有资金流水。可以先给某个代理录一笔“调整”作为期初余额。</div>`}
+        </div>
+      </div>
+    </div>
+  `;
+
+  qs('#segOrders').onclick = ()=>{ state.flowMode='ORDERS'; renderFlow(); };
+  qs('#segFunds').onclick = ()=>{ state.flowMode='FUNDS'; renderFlow(); };
+  qs('#btnAddTx').onclick = ()=> openFundEditor(null);
+  qs('#btnTopup').onclick = ()=> openFundEditor({kind:'TOPUP'});
+  qs('#btnAdjust').onclick = ()=> openFundEditor({kind:'ADJUST'});
+  qsa('[data-open-tx]').forEach(n=> n.onclick = ()=> openFundEditor(n.getAttribute('data-open-tx')));
+}
+
+function renderPeople(){
+  const root = el('view-people');
+
+  const agentRows = DB.agents.map(a=>{
+    const bal = txSum(a.id);
+    const agentOrders = DB.orders.filter(o=>o.type==='AGENT' && o.agentId===a.id);
+    const profit = agentOrders.reduce((s,o)=> s + agentOrderProfit(o), 0);
+    return {a, bal, profit, count: agentOrders.length};
+  }).sort((x,y)=> y.bal - x.bal);
+
+  const custRows = DB.customers.slice().sort((a,b)=> (a.name||'').localeCompare(b.name||''));
+
+  root.innerHTML = `
+    <div class="card">
+      <div class="hd">
+        <div>
+          <h2>代理</h2>
+          <p class="sub">余额=充值/调整/扣款（订单扣款会自动生成一笔 DEBIT）</p>
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn good" id="btnAddAgent">＋ 新增代理</button>
+          <button class="btn" id="btnAddFund">💳 充值/调整</button>
+        </div>
+      </div>
+      <div class="bd">
+        <div class="list">
+          ${agentRows.length ? agentRows.map(r=>{
+            const balCls = r.bal>=0 ? 'pos' : 'neg';
+            const warnTag = r.bal<0 ? `<span class="tag" style="color:var(--warn)">欠款</span>` : `<span class="tag">余额正常</span>`;
+            return `
+              <div class="item" data-open-agent="${r.a.id}">
+                <div class="a">
+                  <p class="name">🐾 ${safe(r.a.name)}</p>
+                  <p class="meta">
+                    <span>🧾 ${r.count} 单</span>
+                    <span>✨ 毛利（老板看）RM ${fmtMoney(r.profit)}</span>
+                    ${r.a.phone?`<span>📞 ${safe(r.a.phone)}</span>`:''}
+                  </p>
+                </div>
+                <div class="b">
+                  <div class="money ${balCls}">RM ${fmtMoney(r.bal)}</div>
+                  ${warnTag}
+                </div>
+              </div>
+            `;
+          }).join('') : `<div class="muted">还没有代理。先新增一个代理就能开始记账。</div>`}
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="hd">
+        <div>
+          <h2>顾客</h2>
+          <p class="sub">零售单可选填顾客（方便复购/查询）</p>
+        </div>
+        <button class="btn" id="btnAddCustomer">＋ 新增顾客</button>
+      </div>
+      <div class="bd">
+        <div class="list">
+          ${custRows.length ? custRows.map(c=>`
+            <div class="item" data-open-customer="${c.id}">
+              <div class="a">
+                <p class="name">🍰 ${safe(c.name)}</p>
+                <p class="meta">
+                  ${c.phone?`<span>📞 ${safe(c.phone)}</span>`:''}
+                  ${c.note?`<span>📝 ${safe(c.note).slice(0,18)}${c.note.length>18?'…':''}</span>`:''}
+                </p>
+              </div>
+              <div class="b">
+                <span class="tag">编辑</span>
+              </div>
+            </div>
+          `).join('') : `<div class="muted">还没有顾客。做零售单时可随手加。</div>`}
+        </div>
+      </div>
+    </div>
+  `;
+
+  qs('#btnAddAgent').onclick = ()=> openAgentEditor(null);
+  qs('#btnAddFund').onclick = ()=> { state.tab='flow'; state.flowMode='FUNDS'; render(); openFundEditor(null); };
+  qs('#btnAddCustomer').onclick = ()=> openCustomerEditor(null);
+  qsa('[data-open-agent]').forEach(n=> n.onclick = ()=> openAgentDetail(n.getAttribute('data-open-agent')));
+  qsa('[data-open-customer]').forEach(n=> n.onclick = ()=> openCustomerEditor(n.getAttribute('data-open-customer')));
+}
+
+function renderProducts(){
+  const root = el('view-products');
+  const cats = Array.from(new Set(DB.products.map(p=> p.category || '未分类'))).sort((a,b)=>a.localeCompare(b));
+
+  root.innerHTML = `
+    <div class="card">
+      <div class="hd">
+        <div>
+          <h2>商品库</h2>
+          <p class="sub">商品（类目/款式）→ 下单时填 SKU/尺码/颜色；价格会“落地保存”进订单</p>
+        </div>
+        <button class="btn good" id="btnAddProduct">＋ 新增商品</button>
+      </div>
+      <div class="bd">
+        <div class="row">
+          <div>
+            <label>分类筛选</label>
+            <select id="pCat">
+              <option value="ALL">全部分类</option>
+              ${cats.map(c=>`<option value="${safe(c)}">${safe(c)}</option>`).join('')}
+            </select>
+          </div>
+          <div>
+            <label>搜索（款名/备注/SKU）</label>
+            <input id="pQ" placeholder="例如：无钢圈 / 腰封 / BC4668" />
+          </div>
+        </div>
+        <div class="divider"></div>
+        <div class="list" id="pList"></div>
+        <p class="hint">尺码类型：文胸=70A~90D；内裤/塑身衣/腰封/家居服=S~XXXL。颜色每款不一样，可在商品里预设常用颜色（下单时也可手填）。</p>
+      </div>
+    </div>
+  `;
+
+  const list = qs('#pList');
+  const draw = ()=>{
+    const cat = qs('#pCat').value;
+    const q = (qs('#pQ').value||'').trim().toLowerCase();
+    const prods = DB.products.filter(p=>{
+      if(cat!=='ALL' && (p.category||'未分类')!==cat) return false;
+      if(q){
+        const hay = ((p.name||'')+' '+(p.category||'')+' '+(p.sku||'')+' '+(p.note||'')).toLowerCase();
+        if(!hay.includes(q)) return false;
+      }
+      return true;
+    }).sort((a,b)=> ((a.category||'')+(a.name||'')).localeCompare((b.category||'')+(b.name||'')));
+
+    list.innerHTML = prods.length ? prods.map(p=>{
+      const st = p.sizeType==='BRA'?'70A~90D':(p.sizeType==='LETTER'?'S~XXXL':'自定义');
+      const colors = (p.colors||[]).slice(0,6).join('、');
+      return `
+        <div class="item" data-open-prod="${p.id}">
+          <div class="a">
+            <p class="name">🌈 ${safe(p.category||'未分类')} · ${safe(p.name||'')}</p>
+            <p class="meta">
+              ${p.sku?`<span>🏷️ ${safe(p.sku)}</span>`:''}
+              <span>📐 ${safe(st)}</span>
+              ${colors?`<span>🎨 ${safe(colors)}${(p.colors||[]).length>6?'…':''}</span>`:''}
+            </p>
+          </div>
+          <div class="b">
+            <span class="tag">编辑</span>
+          </div>
+        </div>
+      `;
+    }).join('') : `<div class="muted">还没有商品。建议先建：文胸/内裤女/内裤男/家居服女/家居服男/腰封/塑身衣/美体衣。</div>`;
+
+    qsa('[data-open-prod]').forEach(n=> n.onclick = ()=> openProductEditor(n.getAttribute('data-open-prod')));
+  };
+
+  qs('#pCat').onchange = draw;
+  qs('#pQ').oninput = draw;
+  draw();
+
+  qs('#btnAddProduct').onclick = ()=> openProductEditor(null);
+}
+
+function renderReports(){
+  // Local escape helper: prevents "esc is not defined" on some cached/older builds
+  const esc = (typeof window.esc === "function") ? window.esc : (s => {
+    const str = String(s ?? "");
+    return str.replace(/[&<>"']/g, c => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      "\"": "&quot;",
+      "'": "&#39;"
+    }[c]));
+  });
+
+  const agents = (DB.agents||[]).filter(a=>!a.isDemo);
+  const box = qs('#view-reports');
+
+  const rows = agents.map(a=>{
+    const settle = computeSettlement(a.id); // all-time
+    const orderCount = (DB.orders||[]).filter(o=>o.agentId===a.id && !o.deletedAt).length;
+    const due = settle.due;
+    const paid = settle.paid;
+    const unpaid = settle.unpaid;
+    const bal = settle.endBalance;
+    return {a, orderCount, due, paid, unpaid, bal};
+  });
+
+  rows.sort((x,y)=> (y.due||0)-(x.due||0));
+
+  box.innerHTML = `
+    <div class="card">
+      <div class="row" style="justify-content:space-between;align-items:flex-start;gap:10px">
+        <div>
+          <div class="title">报表</div>
+          <div class="sub">对账单（代理看）隐藏你的进货价；利润单（老板看）显示毛利/运费/成本</div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end">
+          <button class="btn gold" onclick="quickStatementFromReports()">📄 生成对账单</button>
+          <button class="btn" onclick="safeCall(openLedgerPicker)">📒 生成账本</button>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="title" style="font-size:14px;opacity:.9;margin-bottom:8px">快速入口</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn green" onclick="safeCall(openStatementPicker)">📄 选择代理/日期生成</button>
+        <button class="btn" onclick="installHint()">➕ 添加到主屏幕</button>
+      </div>
+
+      <div class="divider"></div>
+      <div class="tableWrap">
+        <table class="reportsTable">
+          <thead>
+            <tr>
+              <th>代理</th>
+              <th>订单数</th>
+              <th>应付（含国际运费一半）</th>
+              <th>已收（含余额冲抵）</th>
+              <th>未收</th>
+              <th>当前余额（资金流水）</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(r=>`
+              <tr>
+                <td>${esc(r.a.name)}</td>
+                <td>${r.orderCount}</td>
+                <td>RM ${fmt2(r.due)}</td>
+                <td style="color:var(--good)">RM ${fmt2(r.paid)}</td>
+                <td style="color:var(--warn)">RM ${fmt2(r.unpaid)}</td>
+                <td style="color:${r.bal>=0?'var(--good)':'var(--warn)'}">RM ${fmt2(r.bal)}</td>
+              </tr>
+            `).join('')}
+            ${agents.length===0?`<tr><td colspan="6" style="padding:16px;opacity:.7">还没有代理。先去「代理/顾客」新增一个。</td></tr>`:''}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+
+function renderBackup(){
+  const root = el('view-backup');
+  root.innerHTML = `
+    <div class="card">
+      <div class="hd">
+        <div>
+          <h2>备份与迁移</h2>
+          <p class="sub">导出 JSON 备份（换手机/换打开方式都能恢复）</p>
+        </div>
+        <span class="tag">仅本地</span>
+      </div>
+      <div class="bd">
+        <div class="row">
+          <div>
+            <label>导出 JSON（全库备份）</label>
+            <button class="btn primary" id="btnExport">⬇️ 导出备份</button>
+            <p class="hint">会下载一个 .json 文件。</p>
+          </div>
+          <div>
+            <label>导入 JSON（恢复备份）</label>
+            <input type="file" id="fileImport" accept="application/json">
+            <button class="btn warn" id="btnImport">⬆️ 导入并覆盖</button>
+            <p class="hint">导入会覆盖当前库。</p>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <div class="row">
+          <div>
+            <label>清空数据（谨慎）</label>
+            <button class="btn danger" id="btnWipe">🗑️ 清空所有数据</button>
+            <p class="hint">彻底删除本机记录，不可恢复（除非你有备份）。</p>
+          </div>
+          <div>
+            <label>导出 CSV（简单对接 Excel）</label>
+            <button class="btn good" id="btnCSV">🧾 导出 CSV</button>
+            <p class="hint">会导出 orders.csv / transactions.csv / products.csv。</p>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <p class="small muted">隐私说明：不联网、不上传；数据只在本机 Chrome 的本地存储。</p>
+      </div>
+    </div>
+  `;
+
+  qs('#btnExport').onclick = exportJSON;
+  qs('#btnImport').onclick = importJSON;
+  qs('#btnWipe').onclick = wipeAll;
+  qs('#btnCSV').onclick = exportCSV;
+}
+
+/* ===== Filters ===== */
+function applyOrderFilters(orders){
+  const {type, agentId, from, to, q} = state.orderFilters;
+  const q2 = (q||'').trim().toLowerCase();
+  return orders.filter(o=>{
+    if(type!=='ALL' && o.type!==type) return false;
+    if(agentId!=='ALL' && o.agentId!==agentId) return false;
+    if(from && (o.date||'') < from) return false;
+    if(to && (o.date||'') > to) return false;
+    if(q2){
+      const agent = byId(DB.agents,o.agentId)?.name || '';
+      const cust = byId(DB.customers,o.customerId)?.name || '';
+      const items = (o.items||[]).map(it=> `${it.sku||it.name||''} ${it.size||''} ${it.color||''} ${it.note||''}`).join(' ');
+      const hay = (agent+' '+cust+' '+items+' '+(o.note||'')).toLowerCase();
+      if(!hay.includes(q2)) return false;
+    }
+    return true;
+  });
+}
+
+/* ===== Editors ===== */
+function optionList(list, selectedId, placeholder){
+  const ph = placeholder ? `<option value="">${safe(placeholder)}</option>` : '';
+  return ph + list.map(x=> `<option value="${x.id}" ${selectedId===x.id?'selected':''}>${safe(x.name)}</option>`).join('');
+}
+
+function openOrderTypePicker(){
+  modalOpen('新增订单', `
+    <div class="row">
+      <div>
+        <label>订单类型</label>
+        <select id="ot">
+          <option value="AGENT">代理单（扣代理余额 + 分摊国际运费）</option>
+          <option value="RETAIL">零售单（运费你承担两段）</option>
+        </select>
+      </div>
+      <div>
+        <label>日期</label>
+        <input id="od" type="date" value="${todayISO()}">
+      </div>
+    </div>
+    <p class="hint">代理单：隐藏进货价；利润只在“老板利润单”里看。</p>
+  `, `
+    <button class="btn" id="cancel">取消</button>
+    <button class="btn good" id="go">下一步</button>
+  `);
+  qs('#cancel').onclick = modalClose;
+  qs('#go').onclick = ()=>{
+    const type = qs('#ot').value;
+    const date = qs('#od').value || todayISO();
+    modalClose();
+    openOrderEditor(null, {type, date});
+  };
+}
+
+function productSizeOptions(p){
+  if(!p) return [];
+  if(p.sizeType==='BRA') return braSizes();
+  if(p.sizeType==='LETTER') return letterSizes;
+  return (p.customSizes||[]).length ? p.customSizes : [];
+}
+
+function openOrderEditor(id, preset=null){
+  const isNew = !id;
+  let o = isNew ? {
+    id: uid(),
+    type: preset?.type || 'AGENT',
+    date: preset?.date || todayISO(),
+    agentId:'',
+    customerId:'',
+    items:[],
+    paidMYR: 0,
+    cnShipMYR: 0,
+    intlShipMYR: 0,
+    fwdShipMYR: 0,
+    note:'',
+    createdAt: Date.now()
+  } : (DB.orders.find(x=>x.id===id) || null);
+
+  if(!o){ toast('找不到该订单'); return; }
+  if(!o.items) o.items=[];
+
+  const isAgent = o.type==='AGENT';
+
+  const agentField = isAgent ? `
+    <div>
+      <label>代理 *</label>
+      <select id="oAgent">${optionList(DB.agents, o.agentId, '（选择代理）')}</select>
+    </div>
+  ` : `
+    <div>
+      <label>顾客（可空）</label>
+      <select id="oCust">${optionList(DB.customers, o.customerId, '（选择顾客）')}</select>
+    </div>
+  `;
+
+  const shipFields = isAgent ? `
+    <div>
+      <label>中国内地运费（你承担，RM）</label>
+      <input id="oCnShip" type="number" step="0.01" value="${safe(o.cnShipMYR)}">
+    </div>
+    <div>
+      <label>国际运费（总额，RM；一人一半）</label>
+      <input id="oIntlShip" type="number" step="0.01" value="${safe(o.intlShipMYR)}">
+    </div>
+  ` : `
+    <div>
+      <label>中国内地运费（你承担，RM）</label>
+      <input id="oCnShip" type="number" step="0.01" value="${safe(o.cnShipMYR)}">
+    </div>
+    <div>
+      <label>转运/国际运费（你承担，RM）</label>
+      <input id="oFwdShip" type="number" step="0.01" value="${safe(o.fwdShipMYR)}">
+    </div>
+  `;
+
+  modalOpen(isNew?'新增订单':'编辑订单', `
+    <div class="row">
+      <div>
+        <label>日期 *</label>
+        <input id="oDate" type="date" value="${safe(o.date||todayISO())}">
+      </div>
+      <div>
+        <label>类型</label>
+        <select id="oType" ${isNew?'':'disabled'}>
+          <option value="AGENT" ${o.type==='AGENT'?'selected':''}>代理单</option>
+          <option value="RETAIL" ${o.type==='RETAIL'?'selected':''}>零售单</option>
+        </select>
+      </div>
+      ${agentField}
+      <div>
+        <label>已收款（RM）</label>
+        <input id="oPaid" type="number" step="0.01" value="${safe(o.paidMYR||0)}">
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="row">
+      ${shipFields}
+    </div>
+
+    <div class="divider"></div>
+
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+      <div>
+        <h2 style="margin:0; font-size:14px;">商品明细</h2>
+        <p class="sub" style="margin:4px 0 0;">每行包含：SKU/商品、尺码、颜色、数量、单价（代理价/零售价）</p>
+      </div>
+      <button class="btn good" id="btnAddItem">＋ 加一行</button>
+    </div>
+
+    <div id="itemsBox" style="margin-top:10px; display:grid; gap:10px;"></div>
+
+    <div class="divider"></div>
+    <div class="kpi" id="kpiBox"></div>
+
+    <div class="divider"></div>
+    <div>
+      <label>备注（可空）</label>
+      <textarea id="oNote" placeholder="例如：补差、改地址、颜色说明…">${safe(o.note||'')}</textarea>
+    </div>
+  `, `
+    ${isNew ? '' : `<button class="btn danger" id="oDel">删除</button>`}
+    <button class="btn" id="oCancel">取消</button>
+    <button class="btn primary" id="oSave">保存</button>
+  `, isAgent ? '代理单（隐藏进货价给代理）' : '零售单（两段运费你承担）');
+
+  function drawItems(){
+    const box = qs('#itemsBox');
+    box.innerHTML = (o.items||[]).map((it, idx)=>{
+      const p = byId(DB.products, it.productId);
+      const sizeOpts = productSizeOptions(p);
+      const colorList = (p?.colors||[]).map(c=>`<option value="${safe(c)}"></option>`).join('');
+      const prodOpts = DB.products
+        .slice().sort((a,b)=> ((a.category||'')+(a.name||'')).localeCompare((b.category||'')+(b.name||'')))
+        .map(pp=> `<option value="${pp.id}" ${it.productId===pp.id?'selected':''}>${safe(pp.category||'未分类')} · ${safe(pp.name||'')}</option>`)
+        .join('');
+
+      const showAgent = isAgent;
+      const unitLabel = showAgent ? '代理单价（RM）' : '零售价（RM）';
+
+      return `
+        <div class="card" style="box-shadow:none;">
+          <div class="bd">
+            <div class="row">
+              <div>
+                <label>商品</label>
+                <select data-k="productId" data-i="${idx}">
+                  <option value="">（选择商品）</option>
+                  ${prodOpts}
+                </select>
+              </div>
+              <div>
+                <label>SKU（可空）</label>
+                <input data-k="sku" data-i="${idx}" placeholder="例如：BC4668" value="${safe(it.sku||p?.sku||'')}">
+              </div>
+            </div>
+            <div class="row" style="margin-top:10px;">
+              <div>
+                <label>尺码</label>
+                <select data-k="size" data-i="${idx}">
+                  <option value="">（选择尺码）</option>
+                  ${sizeOpts.map(s=>`<option value="${safe(s)}" ${it.size===s?'selected':''}>${safe(s)}</option>`).join('')}
+                </select>
+              </div>
+              <div>
+                <label>颜色</label>
+                <input list="c${idx}" data-k="color" data-i="${idx}" placeholder="例如：黑/肤/紫" value="${safe(it.color||'')}">
+                <datalist id="c${idx}">${colorList}</datalist>
+              </div>
+              <div>
+                <label>数量</label>
+                <input type="number" step="1" min="1" data-k="qty" data-i="${idx}" value="${safe(it.qty||1)}">
+              </div>
+              <div>
+                <label>${unitLabel}</label>
+                <input type="number" step="0.01" data-k="${showAgent?'agentPriceMYR':'retailPriceMYR'}" data-i="${idx}" value="${safe(showAgent?it.agentPriceMYR:it.retailPriceMYR)}">
+              </div>
+            </div>
+            <div class="row" style="margin-top:10px;">
+              <div>
+                <label>你的进货价（RM，老板用）</label>
+                <input type="number" step="0.01" data-k="costMYR" data-i="${idx}" value="${safe(it.costMYR||0)}">
+              </div>
+              <div style="flex:0 0 auto; min-width:110px;">
+                <label>&nbsp;</label>
+                <button class="btn danger" data-del-item="${idx}">删</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    qsa('[data-k]').forEach(inp=>{
+      inp.onchange = (e)=>{
+        const i = Number(inp.getAttribute('data-i'));
+        const k = inp.getAttribute('data-k');
+        const val = (inp.type==='number') ? Number(inp.value||0) : inp.value;
+        o.items[i][k] = val;
+
+        if(k==='productId'){
+          const p = byId(DB.products, val);
+          o.items[i].name = p?.name || '';
+          o.items[i].category = p?.category || '';
+          // default prices
+          if(o.type==='AGENT'){
+            if(!o.items[i].agentPriceMYR) o.items[i].agentPriceMYR = Number(p?.agentPriceMYR||0);
+          }else{
+            if(!o.items[i].retailPriceMYR) o.items[i].retailPriceMYR = Number(p?.retailPriceMYR||0);
+          }
+          if(!o.items[i].costMYR) o.items[i].costMYR = Number(p?.costMYR||0);
+          if(!o.items[i].sku) o.items[i].sku = p?.sku || '';
+          // refresh entire card to update size options / colors list
+          drawItems();
+          drawKPIs();
+          return;
+        }
+
+        drawKPIs();
+      };
+      inp.oninput = inp.onchange;
+    });
+
+    qsa('[data-del-item]').forEach(btn=>{
+      btn.onclick = ()=>{
+        const i = Number(btn.getAttribute('data-del-item'));
+        o.items.splice(i,1);
+        drawItems();
+        drawKPIs();
+      };
+    });
+  }
+
+  function drawKPIs(){
+    // shipping fields may not yet be copied into o
+    o.date = qs('#oDate').value || o.date;
+    if(o.type==='AGENT') o.agentId = qs('#oAgent')?.value || '';
+    if(o.type==='RETAIL') o.customerId = qs('#oCust')?.value || '';
+    o.paidMYR = Number(qs('#oPaid').value||0);
+    o.cnShipMYR = Number(qs('#oCnShip').value||0);
+    if(o.type==='AGENT') o.intlShipMYR = Number(qs('#oIntlShip').value||0);
+    if(o.type==='RETAIL') o.fwdShipMYR = Number(qs('#oFwdShip').value||0);
+    o.note = qs('#oNote').value || '';
+
+    const k = qs('#kpiBox');
+    if(o.type==='AGENT'){
+      const goods = orderItemsTotal(o,'agentPriceMYR');
+      const debit = agentOrderDebit(o);
+      const profit = agentOrderProfit(o);
+      const due = Math.max(0, debit - Number(o.paidMYR||0));
+      k.innerHTML = `
+        <div class="box"><p class="t">代理货款（不含运费）</p><p class="v money">RM ${fmtMoney(goods)}</p></div>
+        <div class="box"><p class="t">国际运费（代理承担一半）</p><p class="v money">RM ${fmtMoney(Number(o.intlShipMYR||0)*0.5)}</p></div>
+        <div class="box"><p class="t">本单应付（扣余额）</p><p class="v money">RM ${fmtMoney(debit)}</p></div>
+        <div class="box"><p class="t">未收款（订单内）</p><p class="v money ${due>0?'warnc':'pos'}">RM ${fmtMoney(due)}</p></div>
+        <div class="box"><p class="t">本单毛利（老板看）</p><p class="v money ${profit>=0?'pos':'neg'}">RM ${fmtMoney(profit)}</p></div>
+      `;
+    }else{
+      const sales = retailOrderRevenue(o);
+      const profit = retailOrderProfit(o);
+      const due = Math.max(0, sales - Number(o.paidMYR||0));
+      k.innerHTML = `
+        <div class="box"><p class="t">零售额（不含运费）</p><p class="v money">RM ${fmtMoney(sales)}</p></div>
+        <div class="box"><p class="t">两段运费（你承担）</p><p class="v money">RM ${fmtMoney(Number(o.cnShipMYR||0)+Number(o.fwdShipMYR||0))}</p></div>
+        <div class="box"><p class="t">未收款（订单内）</p><p class="v money ${due>0?'warnc':'pos'}">RM ${fmtMoney(due)}</p></div>
+        <div class="box"><p class="t">本单毛利（老板看）</p><p class="v money ${profit>=0?'pos':'neg'}">RM ${fmtMoney(profit)}</p></div>
+      `;
+    }
+  }
+
+  // initial draw
+  if(o.items.length===0){
+    o.items.push({id:uid(), productId:'', sku:'', name:'', category:'', size:'', color:'', qty:1, agentPriceMYR:0, retailPriceMYR:0, costMYR:0, note:''});
+  }
+  drawItems();
+  drawKPIs();
+
+  qs('#btnAddItem').onclick = ()=>{
+    o.items.push({id:uid(), productId:'', sku:'', name:'', category:'', size:'', color:'', qty:1, agentPriceMYR:0, retailPriceMYR:0, costMYR:0, note:''});
+    drawItems();
+    drawKPIs();
+    // scroll to bottom of modal body
+    el('modalBody').scrollTop = el('modalBody').scrollHeight;
+  };
+
+  qs('#oCancel').onclick = modalClose;
+  qsa('#oDate,#oPaid,#oCnShip,#oIntlShip,#oFwdShip,#oNote,#oAgent,#oCust').forEach(x=>{
+    if(!x) return;
+    x.oninput = drawKPIs;
+    x.onchange = drawKPIs;
+  });
+
+  qs('#oSave').onclick = ()=>{
+    // validate
+    const d = qs('#oDate').value || todayISO();
+    o.date = d;
+    o.paidMYR = Number(qs('#oPaid').value||0);
+    o.cnShipMYR = Number(qs('#oCnShip').value||0);
+    if(o.type==='AGENT'){
+      o.agentId = qs('#oAgent').value || '';
+      o.intlShipMYR = Number(qs('#oIntlShip').value||0);
+      if(!o.agentId){ toast('请选择代理'); return; }
+    }else{
+      o.customerId = qs('#oCust')?.value || '';
+      o.fwdShipMYR = Number(qs('#oFwdShip').value||0);
+    }
+    o.note = qs('#oNote').value || '';
+
+    // clean items (require product + qty)
+    o.items = (o.items||[]).filter(it=> it.productId && Number(it.qty||0)>0);
+    if(o.items.length===0){ toast('至少添加一行商品'); return; }
+
+    // "落地保存"：把当时商品名字类目也写入
+    o.items = o.items.map(it=>{
+      const p = byId(DB.products,it.productId);
+      return {
+        ...it,
+        sku: (it.sku||p?.sku||'').toString(),
+        name: it.name || p?.name || '',
+        category: it.category || p?.category || '',
+        size: it.size || '',
+        color: it.color || '',
+        qty: Number(it.qty||0),
+        agentPriceMYR: Number(it.agentPriceMYR||0),
+        retailPriceMYR: Number(it.retailPriceMYR||0),
+        costMYR: Number(it.costMYR||0)
+      };
+    });
+
+    // save order
+    const idx = DB.orders.findIndex(x=>x.id===o.id);
+    if(idx>=0) DB.orders[idx] = o;
+    else DB.orders.push(o);
+
+    // auto create/update DEBIT for agent orders (balance system)
+    if(o.type==='AGENT'){
+      const debitAmount = -agentOrderDebit(o);
+      let tx = DB.transactions.find(t=> t.kind==='DEBIT' && t.relatedOrderId===o.id);
+      if(!tx){
+        tx = {id:uid(), date:o.date, agentId:o.agentId, kind:'DEBIT', amountMYR: debitAmount, note: ['订单扣款', (o.orderNo||o.ref|| (o.id ? ('#'+String(o.id).slice(-6).toUpperCase()) : '')), (o.date||''), (o.note||'')].filter(Boolean).join(' · '), relatedOrderId:o.id, createdAt:Date.now()};
+        DB.transactions.push(tx);
+      }else{
+        tx.date = o.date;
+        tx.agentId = o.agentId;
+        tx.amountMYR = debitAmount;
+      }
+    }
+
+    saveStore(DB);
+    modalClose();
+    toast('已保存');
+    render();
+  };
+
+  if(!isNew){
+    qs('#oDel').onclick = ()=>{
+      // delete order and its debit
+      DB.orders = DB.orders.filter(x=>x.id!==o.id);
+      DB.transactions = DB.transactions.filter(t=> !(t.kind==='DEBIT' && t.relatedOrderId===o.id));
+      saveStore(DB);
+      modalClose();
+      toast('已删除');
+      render();
+    };
+  }
+}
+
+function openAgentEditor(id){
+  const isNew = !id;
+  const a = isNew ? {id:uid(), name:'', phone:'', note:'', createdAt:Date.now()} : (byId(DB.agents,id));
+  if(!a){ toast('找不到代理'); return; }
+  modalOpen(isNew?'新增代理':'编辑代理', `
+    <div class="row">
+      <div>
+        <label>代理名称 *</label>
+        <input id="an" placeholder="例如：Jun" value="${safe(a.name)}">
+      </div>
+      <div>
+        <label>电话/备注（可空）</label>
+        <input id="ap" placeholder="例如：Bintulu / +60..." value="${safe(a.phone||'')}">
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div>
+      <label>备注（可空）</label>
+      <textarea id="at" placeholder="地址、习惯、注意事项…">${safe(a.note||'')}</textarea>
+    </div>
+    <div class="divider"></div>
+    <div class="small muted">
+      期初余额/欠款：按你的规则用【资金流水→调整】录入（可正可负）。
+    </div>
+  `, `
+    ${isNew?'':`<button class="btn danger" id="adel">删除</button>`}
+    <button class="btn" id="ac">取消</button>
+    <button class="btn primary" id="as">保存</button>
+  `);
+
+  qs('#ac').onclick = modalClose;
+  qs('#as').onclick = ()=>{
+    const name = (qs('#an').value||'').trim();
+    if(!name){ toast('请输入代理名称'); return; }
+    a.name = name;
+    a.phone = qs('#ap').value||'';
+    a.note = qs('#at').value||'';
+    const idx = DB.agents.findIndex(x=>x.id===a.id);
+    if(idx>=0) DB.agents[idx]=a; else DB.agents.push(a);
+    saveStore(DB);
+    modalClose();
+    toast('已保存');
+    render();
+  };
+
+  if(!isNew){
+    qs('#adel').onclick = ()=>{
+      // soft delete: keep orders but unlink
+      DB.agents = DB.agents.filter(x=>x.id!==a.id);
+      DB.orders = DB.orders.map(o=> o.agentId===a.id ? ({...o, agentId:''}) : o);
+      DB.transactions = DB.transactions.filter(t=> t.agentId!==a.id);
+      saveStore(DB);
+      modalClose();
+      toast('已删除');
+      render();
+    };
+  }
+}
+
+function openAgentDetail(id){
+  const a = byId(DB.agents,id);
+  if(!a){ toast('找不到代理'); return; }
+  const bal = txSum(a.id);
+  const orders = DB.orders.filter(o=>o.type==='AGENT' && o.agentId===a.id).sort((x,y)=> (y.date||'').localeCompare(x.date||''));
+  const txs = DB.transactions.filter(t=>t.agentId===a.id).sort((x,y)=> (y.date||'').localeCompare(x.date||''));
+  const profit = orders.reduce((s,o)=> s + agentOrderProfit(o), 0);
+
+  modalOpen(`代理：${a.name}`, `
+    <div class="kpi">
+      <div class="box"><p class="t">当前余额</p><p class="v money ${bal>=0?'pos':'neg'}">RM ${fmtMoney(bal)}</p></div>
+      <div class="box"><p class="t">代理单数</p><p class="v money">${orders.length}</p></div>
+      <div class="box"><p class="t">毛利（老板看）</p><p class="v money ${profit>=0?'pos':'neg'}">RM ${fmtMoney(profit)}</p></div>
+    </div>
+    <div class="divider"></div>
+    <div class="row">
+      <div><button class="btn good" id="topup">💳 充值</button></div>
+      <div><button class="btn warn" id="adj">🧾 调整/期初</button></div>
+      <div><button class="btn" id="stmt">📄 对账单</button></div>
+    </div>
+    <div class="divider"></div>
+    <h2 style="margin:0 0 8px; font-size:14px;">最近订单</h2>
+    <div class="list">
+      ${orders.slice(0,6).map(o=>{
+        const amount = agentOrderDebit(o);
+        const p = agentOrderProfit(o);
+        const brief = (o.items||[]).slice(0,2).map(it=> `${safe(it.sku||it.name||'')}${it.size?('·'+safe(it.size)):""}${it.color?('·'+safe(it.color)):""}×${it.qty}`).join('；');
+        return `
+          <div class="item" data-oo="${o.id}">
+            <div class="a">
+              <p class="name">🧾 ${safe(o.date)} · 扣 RM ${fmtMoney(amount)}</p>
+              <p class="meta"><span>${brief}${(o.items||[]).length>2?'…':''}</span></p>
+            </div>
+            <div class="b"><div class="money ${p>=0?'pos':'neg'}">毛利 RM ${fmtMoney(p)}</div></div>
+          </div>
+        `;
+      }).join('') || `<div class="muted">暂无订单</div>`}
+    </div>
+    <div class="divider"></div>
+    <h2 style="margin:0 0 8px; font-size:14px;">资金流水（最近）</h2>
+    <div class="list">
+      ${txs.slice(0,6).map(t=>{
+        const cls = Number(t.amountMYR||0)>=0 ? 'pos' : 'neg';
+        return `
+          <div class="item" data-open-tx="${t.id}">
+            <div class="a">
+              <p class="name">💳 ${safe(t.kind)} · ${safe(t.date||'')}</p>
+              <p class="meta">${t.note?`<span>${safe(t.note)}</span>`:''}</p>
+            </div>
+            <div class="b"><div class="money ${cls}">${Number(t.amountMYR||0)>=0?'+':''}RM ${fmtMoney(t.amountMYR)}</div></div>
+          </div>
+        `;
+      }).join('') || `<div class="muted">暂无流水</div>`}
+    </div>
+  `, `
+    <button class="btn" id="edit">编辑代理</button>
+    <button class="btn" id="close">关闭</button>
+  `);
+
+  qs('#close').onclick = modalClose;
+  qs('#edit').onclick = ()=> { modalClose(); openAgentEditor(a.id); };
+  qs('#topup').onclick = ()=> { modalClose(); openFundEditor({kind:'TOPUP', agentId:a.id}); };
+  qs('#adj').onclick = ()=> { modalClose(); openFundEditor({kind:'ADJUST', agentId:a.id}); };
+  qs('#stmt').onclick = ()=> { modalClose(); openStatementPicker(a.id); };
+  qsa('[data-oo]').forEach(n=> n.onclick = ()=> { modalClose(); openOrderEditor(n.getAttribute('data-oo')); });
+  qsa('[data-open-tx]').forEach(n=> n.onclick = ()=> { modalClose(); openFundEditor(n.getAttribute('data-open-tx')); });
+}
+
+function openCustomerEditor(id){
+  const isNew = !id;
+  const c = isNew ? {id:uid(), name:'', phone:'', note:'', createdAt:Date.now()} : (byId(DB.customers,id));
+  if(!c){ toast('找不到顾客'); return; }
+  modalOpen(isNew?'新增顾客':'编辑顾客', `
+    <div class="row">
+      <div>
+        <label>顾客名称 *</label>
+        <input id="cn" placeholder="例如：Alice" value="${safe(c.name)}">
+      </div>
+      <div>
+        <label>电话（可空）</label>
+        <input id="cp" placeholder="+60..." value="${safe(c.phone||'')}">
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div>
+      <label>备注（可空）</label>
+      <textarea id="ct">${safe(c.note||'')}</textarea>
+    </div>
+  `, `
+    ${isNew?'':`<button class="btn danger" id="cdel">删除</button>`}
+    <button class="btn" id="cc">取消</button>
+    <button class="btn primary" id="cs">保存</button>
+  `);
+
+  qs('#cc').onclick = modalClose;
+  qs('#cs').onclick = ()=>{
+    const name = (qs('#cn').value||'').trim();
+    if(!name){ toast('请输入顾客名称'); return; }
+    c.name = name;
+    c.phone = qs('#cp').value||'';
+    c.note = qs('#ct').value||'';
+    const idx = DB.customers.findIndex(x=>x.id===c.id);
+    if(idx>=0) DB.customers[idx]=c; else DB.customers.push(c);
+    saveStore(DB);
+    modalClose();
+    toast('已保存');
+    render();
+  };
+
+  if(!isNew){
+    qs('#cdel').onclick = ()=>{
+      DB.customers = DB.customers.filter(x=>x.id!==c.id);
+      // keep orders but unlink
+      DB.orders = DB.orders.map(o=> o.customerId===c.id ? ({...o, customerId:''}) : o);
+      saveStore(DB);
+      modalClose();
+      toast('已删除');
+      render();
+    };
+  }
+}
+
+function openProductEditor(id){
+  const isNew = !id;
+  const p = isNew ? {id:uid(), category:'', name:'', sku:'', sizeType:'BRA', colors:[], agentPriceMYR:0, retailPriceMYR:0, costMYR:0, note:'', createdAt:Date.now()} : (byId(DB.products,id));
+  if(!p){ toast('找不到商品'); return; }
+
+  modalOpen(isNew?'新增商品':'编辑商品', `
+    <div class="row">
+      <div>
+        <label>分类 *</label>
+        <input id="pc" placeholder="例如：Bra / Panty女 / Waist" value="${safe(p.category||'')}">
+      </div>
+      <div>
+        <label>商品名 *</label>
+        <input id="pn" placeholder="例如：无钢圈 BC4668" value="${safe(p.name||'')}">
+      </div>
+    </div>
+    <div class="row" style="margin-top:10px;">
+      <div>
+        <label>SKU（可空）</label>
+        <input id="ps" placeholder="例如：BC4668" value="${safe(p.sku||'')}">
+      </div>
+      <div>
+        <label>尺码类型</label>
+        <select id="pt">
+          <option value="BRA" ${p.sizeType==='BRA'?'selected':''}>文胸 70A~90D</option>
+          <option value="LETTER" ${p.sizeType==='LETTER'?'selected':''}>字母 S~XXXL</option>
+          <option value="CUSTOM" ${p.sizeType==='CUSTOM'?'selected':''}>自定义</option>
+        </select>
+      </div>
+    </div>
+    <div class="row" style="margin-top:10px;">
+      <div>
+        <label>代理拿货价默认（RM）</label>
+        <input id="pa" type="number" step="0.01" value="${safe(p.agentPriceMYR||0)}">
+      </div>
+      <div>
+        <label>零售价默认（RM，可空）</label>
+        <input id="pr" type="number" step="0.01" value="${safe(p.retailPriceMYR||0)}">
+      </div>
+      <div>
+        <label>你的进货价默认（RM，老板用）</label>
+        <input id="pk" type="number" step="0.01" value="${safe(p.costMYR||0)}">
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div>
+      <label>常用颜色（用逗号分隔，可空）</label>
+      <input id="pcol" placeholder="黑, 肤, 紫, 蓝..." value="${safe((p.colors||[]).join(', '))}">
+      <p class="hint">颜色每款不一样：这里是“输入建议”，下单时也能手动改。</p>
+    </div>
+    <div class="divider"></div>
+    <div>
+      <label>备注（可空）</label>
+      <textarea id="pnote">${safe(p.note||'')}</textarea>
+    </div>
+  `, `
+    ${isNew?'':`<button class="btn danger" id="pdel">删除</button>`}
+    <button class="btn" id="pcancel">取消</button>
+    <button class="btn primary" id="psave">保存</button>
+  `);
+
+  qs('#pcancel').onclick = modalClose;
+  qs('#psave').onclick = ()=>{
+    const cat = (qs('#pc').value||'').trim();
+    const name = (qs('#pn').value||'').trim();
+    if(!cat || !name){ toast('分类和商品名必填'); return; }
+    p.category = cat;
+    p.name = name;
+    p.sku = qs('#ps').value||'';
+    p.sizeType = qs('#pt').value;
+    p.agentPriceMYR = Number(qs('#pa').value||0);
+    p.retailPriceMYR = Number(qs('#pr').value||0);
+    p.costMYR = Number(qs('#pk').value||0);
+    const cols = (qs('#pcol').value||'').split(',').map(s=>s.trim()).filter(Boolean);
+    p.colors = cols;
+    p.note = qs('#pnote').value||'';
+
+    const idx = DB.products.findIndex(x=>x.id===p.id);
+    if(idx>=0) DB.products[idx]=p; else DB.products.push(p);
+    saveStore(DB);
+    modalClose();
+    toast('已保存');
+    render();
+  };
+
+  if(!isNew){
+    qs('#pdel').onclick = ()=>{
+      DB.products = DB.products.filter(x=>x.id!==p.id);
+      // keep existing orders since they already "落地保存"
+      saveStore(DB);
+      modalClose();
+      toast('已删除');
+      render();
+    };
+  }
+}
+
+function openFundEditor(idOrPreset){
+  const preset = (typeof idOrPreset === 'object' && idOrPreset) ? idOrPreset : null;
+  const existing = (typeof idOrPreset === 'string') ? byId(DB.transactions, idOrPreset) : null;
+
+  const isNew = !existing;
+  const t = isNew ? {
+    id: uid(),
+    date: todayISO(),
+    agentId: preset?.agentId || '',
+    kind: preset?.kind || 'TOPUP',
+    amountMYR: 0,
+    note: '',
+    relatedOrderId: '',
+    createdAt: Date.now()
+  } : {...existing};
+
+  modalOpen(isNew?'新增资金流水':'编辑资金流水', `
+    <div class="row">
+      <div>
+        <label>日期 *</label>
+        <input id="td" type="date" value="${safe(t.date||todayISO())}">
+      </div>
+      <div>
+        <label>代理 *</label>
+        <select id="ta">${optionList(DB.agents, t.agentId, '（选择代理）')}</select>
+      </div>
+      <div>
+        <label>类型</label>
+        <select id="tk" ${t.kind==='DEBIT'?'disabled':''}>
+          <option value="TOPUP" ${t.kind==='TOPUP'?'selected':''}>TOPUP 充值（+）</option>
+          <option value="ADJUST" ${t.kind==='ADJUST'?'selected':''}>ADJUST 调整（可正可负）</option>
+          <option value="DEBIT" ${t.kind==='DEBIT'?'selected':''}>DEBIT 扣款（订单自动）</option>
+        </select>
+      </div>
+      <div>
+        <label>金额（RM）</label>
+        <input id="tm" type="number" step="0.01" value="${safe(t.amountMYR||0)}" ${t.kind==='DEBIT'?'disabled':''}>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div>
+      <label>备注（可空）</label>
+      <textarea id="tn" placeholder="例如：期初欠款、补差、退款…">${safe(t.note||'')}</textarea>
+    </div>
+    <p class="hint">规则：你用“调整”录入期初余额/欠款（可正可负）。订单扣款会自动生成 DEBIT。</p>
+  `, `
+    ${(!isNew && t.kind!=='DEBIT')?`<button class="btn danger" id="tdel">删除</button>`:''}
+    <button class="btn" id="tc">取消</button>
+    <button class="btn primary" id="ts">保存</button>
+  `, t.kind==='DEBIT' ? '订单扣款流水（自动生成）' : null);
+
+  qs('#tc').onclick = modalClose;
+
+  qs('#ts').onclick = ()=>{
+    const date = qs('#td').value || todayISO();
+    const agentId = qs('#ta').value || '';
+    const kind = qs('#tk').value;
+    if(!agentId){ toast('请选择代理'); return; }
+    t.date = date;
+    t.agentId = agentId;
+    t.kind = kind;
+    if(kind!=='DEBIT') t.amountMYR = Number(qs('#tm').value||0);
+    t.note = qs('#tn').value||'';
+
+    const idx = DB.transactions.findIndex(x=>x.id===t.id);
+    if(idx>=0) DB.transactions[idx]=t; else DB.transactions.push(t);
+    saveStore(DB);
+    modalClose();
+    toast('已保存');
+    render();
+  };
+
+  if(!isNew && t.kind!=='DEBIT'){
+    qs('#tdel').onclick = ()=>{
+      DB.transactions = DB.transactions.filter(x=>x.id!==t.id);
+      saveStore(DB);
+      modalClose();
+      toast('已删除');
+      render();
+    };
+  }
+}
+
+/* ===== Statements (Agent view + Boss view) ===== */
+function openStatementPicker(agentIdPreset=null){
+  modalOpen('生成对账单 / 利润单', `
+    <div class="row">
+      <div>
+        <label>选择代理 *</label>
+        <select id="sa">${optionList(DB.agents, agentIdPreset||'', '（先选择代理）')}</select>
+      </div>
+      <div>
+        <label>开始日期（可空）</label>
+        <input id="sf" type="date">
+      </div>
+      <div>
+        <label>结束日期（可空）</label>
+        <input id="st" type="date">
+      </div>
+    </div>
+    <p class="hint">代理版：只显示代理拿货价/国际运费/余额；老板版：显示进货价与本单毛利。</p>
+  `, `
+    <button class="btn" id="sc">取消</button>
+    <button class="btn good" id="sAgent" type="button">📄 代理版</button>
+    <button class="btn warn" id="sBoss">🧮 老板利润单</button>
+  `);
+
+  qs('#sc').onclick = modalClose;
+
+  const getRangeOrders = ()=>{
+    const aid = qs('#sa').value;
+    if(!aid){ toast('请选择代理'); return null; }
+    const from = qs('#sf').value || '';
+    const to = qs('#st').value || '';
+    const orders = DB.orders.filter(o=> o.type==='AGENT' && o.agentId===aid)
+      .filter(o=>{
+        if(from && (o.date||'')<from) return false;
+        if(to && (o.date||'')>to) return false;
+        return true;
+      })
+      .sort((a,b)=> (a.date||'').localeCompare(b.date||''));
+    return {aid, from, to, orders};
+  };
+
+  qs('#sAgent').onclick = ()=>{
+    const r = getRangeOrders(); if(!r) return;
+    modalClose();
+    openStatementPage(r.aid, r.orders, r.from, r.to, 'AGENT');
+  };
+  qs('#sBoss').onclick = ()=>{
+    const r = getRangeOrders(); if(!r) return;
+    modalClose();
+    openStatementPage(r.aid, r.orders, r.from, r.to, 'BOSS');
+  };
+}
+
+
+/* ===== Statement (no pop‑up) ===== */
+function closeStatementModal(){
+  const el = qs('#statementOverlay');
+  if(el) el.remove();
+  document.body.classList.remove('printing');
+}
+(function(){
+  // ensure we clean printing state
+  if(window.__bf_afterprint_installed) return;
+  window.__bf_afterprint_installed = true;
+  window.addEventListener('afterprint', ()=>{ document.body.classList.remove('printing'); });
+})();
+
+
+// Compatibility: old onclick uses openStmtPicker()
+
+function quickStatementFromReports(){
+  const agents = (DB.agents||[]).filter(a=>a && a.id && a.name && a.name!=='示例代理');
+  if(agents.length===0){ toast('还没有代理，先在「代理/顾客」里新增哦'); return; }
+  if(agents.length>1){ openStatementPicker(); return; }
+  const agentId = agents[0].id;
+  const today = new Date();
+  const to = today.toISOString().slice(0,10);
+  const from = new Date(today.getTime() - 29*24*3600*1000).toISOString().slice(0,10);
+  const orders = getRangeOrders(agentId, from, to);
+  if(!orders || orders.length===0){
+    openStatementPicker();
+    toast('这个代理最近没有订单，已打开选择界面');
+    return;
+  }
+  openStatementPage(agentId, {from, to, orders});
+}
+
+function openStmtPicker(){ return openStatementPicker(); }
+
+function openLedgerPicker(){
+  closeLedgerModal();
+  const agents = (DB.agents||[]);
+  if(!agents.length){ toast('还没有代理，先去「代理」里新增'); return; }
+
+  const optAgents = agents.map(a=>`<option value="${a.id}">${h(a.name||a.id)}</option>`).join('');
+  const modal = document.createElement('div');
+  modal.id = 'ledgerModal';
+  modal.className = 'modal';
+  modal.innerHTML = `
+    <div class="modalCard">
+      <div class="modalTitle">📒 代理账本（Debit / Credit / Balance）</div>
+
+      <div class="formRow">
+        <label>代理</label>
+        <select id="ledgerAgentSel">${optAgents}</select>
+      </div>
+
+      <div class="formRow two">
+        <div>
+          <label>开始日期</label>
+          <input id="ledgerFrom" type="date" />
+        </div>
+        <div>
+          <label>结束日期</label>
+          <input id="ledgerTo" type="date" />
+        </div>
+      </div>
+
+      <div class="hint" style="margin-top:8px;">
+        自动从【流水】读取：充值（Credit）/ 订单扣款（Debit）/ 调整（正负皆可）并计算 Balance（累计余额）。
+      </div>
+
+      <div class="modalActions">
+        <button class="btn" id="ledgerCancel">取消</button>
+        <button class="btn warn" id="ledgerGo">生成账本</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  qs('#ledgerCancel').onclick = closeLedgerModal;
+  qs('#ledgerGo').onclick = ()=>{
+    const aid = qs('#ledgerAgentSel').value;
+    const from = qs('#ledgerFrom').value || '';
+    const to = qs('#ledgerTo').value || '';
+    closeLedgerModal();
+    openLedgerPage(aid, from, to);
+  };
+}
+
+function closeLedgerModal(){
+  const el = document.getElementById('ledgerModal');
+  if(el) el.remove();
+}
+
+function openLedgerPage(agentId, from, to){
+  const agent = (DB.agents||[]).find(a=>a.id===agentId) || {name: agentId};
+  const txs = (DB.transactions||[]).filter(t=>t.agentId===agentId);
+
+  const inRange = (d)=>{
+    if(!d) return true;
+    if(from && d < from) return false;
+    if(to && d > to) return false;
+    return true;
+  };
+
+  // 按日期排序（同日保持稳定）
+  const sorted = txs.slice().sort((a,b)=>{
+    return String(a.date||'').localeCompare(String(b.date||'')) || String(a.id||'').localeCompare(String(b.id||''));
+  });
+
+  // 期初余额：开始日期之前的累计
+  let opening = 0;
+  if(from){
+    sorted.forEach(t=>{
+      if(String(t.date||'') < from) opening += (Number(t.amountMYR||0) || 0);
+    });
+  }
+  let bal = opening;
+
+  const rows = [];
+  sorted.forEach(t=>{
+    const d = String(t.date||'');
+    if(!inRange(d)) return;
+
+    const amt = Number(t.amountMYR||0) || 0;
+    let debit = '';
+    let credit = '';
+    if(amt < 0) debit = money(Math.abs(amt));
+    if(amt > 0) credit = money(amt);
+
+    bal += amt;
+
+    rows.push({
+      d: d || '—',
+      particulars: ledgerParticulars(t),
+      debit,
+      credit,
+      balance: money(bal),
+    });
+  });
+
+  const rangeTxt = `${from || '全部'} ~ ${to || '全部'}`;
+  const gen = todayStr();
+  const closing = money(bal);
+
+  const thead = `
+    <thead>
+      <tr>
+        <th style="width:110px;">Date</th>
+        <th>Particulars</th>
+        <th style="width:120px; text-align:right;">Debit</th>
+        <th style="width:120px; text-align:right;">Credit</th>
+        <th style="width:120px; text-align:right;">Balance</th>
+      </tr>
+    </thead>`;
+
+  const tbody = `
+    <tbody>
+      <tr>
+        <td>${h(from ? from : '—')}</td>
+        <td><b>Opening balance</b></td>
+        <td style="text-align:right;"></td>
+        <td style="text-align:right;"></td>
+        <td style="text-align:right;"><b>${money(opening)}</b></td>
+      </tr>
+      ${rows.map(r=>`
+        <tr>
+          <td>${h(r.d)}</td>
+          <td style="white-space:pre-wrap;">${r.particulars}</td>
+          <td style="text-align:right;">${r.debit||''}</td>
+          <td style="text-align:right;">${r.credit||''}</td>
+          <td style="text-align:right;">${r.balance}</td>
+        </tr>
+      `).join('')}
+    </tbody>`;
+
+  const html = `
+  <div class="statementOverlay">
+    <div class="statementTopbar">
+      <button class="btn primary" id="ledgerPrintBtn">下载PDF</button>
+      <button class="btn" id="ledgerBackBtn">返回</button>
+    </div>
+
+    <div class="statementSheet">
+      <div class="statementHeader">
+        <div class="statementTitle">代理账本</div>
+        <div class="statementMeta"><b>代理：</b> ${h(agent.name||agentId)} ｜ <b>日期：</b> ${h(rangeTxt)}</div>
+        <div class="statementMeta">期初余额：${money(opening)} ｜ 期末余额：${closing}</div>
+      </div>
+
+      <table class="statementTable">
+        ${thead}
+        ${tbody}
+      </table>
+
+      <div class="statementFoot">
+        说明：Debit=扣款（支出），Credit=充值（收入），Balance=累计余额。订单扣款会优先显示订单号/日期/备注。
+      </div>
+    </div>
+  </div>
+  `;
+
+  // 复用对账单的全屏样式与打印逻辑
+  const host = document.createElement('div');
+  host.className = 'statementHost';
+  host.innerHTML = html;
+  document.body.appendChild(host);
+
+  const back = ()=>{
+    host.remove();
+  };
+
+  qs('#ledgerBackBtn').onclick = back;
+  qs('#ledgerPrintBtn').onclick = ()=>{
+    document.body.classList.add('printing');
+    setTimeout(()=>{
+      window.print();
+      setTimeout(()=>document.body.classList.remove('printing'), 300);
+    }, 50);
+  };
+}
+
+function ledgerParticulars(t){
+  const kind = t.kind || '';
+  // 订单扣款：展示更“正式账本”的明细（订单号/日期/备注）
+  if(kind === 'DEBIT' && t.relatedOrderId){
+    const o = (DB.orders||[]).find(x=>x.id===t.relatedOrderId);
+    if(o){
+      const ref = (o.orderNo||o.ref|| (o.id ? ('#'+String(o.id).slice(-6).toUpperCase()) : ''));
+      const date = o.date || t.date || '';
+      const note = o.note ? ` · ${h(o.note)}` : '';
+      const items = (o.items||[]).map(it=>{
+        const p = (DB.products||[]).find(p=>p.id===it.productId);
+        const code = (p?.code || it.sku || it.productId || '').toString();
+        const size = (it.size||'').toString();
+        const color = (it.color||'').toString();
+        const qty = Number(it.qty||0) || 0;
+        const left = [code, size, color].filter(Boolean).join('·');
+        return left ? `${left}${qty?('×'+qty):''}` : '';
+      }).filter(Boolean);
+      const brief = items.slice(0,4).join('；') + (items.length>4 ? '…' : '');
+      const briefTxt = brief ? `\n${h(brief)}` : '';
+      return `订单扣款 · ${h(ref)} · ${h(date)}${note}${briefTxt}`;
+    }
+  }
+
+  const map = { TOPUP:'充值', ADJUST:'调整', DEBIT:'扣款' };
+  const base = map[kind] || '流水';
+  const note = t.note ? ` · ${h(t.note)}` : '';
+  return `${base}${note}`;
+}
+
+// 简单 HTML 转义
+function h(s){
+  return String(s ?? '').replace(/[&<>"']/g, m=>({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[m]));
+}
+
+
+function openStatementPage(agentId, orders, fromDate, toDate, mode){
+  // Back-compat: allow passing a single options object
+  if(typeof agentId === 'object' && agentId){
+    ({agentId, orders, fromDate, toDate, mode} = agentId);
+  }
+  const agent = DB.agents.find(a=>a.id===agentId) || {name: agentId};
+  let fromYmd = (fromDate && fromDate.ymd) ? fromDate.ymd : ymd(fromDate);
+  let toYmd = (toDate && toDate.ymd) ? toDate.ymd : ymd(toDate);
+  if(!fromYmd) fromYmd = '0000-01-01';
+  if(!toYmd) toYmd = ymd(new Date());
+  const MODE = String(mode||'AGENT').toUpperCase();
+
+  // Boss mode -> profit sheet
+  if(MODE === 'BOSS'){
+    return openProfitStatementPage({agentId, orders, fromDate, toDate});
+  }
+
+  // ===== Agent Statement (itemized, agent-facing) =====
+  const openingYmd = ymdShift(fromYmd, -1);
+  const openingBal = txSumAsOf(agentId, openingYmd);
+  const closingBal = txSumAsOf(agentId, toYmd);
+
+  const txs = (DB.transactions||[])
+    .filter(t=>t.agentId===agentId && t.date>=fromYmd && t.date<=toYmd)
+    .sort((a,b)=> (a.date||'').localeCompare(b.date||'') || (a.kind||'').localeCompare(b.kind||''));
+
+  // Rows: {type:'data'|'date', date, desc, calc, amt, cum}
+  const dataRows = [];
+  let cum = Number(openingBal||0);
+  let goodsPayable = 0;
+  let shipPayable  = 0;
+
+
+  const pushData = (date, desc, calc, amt)=>{
+    cum += Number(amt||0);
+    dataRows.push({type:'data', date: date||'', desc, calc, amt:Number(amt||0), cum});
+  };
+
+  // First row must be opening balance
+  dataRows.push({type:'data', date:'', desc:'上期余额', calc:'', amt:Number(openingBal||0), cum:Number(openingBal||0)});
+
+  txs.forEach(tx=>{
+    const kind = String(tx.kind||'').toUpperCase();
+    const amt  = Number(tx.amountMYR||0);
+    const date = tx.date || '';
+
+    // Expand linked order DEBIT into per-item rows (same order date)
+    if(kind === 'DEBIT' && tx.relatedOrderId){
+      const o = (DB.orders||[]).find(x=>x.id===tx.relatedOrderId);
+      if(o){
+        const od = o.date || date || '';
+        const items = Array.isArray(o.items) ? o.items : [];
+        if(items.length){
+          items.forEach(it=>{
+            const qty  = Number(it.qty||0);
+            const unit = Number(it.agentPriceMYR ?? it.priceMYR ?? 0);
+            const line = -(unit * qty);
+
+            goodsPayable += (unit * qty);
+
+            const rawSku = (it.sku||'').toString().trim();
+            const pid    = (it.productId||'').toString().trim();
+            const sku    = rawSku || (pid && pid.length<=14 ? pid : '');
+            const nm     = (it.name||'').toString().trim();
+            const head   = [sku, nm].filter(Boolean).join(' · ') || (nm || '货品');
+            const attr = [it.size||'', it.color||''].filter(Boolean).join(' · ');
+            const desc = attr ? `${head}
+${attr}` : head;
+
+            const calc = `RM ${fmt2(unit)} × ${qty}`; // 日期移到上面分组显示
+            pushData(od, desc, calc, line);
+          });
+
+          // Intl shipping (代理承担一半)
+          const intl = Number(o.intlShipMYR || 0);
+          const half = intl * 0.5;
+          if(half){
+            const calc = `RM ${fmt2(intl)} ÷ 2`;
+            pushData(od, '国际运费（你承担一半）', calc, -half);
+          }
+          shipPayable += half;
+        }else{
+          // Fallback: single row
+          pushData(od, tx.note || '订单扣款', '', amt);
+        }
+        return;
+      }
+      // linked order missing -> fall back
+      pushData(date, tx.note || '订单扣款', '', amt);
+      return;
+    }
+
+    // Other tx (TOPUP / ADJUST / DEBIT)
+    const base =
+      kind === 'TOPUP' ? '充值' :
+      kind === 'ADJUST' ? '调整/期初' :
+      kind === 'DEBIT' ? '扣款' :
+      '流水';
+
+    if(kind==='DEBIT' || (kind==='ADJUST' && amt<0)) goodsPayable += Math.abs(amt);
+    // 计算栏只放数额/倍数，日期统一用分组行
+    pushData(date, base + (tx.note ? `：${tx.note}` : ''), '', amt);
+  });
+
+  const totalDebit = txs.filter(t=>{
+    const k = String(t.kind||'').toUpperCase();
+    const a = Number(t.amountMYR||0);
+    return k==='DEBIT' || (k==='ADJUST' && a<0);
+  }).reduce((s,t)=> s + Math.abs(Number(t.amountMYR||0)), 0);
+
+  const rangeTxt = (()=>{
+    // 仅显示本次对账单里出现的日期（下单/充值/调整/扣款等）
+    const ds = txs.map(t=>t.date).filter(Boolean).sort();
+    const a = ds[0] || fromYmd;
+    const b = ds[ds.length-1] || a;
+    return (a===b) ? a : `${a} ~ ${b}`;
+  })();
+
+  // Insert date separator rows (skip the opening balance row)
+  const renderRows = [];
+  let lastDate = '';
+  dataRows.forEach((r, i)=>{
+    if(i===0){ renderRows.push(r); return; }
+    const d = r.date || '';
+    if(d && d !== lastDate){
+      renderRows.push({type:'date', date:d});
+      lastDate = d;
+    }
+    renderRows.push(r);
+  });
+
+  const overlay = document.createElement('div');
+  overlay.className = 'statementOverlay';
+  overlay.innerHTML = `
+    <div class="statementTopbar">
+      <div style="display:flex; gap:10px; align-items:center;">
+        <button class="sbtn primary" id="stPrint">下载PDF</button>
+        <button class="sbtn" id="stClose">返回</button>
+      </div>
+      <div class="hint">“已收”仅影响本次对账单的“未收”显示，不会自动改动资金流水。</div>
+    </div>
+
+    <div class="statementSheet" id="statementSheet">
+      <div class="statementBody">
+        <div class="statementTitle" style="font-size:24px">对账单</div>
+        <div class="statementMeta">
+          <span><b>代理：</b> ${escapeHtml(agent.name||agentId)}</span>
+          <span><b>日期：</b> ${escapeHtml(rangeTxt)}</span>
+        </div>
+
+        <div class="statementCards">
+          <div class="statementCard">
+            <div class="k">应付（含国际运费一半）</div>
+            <div class="v">RM ${fmt2(totalDebit)}</div>
+            <div class="k" style="margin-top:6px">货款 RM ${fmt2(goodsPayable)} + 运费 RM ${fmt2(shipPayable)}</div>
+          </div>
+
+          <div class="statementCard">
+            <div class="k">已收（订单内，可改）</div>
+            <input class="statementInput" id="stReceived" inputmode="decimal" value="${fmt2(totalDebit)}" />
+            <div class="k" style="margin-top:6px">只影响本次对账单的“未收”展示，不会自动改动资金流水。</div>
+          </div>
+
+          <div class="statementCard">
+            <div class="k">未收（本单）</div>
+            <div class="v green" id="stUnpaid">RM ${fmt2(0)}</div>
+          </div>
+
+          <div class="statementCard">
+            <div class="k">当前余额（资金流水）</div>
+            <div class="v green">RM ${fmt2(closingBal)}</div>
+            <div class="k" style="margin-top:6px">余额 = 历史扣款/充值合计；与“本单未收”不一定相同。</div>
+          </div>
+        </div>
+
+        <table class="statementTable">
+          <thead>
+            <tr>
+              <th class="col-seq">序号</th>
+              <th class="col-desc">明细</th>
+              <th class="col-calc">计算</th>
+              <th class="col-amt" style="text-align:right">金额</th>
+              <th class="col-cum" style="text-align:right">累计</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${(()=>{
+              let n = 0;
+              return renderRows.map(r=>{
+                if(r.type==='date'){
+                  return `<tr class="stmtDateRow"><td colspan="5">${escapeHtml(r.date)}</td></tr>`;
+                }
+                n += 1;
+                return `
+                  <tr>
+                    <td>${n}</td>
+                    <td class="desc">${escBr(r.desc)}</td>
+                    <td class="calc">${escBr(r.calc||'')}</td>
+                    <td class="amount" style="text-align:right;${r.amt<0?'color:var(--danger)':'color:var(--ok)'}">
+                      ${r.amt<0?'-':''}RM ${fmt2(Math.abs(r.amt))}
+                    </td>
+                    <td class="amount" style="text-align:right;${r.cum<0?'color:var(--danger)':'color:var(--ok)'}">
+                      ${r.cum<0?'-':''}RM ${fmt2(Math.abs(r.cum))}
+                    </td>
+                  </tr>
+                `;
+              }).join('');
+            })()}
+          </tbody>
+        </table>
+
+        <div class="muted" style="margin-top:10px;font-size:12px">
+          说明：金额为「余额」流水；扣款为负数（欠款增加），充值/调整为正数（欠款减少）。国际运费按一半计入代理应付。
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  // Close
+  overlay.querySelector('#stClose').onclick = ()=> overlay.remove();
+
+  // Print (hide app UI)
+  overlay.querySelector('#stPrint').onclick = ()=>{
+    document.body.classList.add('printing');
+    setTimeout(()=>{
+      window.print();
+      setTimeout(()=>document.body.classList.remove('printing'), 300);
+    }, 50);
+  };
+
+  // Unpaid calc (display-only)
+  const recEl = overlay.querySelector('#stReceived');
+  const unpaidEl = overlay.querySelector('#stUnpaid');
+  const recalcUnpaid = ()=>{
+    const v = Number(String(recEl.value||'').replace(/,/g,'').trim()) || 0;
+    const unpaid = Math.max(0, Number(totalDebit||0) - v);
+    unpaidEl.textContent = `RM ${fmt2(unpaid)}`;
+  };
+  recEl.addEventListener('input', recalcUnpaid);
+  recalcUnpaid();
+}
+
+function openProfitStatementPage(opts){
+  const agentId = opts.agentId;
+  const agent = DB.agents.find(a=>a.id===agentId) || {name: agentId};
+  let fromYmd = (opts.fromDate && opts.fromDate.ymd) ? opts.fromDate.ymd : ymd(opts.fromDate);
+  let toYmd = (opts.toDate && opts.toDate.ymd) ? opts.toDate.ymd : ymd(opts.toDate);
+  if(!fromYmd) fromYmd = '0000-01-01';
+  if(!toYmd) toYmd = ymd(new Date());
+
+  // Orders in range for this agent
+  const os = (DB.orders||[])
+    .filter(o=>o.agentId===agentId && o.date>=fromYmd && o.date<=toYmd)
+    .sort((a,b)=> (a.date||'').localeCompare(b.date||'') || String(a.id||'').localeCompare(String(b.id||'')));
+
+  // Rows: {type:'data'|'date', date, desc, calc, amt, cum}
+  const dataRows = [];
+  let cum = 0;
+
+  const pushData = (date, desc, calc, amt)=>{
+    cum += Number(amt||0);
+    dataRows.push({type:'data', date: date||'', desc, calc: calc||'', amt:Number(amt||0), cum});
+  };
+
+  let totalGross = 0; // sum of item gross profits
+  let totalShip  = 0; // my shipping costs (cn + fwd + intl/2)
+  let totalNet   = 0;
+
+  os.forEach(o=>{
+    const od = o.date || '';
+    const items = Array.isArray(o.items) ? o.items : [];
+
+    items.forEach(it=>{
+      const qty  = Number(it.qty||0);
+      const sell = Number(it.agentPriceMYR ?? it.priceMYR ?? 0);
+      const cost = Number(it.costMYR ?? 0);
+      const gp   = (sell - cost) * qty;
+
+      totalGross += gp;
+
+      const rawSku = (it.sku||'').toString().trim();
+      const pid    = (it.productId||'').toString().trim();
+      const sku    = rawSku || (pid && pid.length<=14 ? pid : '');
+      const nm     = (it.name||'').toString().trim();
+      const head   = [sku, nm].filter(Boolean).join(' · ') || (nm || '货品');
+      const attr   = [it.size||'', it.color||''].filter(Boolean).join(' · ');
+      const desc   = attr ? `${head}\n${attr}` : head;
+
+      const calc = `订单 RM ${fmt2(sell)} × ${qty} ｜ 进货 RM ${fmt2(cost)} × ${qty}`;
+      pushData(od, desc, calc, gp);
+    });
+
+    // Shipping costs (扣我自己的成本)
+    const cn   = Number(o.cnShipMYR||0);
+    const fwd  = Number(o.fwdShipMYR||0);
+    const intl = Number(o.intlShipMYR||0);
+    const intlMine = intl * 0.5;
+
+    const shipCost = cn + fwd + intlMine;
+    totalShip += shipCost;
+
+    if(cn){
+      pushData(od, '国内运费', `RM ${fmt2(cn)}`, -cn);
+    }
+    if(fwd){
+      pushData(od, '国内转运/中转', `RM ${fmt2(fwd)}`, -fwd);
+    }
+    if(intlMine){
+      pushData(od, '国际运费（我承担一半）', `RM ${fmt2(intl)} ÷ 2`, -intlMine);
+    }
+  });
+
+  totalNet = totalGross - totalShip;
+
+  const rangeTxt = (()=>{
+    const ds = os.map(o=>o.date).filter(Boolean).sort();
+    const a = ds[0] || fromYmd;
+    const b = ds[ds.length-1] || a;
+    return (a===b) ? a : `${a} ~ ${b}`;
+  })();
+
+  // Insert date separator rows
+  const renderRows = [];
+  let lastDate = '';
+  dataRows.forEach(r=>{
+    const d = r.date || '';
+    if(d && d !== lastDate){
+      renderRows.push({type:'date', date:d});
+      lastDate = d;
+    }
+    renderRows.push(r);
+  });
+
+  const overlay = document.createElement('div');
+  overlay.className = 'statementOverlay';
+  overlay.innerHTML = `
+    <div class="statementTopbar">
+      <div style="display:flex; gap:10px; align-items:center;">
+        <button class="sbtn primary" id="pfPrint">下载PDF</button>
+        <button class="sbtn" id="pfClose">返回</button>
+      </div>
+      <div class="hint">老板利润单：显示进货价与毛利/运费/净利（代理版不显示）。</div>
+    </div>
+
+    <div class="statementSheet" id="profitSheet">
+      <div class="statementBody">
+        <div class="statementTitle">老板利润单</div>
+        <div class="statementMeta">
+          <span><b>代理：</b> ${escapeHtml(agent.name||agentId)}</span>
+          <span><b>日期：</b> ${escapeHtml(rangeTxt)}</span>
+        </div>
+
+        <div class="statementCards">
+          <div class="statementCard">
+            <div class="k">毛利（代理价 - 进货价）</div>
+            <div class="v ${totalGross>=0?'green':'red'}">RM ${fmt2(totalGross)}</div>
+          </div>
+
+          <div class="statementCard">
+            <div class="k">运费成本（国内 + 国际一半）</div>
+            <div class="v ${totalShip<=0?'green':'orange'}">RM ${fmt2(totalShip)}</div>
+            <div class="k" style="margin-top:6px">本卡为“成本合计”，明细在下表。</div>
+          </div>
+
+          <div class="statementCard" style="grid-column: span 2">
+            <div class="k">净利</div>
+            <div class="v ${totalNet>=0?'green':'red'}">RM ${fmt2(totalNet)}</div>
+          </div>
+        </div>
+
+        <table class="statementTable">
+          <thead>
+            <tr>
+              <th class="col-seq">序号</th>
+              <th class="col-desc">明细</th>
+              <th class="col-calc">价格/计算</th>
+              <th class="col-amt" style="text-align:right">本行</th>
+              <th class="col-cum" style="text-align:right">累计净利</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${(()=>{
+              let n = 0;
+              if(!renderRows.length){
+                return `<tr><td colspan="5" style="padding:14px 10px;color:#667">该日期范围内没有订单记录。</td></tr>`;
+              }
+              return renderRows.map(r=>{
+                if(r.type==='date'){
+                  return `<tr class="stmtDateRow"><td colspan="5">${escapeHtml(r.date)}</td></tr>`;
+                }
+                n += 1;
+                return `
+                  <tr>
+                    <td>${n}</td>
+                    <td class="desc">${escBr(r.desc)}</td>
+                    <td class="calc">${escBr(r.calc||'')}</td>
+                    <td class="amount" style="text-align:right;${r.amt<0?'color:var(--danger)':'color:var(--ok)'}">
+                      ${r.amt<0?'-':''}RM ${fmt2(Math.abs(r.amt))}
+                    </td>
+                    <td class="amount" style="text-align:right;${r.cum<0?'color:var(--danger)':'color:var(--ok)'}">
+                      ${r.cum<0?'-':''}RM ${fmt2(Math.abs(r.cum))}
+                    </td>
+                  </tr>
+                `;
+              }).join('');
+            })()}
+          </tbody>
+        </table>
+
+        <div class="muted" style="margin-top:10px;font-size:12px">
+          规则：扣除国内运费（cnShip + fwdShip）全额；国际运费只扣我承担的一半（intlShip ÷ 2）。本表不显示“未收/余额”，只看利润。
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  overlay.querySelector('#pfClose').onclick = ()=> overlay.remove();
+
+  overlay.querySelector('#pfPrint').onclick = ()=>{
+    document.body.classList.add('printing');
+    setTimeout(()=>{
+      window.print();
+      setTimeout(()=>document.body.classList.remove('printing'), 300);
+    }, 50);
+  };
+}
+
+
+/* ===== Backup ===== */
+function download(filename, content, mime='application/octet-stream'){
+  const blob = new Blob([content], {type:mime});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 0);
+}
+function exportJSON(){
+  const stamp = new Date().toISOString().replace(/[:.]/g,'-');
+  download(`BeingFine_FinelyCup_backup_${stamp}.json`, JSON.stringify(DB, null, 2), 'application/json');
+}
+async function importJSON(){
+  const f = qs('#fileImport').files?.[0];
+  if(!f){ toast('请选择备份文件'); return; }
+  try{
+    const txt = await f.text();
+    const d = JSON.parse(txt);
+    // minimal validate
+    if(!d || typeof d!=='object') throw new Error('bad');
+    d.settings ??= {theme:'galaxy'};
+    d.agents ??= []; d.customers ??= []; d.products ??= []; d.orders ??= []; d.transactions ??= [];
+    DB = d;
+    saveStore(DB);
+    applyTheme(DB.settings.theme||'galaxy');
+    toast('导入成功');
+    render();
+  }catch(e){
+    toast('导入失败：文件不正确');
+  }
+}
+function wipeAll(){
+  if(!confirm('确定要清空所有数据吗？此操作不可恢复（除非你有备份）。')) return;
+  DB = {settings:{theme:DB.settings.theme||'galaxy'}, agents:[], customers:[], products:[], orders:[], transactions:[]};
+  saveStore(DB);
+  toast('已清空');
+  render();
+}
+function exportCSV(){
+  // products
+  const products = [['id','category','name','sku','sizeType','colors','agentPriceMYR','retailPriceMYR','costMYR','note']]
+    .concat(DB.products.map(p=>[
+      p.id, p.category||'', p.name||'', p.sku||'', p.sizeType||'', (p.colors||[]).join('|'),
+      Number(p.agentPriceMYR||0), Number(p.retailPriceMYR||0), Number(p.costMYR||0), (p.note||'').replace(/\n/g,' ')
+    ]));
+  // orders
+  const orders = [['id','type','date','agentId','customerId','paidMYR','cnShipMYR','intlShipMYR','fwdShipMYR','note','items_json']]
+    .concat(DB.orders.map(o=>[
+      o.id, o.type, o.date||'', o.agentId||'', o.customerId||'',
+      Number(o.paidMYR||0), Number(o.cnShipMYR||0), Number(o.intlShipMYR||0), Number(o.fwdShipMYR||0),
+      (o.note||'').replace(/\n/g,' '),
+      JSON.stringify(o.items||[])
+    ]));
+  // transactions
+  const txs = [['id','date','agentId','kind','amountMYR','note','relatedOrderId']]
+    .concat(DB.transactions.map(t=>[
+      t.id, t.date||'', t.agentId||'', t.kind||'', Number(t.amountMYR||0),
+      (t.note||'').replace(/\n/g,' '), t.relatedOrderId||''
+    ]));
+
+  const toCSV = (rows)=> rows.map(r=> r.map(x=>{
+    const s = (x??'').toString();
+    if(/[",\n]/.test(s)) return '"' + s.replace(/"/g,'""') + '"';
+    return s;
+  }).join(',')).join('\n');
+
+  download('products.csv', toCSV(products), 'text/csv');
+  download('orders.csv', toCSV(orders), 'text/csv');
+  download('transactions.csv', toCSV(txs), 'text/csv');
+}
+
+/* ===== Boot ===== */
+function seedIfEmpty(){
+  if(DB.agents.length===0 && DB.products.length===0 && DB.orders.length===0 && DB.transactions.length===0){
+    // minimal starter examples
+    DB.agents.push({id:uid(), name:'示例代理（可删）', phone:'', note:'', createdAt:Date.now()});
+    DB.products.push({id:uid(), category:'Bra', name:'示例款', sku:'BC0000', sizeType:'BRA', colors:['黑','肤'], agentPriceMYR:0, retailPriceMYR:0, costMYR:0, note:'', createdAt:Date.now()});
+    saveStore(DB);
+  }
+}
+seedIfEmpty();
+applyTheme(DB.settings.theme||'galaxy');
+render();
+
+// Expose key actions for inline handlers (mobile file:// environments can be finicky)
+window.openStmtPicker = openStmtPicker;
+window.openLedgerPicker = openLedgerPicker;
+window.openStatementPicker = openStatementPicker;
+window.openStatementPage = openStatementPage;
+window.openLedgerPage = openLedgerPage;
+
+// ---- 全局错误提示：避免出现“黑屏无反应” ----
+(function(){
+  const fmt = (v)=> (v==null?'':String(v));
+
+  // 修复：把旧数据里缺失字段补齐，避免报表/对账单计算直接崩溃
+  window.repairAndRefresh = function(){
+    try{
+      const raw = localStorage.getItem(STORE_KEY);
+      if(!raw){ location.reload(); return; }
+      const db = JSON.parse(raw) || {};
+      db.agents = Array.isArray(db.agents) ? db.agents : [];
+      db.products = Array.isArray(db.products) ? db.products : [];
+      db.orders = Array.isArray(db.orders) ? db.orders : [];
+      // 兼容旧字段：txs / transactions
+      const txs = Array.isArray(db.transactions) ? db.transactions : (Array.isArray(db.txs) ? db.txs : []);
+      db.transactions = txs.filter(t=>t && typeof t==='object');
+
+      // 补字段（尽量不改用户已有数值）
+      const today = ymd(new Date());
+      db.transactions.forEach(t=>{
+        if(!t.id) t.id = uid();
+        if(!t.agentId) t.agentId = '__unknown__';
+        if(!t.date) t.date = today;
+        if(t.amountMYR==null && t.amount!=null) t.amountMYR = t.amount;
+        if(t.amountMYR==null && t.myr!=null) t.amountMYR = t.myr;
+        if(!t.kind && t.type) t.kind = t.type; // 旧type -> kind
+      });
+
+      db.orders.forEach(o=>{
+        if(!o.id) o.id = uid();
+        if(!o.agentId) o.agentId='__unknown__';
+        if(!o.date) o.date = today;
+        if(!Array.isArray(o.items)) o.items = [];
+      });
+
+      // Backfill missing DEBIT transactions for old orders (so 报表/对账单不会显示0)
+      try{
+        const txs = Array.isArray(db.transactions) ? db.transactions : (db.transactions=[]);
+        const existing = new Set(txs.filter(t=>t && t.kind==="DEBIT" && t.relatedOrderId).map(t=>t.relatedOrderId));
+        (db.orders||[]).forEach(o=>{
+          if(!o || o.type!=="AGENT") return;
+          if(!o.id) return;
+          if(existing.has(o.id)) return;
+          // amountMYR: negative number
+          let total = 0;
+          (o.items||[]).forEach(it=>{
+            const p = Number(it.agentPriceMYR ?? it.priceMYR ?? 0);
+            const q = Number(it.qty ?? 0);
+            if(Number.isFinite(p) && Number.isFinite(q)) total += p*q;
+          });
+          const ship = Number(o.shippingMYR ?? 0) || 0;
+          const halfIntl = Number(o.intlShipHalfMYR ?? 0) || 0;
+          total += ship + halfIntl;
+          const amountMYR = -total;
+          txs.push({
+            id: uid(),
+            date: o.date || today,
+            agentId: o.agentId || '__unknown__',
+            kind: 'DEBIT',
+            amountMYR,
+            note: `订单扣款(自动修复) · ${o.id}`,
+            relatedOrderId: o.id,
+            createdAt: Date.now()
+          });
+          existing.add(o.id);
+        });
+      }catch(_){ }
+
+
+      localStorage.setItem(STORE_KEY, JSON.stringify(db));
+    }catch(_){}
+    location.reload();
+  };
+
+  function showFatal(title, msg){
+    try{
+      showModal(title || '发生错误', `
+        <div class="card" style="background:#0b0f17;border:1px solid rgba(255,255,255,.08)">
+          <div style="font-weight:800;margin-bottom:8px">报表/对账单加载失败</div>
+          <div class="muted" style="margin-bottom:10px">点一下“修复并刷新”就能自动修补旧数据结构。</div>
+          <pre style="white-space:pre-wrap;word-break:break-word;line-height:1.35;
+                      background:rgba(0,0,0,.35);padding:12px;border-radius:12px;
+                      border:1px solid rgba(255,255,255,.08);max-height:42vh;overflow:auto;">${escapeHtml(fmt(msg))}</pre>
+          <div style="display:flex;gap:10px;margin-top:12px">
+            <button class="btn" onclick="location.reload()">刷新</button>
+            <button class="btn primary" onclick="repairAndRefresh()">修复并刷新</button>
+          </div>
+        </div>
+      `);
+    }catch(_){
+      alert((title||'发生错误') + "\n\n" + fmt(msg));
+    }
+  }
+
+  window.addEventListener('error', (e)=>{
+    const stack = e && e.error && e.error.stack ? e.error.stack : (e && e.message ? e.message : 'Unknown error');
+    showFatal('报表加载失败', stack);
+  });
+
+  window.addEventListener('unhandledrejection', (e)=>{
+    const reason = e && e.reason ? (e.reason.stack || e.reason.message || String(e.reason)) : 'Unhandled rejection';
+    showFatal('报表加载失败', reason);
+  });
+})();
+
+
+</script>
+</body>
+</html>
