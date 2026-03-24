@@ -1,0 +1,9 @@
+name = "veyron-screentime"
+main = "index.js"
+compatibility_date = "2024-09-23"
+
+# 部署前先建 KV namespace，然后把 id 填进来：
+# npx wrangler kv namespace create SCREENTIME
+[[kv_namespaces]]
+binding = "SCREENTIME"
+id = "YOUR_KV_NAMESPACE_ID"
