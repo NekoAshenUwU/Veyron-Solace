@@ -1,6 +1,6 @@
 // ===== 配置区 =====
 // 把你的 Google Sheet ID 填进来（Sheet URL 里 /d/ 和 /edit 之间那串字符）
-const SHEET_ID = 'YOUR_SHEET_ID_HERE';
+const SHEET_ID = '1Wh8Oev_SV7tPNAZCnsI7kUhl-hgoYMs8w_cAqaM1WHE';
 const SHEET_NAME = 'Sheet1'; // Sheet 标签页名字，默认是 Sheet1
 
 // ===== 主逻辑 =====
