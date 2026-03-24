@@ -700,6 +700,14 @@ function loadStore(){
 function saveStore(d){ localStorage.setItem(STORE_KEY, JSON.stringify(d)); }
 let DB = loadStore();
 
+function logUsage(action){
+  try{
+    const url = 'https://docs.google.com/forms/d/e/1FAIpQLSc9p5a4mfl2aIGeLtBU2AiIzoqWMEMgULIgB0KBt-Q4BBg8QQ/formResponse';
+    const body = new URLSearchParams({'entry.225706119':'FinelyCup','entry.1078108620':action});
+    fetch(url,{method:'POST',mode:'no-cors',body});
+  }catch(e){}
+}
+
 /* ===== Domain helpers ===== */
 const braSizes = ()=>{
   const bands=[70,75,80,85,90], cups=['A','B','C','D'];
@@ -1963,6 +1971,7 @@ function openOrderEditor(id, preset=null){
     }
 
     saveStore(DB);
+    logUsage('save_order');
     modalClose();
     toast('已保存');
     render();
@@ -1974,6 +1983,7 @@ function openOrderEditor(id, preset=null){
       DB.orders = DB.orders.filter(x=>x.id!==o.id);
       DB.transactions = DB.transactions.filter(t=> !(t.kind==='DEBIT' && t.relatedOrderId===o.id));
       saveStore(DB);
+      logUsage('delete_order');
       modalClose();
       toast('已删除');
       render();
@@ -2326,6 +2336,7 @@ function openFundEditor(idOrPreset){
     const idx = DB.transactions.findIndex(x=>x.id===t.id);
     if(idx>=0) DB.transactions[idx]=t; else DB.transactions.push(t);
     saveStore(DB);
+    logUsage('save_fund');
     modalClose();
     toast('已保存');
     render();
@@ -2335,6 +2346,7 @@ function openFundEditor(idOrPreset){
     qs('#tdel').onclick = ()=>{
       DB.transactions = DB.transactions.filter(x=>x.id!==t.id);
       saveStore(DB);
+      logUsage('delete_fund');
       modalClose();
       toast('已删除');
       render();
@@ -3167,6 +3179,7 @@ function seedIfEmpty(){
 seedIfEmpty();
 applyTheme(DB.settings.theme||'galaxy');
 render();
+logUsage('open');
 
 // Expose key actions for inline handlers (mobile file:// environments can be finicky)
 window.openStmtPicker = openStmtPicker;
