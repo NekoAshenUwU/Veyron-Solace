@@ -52,14 +52,45 @@ curl -X PATCH "https://api.cloudflare.com/client/v4/zones/ZONE_ID/settings/ssl" 
 - **FastMCP version**: 3.1.1
 - **Transport**: streamable-http on port 8890
 
-## Verification After Fix
+## Verification After Fix (Mobile Steps)
+
+### Step 1: Check local server is running
+```bash
+curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8890/mcp
+```
+- Expected: `200`
+- If not 200: restart the MCP server (see Startup Command below)
+
+### Step 2: Check Cloudflare Tunnel status
+```bash
+curl -s -o /dev/null -w "%{http_code}" https://mcp.nekopurrs.uk/mcp
+```
+- Expected: `405` or `200` (any non-530 means tunnel is passing traffic)
+- If `530`: SSL/TLS still misconfigured, go back to fix options above
+
+### Step 3: Test MCP initialize handshake
 ```bash
 curl -X POST https://mcp.nekopurrs.uk/mcp \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
   -d '{"jsonrpc":"2.0","method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}},"id":1}'
 ```
-Should return HTTP 200 with JSON-RPC response containing `serverInfo`.
+- Expected: HTTP 200 with JSON containing `"serverInfo"`
+- If error: check the JSON-RPC response for clues
+
+### Step 4: Test tool listing
+```bash
+curl -X POST https://mcp.nekopurrs.uk/mcp \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","method":"tools/list","params":{},"id":2}'
+```
+- Expected: HTTP 200 with JSON listing available tools
+
+### Step 5: Verify from external network (optional)
+- Turn off WiFi on phone, use mobile data
+- Re-run Step 3 to confirm it works from outside the local network
+- This proves the tunnel is fully functional end-to-end
 
 ## Startup Command (for reference)
 ```bash
