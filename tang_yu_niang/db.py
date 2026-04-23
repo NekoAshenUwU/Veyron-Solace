@@ -50,6 +50,20 @@ def init_db():
         status TEXT DEFAULT 'success',
         created_at TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS timeline_events (
+        id TEXT PRIMARY KEY,
+        date TEXT NOT NULL,
+        start_at TEXT,
+        end_at TEXT,
+        category TEXT NOT NULL,
+        subcategory TEXT,
+        content TEXT NOT NULL,
+        mood_emoji TEXT,
+        created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_timeline_date ON timeline_events(date DESC);
+    CREATE INDEX IF NOT EXISTS idx_timeline_cat ON timeline_events(category);
     """)
     conn.commit()
     conn.close()
