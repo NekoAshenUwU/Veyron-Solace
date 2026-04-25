@@ -361,6 +361,208 @@ function Calendar() {
   );
 }
 
+/* ── Memory Card ── */
+const TAG_COLOR  = { treasure:'rgba(255,192,80,0.14)', anchor:'rgba(118,202,255,0.14)', diary:'rgba(178,118,255,0.14)', love_note:'rgba(255,138,178,0.14)' };
+const TAG_LABEL  = { treasure:'💫 珍藏', anchor:'⚓ 锚点', diary:'📖 日记', love_note:'💌 情话' };
+
+function MemoryCard({ m, i }) {
+  const hi = (m.strength || 0) >= 0.8;
+  return (
+    <G glow={hi} style={{
+      padding:'18px', marginBottom:'10px',
+      borderLeft: hi ? '3px solid rgba(178,118,255,0.58)' : '3px solid rgba(98,62,152,0.16)',
+      animation:`slideUp 0.38s ease-out ${i*0.06}s both`
+    }}>
+      <div style={{display:'flex',alignItems:'center',gap:'10px',marginBottom:'7px'}}>
+        <span style={{fontSize:'15px'}}>{m.mood_emoji || '✦'}</span>
+        <span style={{
+          flex:1,
+          fontFamily:"'LXGW WenKai','Noto Serif SC',serif",
+          fontSize:'14px', color:'rgba(222,202,255,0.93)', fontWeight:400
+        }}>{m.title}</span>
+        {m.tag && (
+          <span style={{
+            fontFamily:"'Quicksand',sans-serif",
+            fontSize:'9px', padding:'3px 10px', borderRadius:'12px',
+            background: TAG_COLOR[m.tag] || 'rgba(118,68,202,0.15)',
+            color:'rgba(178,158,222,0.82)',
+            border:'1px solid rgba(118,78,182,0.16)',
+            fontWeight:500, letterSpacing:'0.5px', whiteSpace:'nowrap'
+          }}>{TAG_LABEL[m.tag] || m.tag}</span>
+        )}
+      </div>
+      <div style={{
+        fontFamily:"'LXGW WenKai','Noto Serif SC',serif",
+        fontSize:'12px', color:'rgba(178,158,222,0.68)',
+        lineHeight:1.75, fontWeight:300,
+        marginBottom: m.strength !== undefined ? '10px' : 0
+      }}>{m.content ? m.content.slice(0,80) + (m.content.length > 80 ? '…' : '') : ''}</div>
+      {m.strength !== undefined && (
+        <>
+          <div style={{height:'4px',borderRadius:'2px',background:'rgba(48,24,88,0.52)',overflow:'hidden'}}>
+            <div style={{
+              height:'100%', borderRadius:'2px',
+              width:`${Math.round(m.strength*100)}%`,
+              transition:'width 1.4s ease-out',
+              background: hi
+                ? 'linear-gradient(90deg,rgba(138,78,222,0.88),rgba(222,98,178,0.75))'
+                : 'linear-gradient(90deg,rgba(98,58,158,0.38),rgba(98,58,158,0.18))'
+            }}/>
+          </div>
+          <div style={{display:'flex',justifyContent:'space-between',marginTop:'5px'}}>
+            <span style={{fontFamily:"'Noto Sans SC',sans-serif",fontSize:'10px',color:'rgba(138,118,178,0.42)',fontWeight:300}}>
+              {m.created_at ? m.created_at.split('T')[0] : ''}
+            </span>
+            <span style={{
+              fontFamily:"'Quicksand',sans-serif", fontSize:'10px', fontWeight:600,
+              color: hi ? 'rgba(202,172,255,0.88)' : 'rgba(138,118,178,0.48)'
+            }}>{Math.round(m.strength*100)}%</span>
+          </div>
+        </>
+      )}
+    </G>
+  );
+}
+
+/* ── Memory Tab ── */
+function MemoryTab() {
+  const [filter, setFilter] = useState('all');
+  const [query,  setQuery]  = useState('');
+  const [mems,   setMems]   = useState([]);
+  const [loading,setLoading]= useState(true);
+
+  const TAGS = [
+    {key:'all',label:'All'},{key:'diary',label:'Diary'},
+    {key:'treasure',label:'Treasured'},{key:'anchor',label:'Anchor'},
+    {key:'love_note',label:'Love'}
+  ];
+
+  useEffect(() => {
+    setLoading(true);
+    const t = filter === 'all' ? '' : filter;
+    api(`/memories?tag=${t}&q=${encodeURIComponent(query)}`).then(d => {
+      setMems(d?.memories || (Array.isArray(d) ? d : []));
+      setLoading(false);
+    });
+  }, [filter, query]);
+
+  return (
+    <div style={{padding:'0 18px'}}>
+      {/* Filter pills */}
+      <div style={{display:'flex',gap:'7px',marginBottom:'14px',flexWrap:'wrap'}}>
+        {TAGS.map(t => {
+          const on = filter === t.key;
+          return (
+            <button key={t.key} onClick={() => setFilter(t.key)} style={{
+              fontFamily:"'Quicksand',sans-serif",
+              padding:'8px 16px', borderRadius:'20px', cursor:'pointer',
+              fontSize: on ? '12px' : '11px', fontWeight: on ? 600 : 400,
+              letterSpacing:'1.5px', textTransform:'uppercase',
+              transition:'all 0.28s ease',
+              border: on ? '1px solid rgba(178,118,242,0.58)' : '1px solid rgba(98,68,158,0.2)',
+              background: on
+                ? 'linear-gradient(135deg,rgba(118,68,202,0.44),rgba(178,68,148,0.34))'
+                : 'rgba(16,9,30,0.48)',
+              color: on ? 'rgba(232,212,255,1)' : 'rgba(158,138,202,0.65)',
+              transform: on ? 'scale(1.06)' : 'scale(1)',
+              boxShadow: on ? '0 0 22px rgba(138,78,222,0.3)' : 'none'
+            }}>{t.label}</button>
+          );
+        })}
+      </div>
+      {/* Search */}
+      <input
+        type="text" placeholder="Search memories…" value={query}
+        onChange={e => setQuery(e.target.value)}
+        style={{
+          width:'100%', padding:'12px 18px', borderRadius:'16px', marginBottom:'14px',
+          background:'rgba(16,9,30,0.58)',
+          border:'1px solid rgba(98,68,158,0.2)',
+          color:'rgba(222,202,255,0.92)',
+          fontFamily:"'Quicksand',sans-serif",
+          fontSize:'13px', fontWeight:400,
+          backdropFilter:'blur(20px)', display:'block'
+        }}
+      />
+      {loading
+        ? <Spinner/>
+        : mems.length === 0
+          ? <div style={{textAlign:'center',padding:'40px 0',fontFamily:"'Quicksand',sans-serif",fontSize:'12px',letterSpacing:'2px',color:'rgba(158,138,202,0.4)'}}>No memories found ✧</div>
+          : mems.map((m,i) => <MemoryCard key={m.id||i} m={m} i={i}/>)
+      }
+    </div>
+  );
+}
+
+/* ── Tidal Tab ── */
+function TidalTab() {
+  const [tidal,  setTidal]  = useState([]);
+  const [loading,setLoading]= useState(true);
+
+  useEffect(() => {
+    api('/tidal').then(d => {
+      setTidal(d?.memories || (Array.isArray(d) ? d : []));
+      setLoading(false);
+    });
+  }, []);
+
+  return (
+    <div style={{padding:'0 18px'}}>
+      <G style={{padding:'15px 18px',marginBottom:'15px',background:'rgba(48,24,88,0.28)'}}>
+        <div style={{
+          fontFamily:"'LXGW WenKai','Noto Serif SC',serif",
+          fontSize:'12px', color:'rgba(178,158,222,0.72)',
+          lineHeight:2, fontWeight:300
+        }}>🌊 涨潮中的记忆权重更高，会在对话开头主动浮现。退潮的正在沉淀，等待关键词唤醒。</div>
+      </G>
+      {loading ? <Spinner/> : tidal.map((m,i) => {
+        const pct    = Math.round((m.strength||0)*100);
+        const hi     = (m.strength||0) >= 0.8;
+        const rising = m.rising !== undefined ? m.rising : hi;
+        return (
+          <G key={m.id||i} glow={hi} style={{
+            padding:'18px', marginBottom:'10px',
+            borderLeft: hi ? '3px solid rgba(178,118,255,0.65)' : '3px solid rgba(98,68,148,0.18)',
+            animation:`slideUp 0.38s ease-out ${i*0.06}s both`
+          }}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'8px'}}>
+              <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
+                <span style={{fontSize:'15px'}}>{m.mood_emoji||'✦'}</span>
+                <span style={{
+                  fontFamily:"'LXGW WenKai',serif",
+                  fontSize:'13px', color:'rgba(222,202,255,0.93)', fontWeight:400
+                }}>{m.title}</span>
+              </div>
+              <span style={{
+                fontFamily:"'Quicksand',sans-serif",
+                fontSize:'10px', fontWeight:600, letterSpacing:'1px', textTransform:'uppercase',
+                color: rising ? 'rgba(118,222,178,0.92)' : 'rgba(178,138,202,0.55)'
+              }}>{rising ? '↑ Rising' : '↓ Fading'}</span>
+            </div>
+            <div style={{height:'5px',borderRadius:'3px',background:'rgba(38,18,78,0.52)',overflow:'hidden'}}>
+              <div style={{
+                height:'100%', borderRadius:'3px', width:`${pct}%`, transition:'width 1.4s ease-out',
+                background: hi
+                  ? 'linear-gradient(90deg,rgba(138,78,222,0.88),rgba(222,98,178,0.75))'
+                  : 'linear-gradient(90deg,rgba(98,58,158,0.38),rgba(98,58,158,0.18))'
+              }}/>
+            </div>
+            <div style={{display:'flex',justifyContent:'space-between',marginTop:'5px'}}>
+              <span style={{fontFamily:"'Noto Sans SC',sans-serif",fontSize:'10px',color:'rgba(138,118,178,0.42)',fontWeight:300}}>
+                {m.created_at ? m.created_at.split('T')[0] : ''}
+              </span>
+              <span style={{
+                fontFamily:"'Quicksand',sans-serif", fontSize:'10px', fontWeight: hi?600:400,
+                color: hi ? 'rgba(202,172,255,0.88)' : 'rgba(138,118,178,0.48)'
+              }}>{pct}%</span>
+            </div>
+          </G>
+        );
+      })}
+    </div>
+  );
+}
+
 /* placeholder — remaining components follow */
 function App() { return <div style={{color:'#fff',padding:40}}>Loading…</div>; }
 ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
