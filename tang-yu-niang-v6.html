@@ -462,14 +462,14 @@ function MemoryTab() {
             <button key={t.key} onClick={() => setFilter(t.key)} style={{
               fontFamily:"'Quicksand',sans-serif",
               padding:'8px 16px', borderRadius:'20px', cursor:'pointer',
-              fontSize: on ? '12px' : '11px', fontWeight: on ? 600 : 400,
+              fontSize: on ? '12px' : '11px', fontWeight: on ? 600 : 500,
               letterSpacing:'1.5px', textTransform:'uppercase',
               transition:'all 0.28s ease',
               border: on ? '1px solid rgba(178,118,242,0.58)' : '1px solid rgba(98,68,158,0.2)',
               background: on
                 ? 'linear-gradient(135deg,rgba(118,68,202,0.44),rgba(178,68,148,0.34))'
                 : 'rgba(16,9,30,0.48)',
-              color: on ? 'rgba(232,212,255,1)' : 'rgba(158,138,202,0.65)',
+              color: on ? 'rgba(232,212,255,1)' : 'rgba(195,178,235,0.88)',
               transform: on ? 'scale(1.06)' : 'scale(1)',
               boxShadow: on ? '0 0 22px rgba(138,78,222,0.3)' : 'none'
             }}>{t.label}</button>
@@ -493,7 +493,7 @@ function MemoryTab() {
       {loading
         ? <Spinner/>
         : mems.length === 0
-          ? <div style={{textAlign:'center',padding:'40px 0',fontFamily:"'Quicksand',sans-serif",fontSize:'12px',letterSpacing:'2px',color:'rgba(158,138,202,0.4)'}}>No memories found ✧</div>
+          ? <div style={{textAlign:'center',padding:'40px 0',fontFamily:"'Quicksand',sans-serif",fontSize:'12px',letterSpacing:'2px',color:'rgba(185,165,228,0.72)'}}>No memories found ✧</div>
           : mems.map((m,i) => <MemoryCard key={m.id||i} m={m} i={i}/>)
       }
     </div>
@@ -517,7 +517,7 @@ function TidalTab() {
       <G style={{padding:'15px 18px',marginBottom:'15px',background:'rgba(48,24,88,0.28)'}}>
         <div style={{
           fontFamily:"'LXGW WenKai','Noto Serif SC',serif",
-          fontSize:'12px', color:'rgba(178,158,222,0.72)',
+          fontSize:'13px', color:'rgba(198,178,238,0.90)',
           lineHeight:2, fontWeight:400
         }}>🌊 涨潮中的记忆权重更高，会在对话开头主动浮现。退潮的正在沉淀，等待关键词唤醒。</div>
       </G>
@@ -640,9 +640,9 @@ function DiaryTab() {
       {/* Anchors */}
       <div style={{
         fontFamily:"'Quicksand',sans-serif",
-        fontSize:'10px', color:'rgba(178,158,222,0.52)',
+        fontSize:'11px', color:'rgba(195,175,238,0.85)',
         letterSpacing:'4px', textTransform:'uppercase',
-        marginBottom:'12px', fontWeight:500
+        marginBottom:'12px', fontWeight:600
       }}>⚓ Anchors</div>
 
       {anchors.length > 0
@@ -712,7 +712,7 @@ function LogTab() {
   return (
     <div style={{padding:'0 18px'}}>
       {loading ? <Spinner/> : logs.length === 0
-        ? <div style={{textAlign:'center',padding:'40px 0',fontFamily:"'Quicksand',sans-serif",fontSize:'12px',letterSpacing:'2px',color:'rgba(158,138,202,0.4)'}}>No logs yet ✧</div>
+        ? <div style={{textAlign:'center',padding:'40px 0',fontFamily:"'Quicksand',sans-serif",fontSize:'12px',letterSpacing:'2px',color:'rgba(185,165,228,0.72)'}}>No logs yet ✧</div>
         : logs.map((l,i) => {
           const dot = LOG_DOT[l.tool_name] || '#c4a0e0';
           const t   = l.created_at ? l.created_at.split('T')[1]?.slice(0,5) : '';
@@ -861,7 +861,7 @@ function HomeTab({ pulse, onEnvelope, setTab }) {
       {/* Recently surfaced */}
       {recent.length > 0 && (
         <>
-          <div style={{fontFamily:"'Quicksand',sans-serif",fontSize:'10px',color:'rgba(178,158,222,0.55)',letterSpacing:'3px',marginBottom:'12px',fontWeight:500,textTransform:'uppercase'}}>✦ Recently Surfaced</div>
+          <div style={{fontFamily:"'Quicksand',sans-serif",fontSize:'11px',color:'rgba(192,172,235,0.82)',letterSpacing:'3px',marginBottom:'12px',fontWeight:600,textTransform:'uppercase'}}>✦ Recently Surfaced</div>
           {recent.slice(0,3).map((m,i) => (
             <G key={i} style={{padding:'15px 18px',marginBottom:'10px',animation:`slideUp 0.42s ease-out ${i*0.09}s both`}}>
               <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
@@ -986,8 +986,8 @@ function SH({ label }) {
     <div style={{
       padding:'0 18px 14px',
       fontFamily:"'Cinzel',serif",
-      fontSize:'10px', color:'rgba(178,158,222,0.58)',
-      letterSpacing:'6px', textTransform:'uppercase'
+      fontSize:'11px', color:'rgba(195,175,240,0.85)',
+      letterSpacing:'5px', textTransform:'uppercase', fontWeight:500
     }}>{label}</div>
   );
 }
