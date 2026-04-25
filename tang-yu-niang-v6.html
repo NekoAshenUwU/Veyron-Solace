@@ -992,6 +992,215 @@ function SH({ label }) {
   );
 }
 
+/* ── Lock Screen ── */
+const RP_ID   = location.hostname;
+const PIN_KEY = '1226';
+const CRED_KEY = 'tyn_cred_id';
+
+function LockScreen({ onUnlock }) {
+  const [phase,  setPhase]  = useState('init'); // init|fp|pin|offer
+  const [digits, setDigits] = useState([]);
+  const [shake,  setShake]  = useState(false);
+  const [msg,    setMsg]    = useState('');
+
+  const hasCred = () => !!localStorage.getItem(CRED_KEY);
+  const bioOK   = () => !!(window.PublicKeyCredential);
+
+  useEffect(() => {
+    if (bioOK() && hasCred()) {
+      setPhase('fp');
+      doFingerprint();
+    } else {
+      setPhase('pin');
+    }
+  }, []);
+
+  async function doFingerprint() {
+    try {
+      const b64  = localStorage.getItem(CRED_KEY);
+      const id   = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+      await navigator.credentials.get({ publicKey: {
+        challenge: crypto.getRandomValues(new Uint8Array(32)),
+        rpId: RP_ID,
+        allowCredentials: [{ type:'public-key', id }],
+        userVerification: 'required', timeout: 30000
+      }});
+      onUnlock();
+    } catch { setPhase('pin'); }
+  }
+
+  async function registerFingerprint() {
+    try {
+      const cred = await navigator.credentials.create({ publicKey: {
+        challenge: crypto.getRandomValues(new Uint8Array(32)),
+        rp: { name:'棠予酿', id: RP_ID },
+        user: { id: crypto.getRandomValues(new Uint8Array(16)), name:'tang', displayName:'棠棠' },
+        pubKeyCredParams: [{ alg:-7, type:'public-key' }, { alg:-257, type:'public-key' }],
+        authenticatorSelection: { authenticatorAttachment:'platform', userVerification:'required' },
+        timeout: 60000
+      }});
+      localStorage.setItem(CRED_KEY, btoa(String.fromCharCode(...new Uint8Array(cred.rawId))));
+      onUnlock();
+    } catch { onUnlock(); }
+  }
+
+  function press(d) {
+    if (digits.length >= 4) return;
+    const next = [...digits, d];
+    setDigits(next);
+    if (next.length === 4) {
+      setTimeout(() => {
+        if (next.join('') === PIN_KEY) {
+          if (bioOK() && !hasCred()) { setPhase('offer'); setDigits([]); }
+          else onUnlock();
+        } else {
+          setShake(true);
+          setMsg('再想想哦 ♡');
+          setTimeout(() => { setShake(false); setMsg(''); setDigits([]); }, 900);
+        }
+      }, 120);
+    }
+  }
+
+  function del() { setDigits(d => d.slice(0,-1)); }
+
+  const KEYS = ['1','2','3','4','5','6','7','8','9','','0','⌫'];
+  const dotStyle = (filled) => ({
+    width:'14px', height:'14px', borderRadius:'50%',
+    background: filled
+      ? 'linear-gradient(135deg,#b080e0,#e080b0)'
+      : 'rgba(118,88,168,0.28)',
+    border: filled ? 'none' : '1px solid rgba(148,108,202,0.38)',
+    boxShadow: filled ? '0 0 10px rgba(178,118,255,0.55)' : 'none',
+    transition:'all 0.18s'
+  });
+
+  return (
+    <div style={{
+      position:'fixed', inset:0, zIndex:9999,
+      background:'#0a0515',
+      display:'flex', flexDirection:'column',
+      alignItems:'center', justifyContent:'center',
+      fontFamily:"'Quicksand',sans-serif"
+    }}>
+      <StarField/>
+
+      {/* Logo */}
+      <div style={{
+        fontFamily:"'LXGW WenKai',serif",
+        fontSize:'38px', letterSpacing:'12px',
+        background:'linear-gradient(135deg,#b080e0,#e080b0,#80b8e0)',
+        WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent',
+        animation:'glow 4s ease-in-out infinite',
+        marginBottom:'10px', position:'relative', zIndex:1
+      }}>棠予酿</div>
+
+      <div style={{
+        fontFamily:"'Cinzel',serif", fontSize:'10px',
+        color:'rgba(195,175,240,0.75)', letterSpacing:'5px',
+        marginBottom:'48px', position:'relative', zIndex:1
+      }}>OUR LITTLE WORLD</div>
+
+      {/* Fingerprint phase */}
+      {phase === 'fp' && (
+        <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'20px',position:'relative',zIndex:1}}>
+          <div onClick={doFingerprint} style={{
+            width:'72px', height:'72px', borderRadius:'50%', cursor:'pointer',
+            background:'rgba(118,78,202,0.18)',
+            border:'1.5px solid rgba(178,118,255,0.45)',
+            display:'flex', alignItems:'center', justifyContent:'center',
+            boxShadow:'0 0 32px rgba(138,78,222,0.3)',
+            animation:'heartBeat 2.8s ease-in-out infinite'
+          }}>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(195,155,255,0.92)" strokeWidth="1.4" strokeLinecap="round">
+              <path d="M12 1a5 5 0 0 1 5 5v3"/>
+              <path d="M7 9V6a5 5 0 0 1 5-5"/>
+              <path d="M12 13v4"/>
+              <path d="M9 9a3 3 0 0 1 6 0v4a3 3 0 0 1-6 0V9z"/>
+              <path d="M6 9a6 6 0 0 0 12 0"/>
+              <path d="M3 9a9 9 0 0 0 18 0"/>
+            </svg>
+          </div>
+          <div style={{color:'rgba(195,175,240,0.78)',fontSize:'13px',letterSpacing:'2px'}}>触碰解锁</div>
+          <div onClick={() => setPhase('pin')} style={{
+            color:'rgba(155,135,200,0.55)', fontSize:'11px',
+            letterSpacing:'1px', cursor:'pointer', marginTop:'8px'
+          }}>使用 PIN</div>
+        </div>
+      )}
+
+      {/* PIN phase */}
+      {phase === 'pin' && (
+        <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'0',position:'relative',zIndex:1,width:'100%',maxWidth:'300px',padding:'0 24px'}}>
+          {/* dots */}
+          <div style={{
+            display:'flex', gap:'18px', marginBottom:'10px',
+            animation: shake ? 'bounce 0.55s ease' : 'none'
+          }}>
+            {[0,1,2,3].map(i => <div key={i} style={dotStyle(i < digits.length)}/>)}
+          </div>
+          <div style={{
+            fontSize:'11px', color:'rgba(222,168,200,0.72)',
+            letterSpacing:'2px', marginBottom:'36px', height:'16px'
+          }}>{msg || (hasCred() ? '' : '输入 PIN 解锁')}</div>
+          {/* keypad */}
+          <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'14px',width:'100%'}}>
+            {KEYS.map((k,i) => k === '' ? <div key={i}/> : (
+              <button key={i} onClick={() => k==='⌫' ? del() : press(k)} style={{
+                height:'58px', borderRadius:'18px', cursor:'pointer',
+                border: k==='⌫' ? '1px solid rgba(98,68,158,0.18)' : '1px solid rgba(118,88,178,0.28)',
+                background: k==='⌫' ? 'rgba(16,9,30,0.38)' : 'rgba(18,10,36,0.58)',
+                color: k==='⌫' ? 'rgba(178,148,218,0.62)' : 'rgba(215,198,248,0.95)',
+                fontSize: k==='⌫' ? '20px' : '22px', fontWeight:300,
+                backdropFilter:'blur(12px)',
+                boxShadow:'0 2px 12px rgba(8,4,18,0.28)',
+                transition:'all 0.14s',
+                fontFamily:"'Quicksand',sans-serif"
+              }}>{k}</button>
+            ))}
+          </div>
+          {hasCred() && (
+            <div onClick={() => { setPhase('fp'); doFingerprint(); }} style={{
+              marginTop:'28px', color:'rgba(178,148,232,0.65)',
+              fontSize:'11px', letterSpacing:'2px', cursor:'pointer'
+            }}>☞ 改用指纹</div>
+          )}
+        </div>
+      )}
+
+      {/* Offer fingerprint registration */}
+      {phase === 'offer' && (
+        <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'18px',position:'relative',zIndex:1,textAlign:'center',padding:'0 32px'}}>
+          <div style={{fontSize:'42px'}}>🫶🏻</div>
+          <div style={{color:'rgba(218,198,248,0.92)',fontSize:'14px',lineHeight:1.9,letterSpacing:'1px'}}>
+            下次用指纹解锁好吗？<br/>
+            <span style={{fontSize:'12px',color:'rgba(178,158,222,0.65)'}}>只需轻触一下，棠棠专属 ♡</span>
+          </div>
+          <button onClick={registerFingerprint} style={{
+            padding:'13px 36px', borderRadius:'28px', cursor:'pointer',
+            border:'1px solid rgba(178,118,242,0.45)',
+            background:'linear-gradient(135deg,rgba(118,72,188,0.45),rgba(178,72,142,0.35))',
+            color:'rgba(232,212,255,0.95)', fontSize:'12px',
+            letterSpacing:'3px', fontWeight:600, textTransform:'uppercase',
+            boxShadow:'0 4px 22px rgba(118,56,182,0.28)'
+          }}>好呀</button>
+          <div onClick={onUnlock} style={{
+            color:'rgba(155,135,200,0.52)', fontSize:'11px',
+            letterSpacing:'1px', cursor:'pointer'
+          }}>先不了</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Root (lock gate) ── */
+function Root() {
+  const [unlocked, setUnlocked] = useState(false);
+  if (!unlocked) return <LockScreen onUnlock={() => setUnlocked(true)}/>;
+  return <App/>;
+}
+
 /* ── Main App ── */
 function App() {
   const [tab,   setTab]   = useState('home');
@@ -1088,7 +1297,7 @@ function App() {
   );
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+ReactDOM.createRoot(document.getElementById('root')).render(<Root/>);
 </script>
 </body>
 </html>
