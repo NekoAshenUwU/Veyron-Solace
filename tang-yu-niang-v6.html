@@ -368,8 +368,8 @@ function Calendar() {
 }
 
 /* ── Memory Card ── */
-const TAG_COLOR  = { treasure:'rgba(255,192,80,0.08)', anchor:'rgba(118,202,255,0.08)', diary:'rgba(178,118,255,0.08)', love_note:'rgba(255,138,178,0.08)' };
-const TAG_LABEL  = { treasure:'💫 珍藏', anchor:'⚓ 锚点', diary:'📖 日记', love_note:'💌 情话' };
+const TAG_COLOR  = { treasure:'rgba(255,192,80,0.08)', anchor:'rgba(118,202,255,0.08)', diary:'rgba(178,118,255,0.08)', message:'rgba(255,138,178,0.08)' };
+const TAG_LABEL  = { treasure:'💫 珍藏', anchor:'⚓ 锚点', diary:'📖 日记', message:'💌 留言' };
 
 function MemoryCard({ m, i }) {
   const hi = (m.strength || 0) >= 0.8;
@@ -440,7 +440,7 @@ function MemoryTab() {
   const TAGS = [
     {key:'all',label:'All'},{key:'diary',label:'Diary'},
     {key:'treasure',label:'Treasured'},{key:'anchor',label:'Anchor'},
-    {key:'love_note',label:'Love'}
+    {key:'message',label:'💌 留言'}
   ];
 
   useEffect(() => {
