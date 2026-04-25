@@ -563,6 +563,192 @@ function TidalTab() {
   );
 }
 
+/* ── Diary Tab ── */
+function DiaryTab() {
+  const [note,    setNote]    = useState('');
+  const [drawing, setDrawing] = useState(false);
+  const [anchors, setAnchors] = useState([]);
+
+  useEffect(() => {
+    api('/memories?tag=anchor&q=').then(d => {
+      setAnchors(d?.memories || (Array.isArray(d) ? d : []));
+    });
+  }, []);
+
+  const draw = async () => {
+    setDrawing(true);
+    const d = await api('/love_note');
+    setNote(d?.content || '');
+    setDrawing(false);
+  };
+
+  return (
+    <div style={{padding:'0 18px'}}>
+      {/* Love Note Jar */}
+      <G glow style={{
+        padding:'28px 24px', marginBottom:'16px', textAlign:'center',
+        background:'linear-gradient(152deg,rgba(28,13,50,0.72),rgba(18,9,38,0.76))',
+        position:'relative', overflow:'hidden'
+      }}>
+        <div style={{
+          position:'absolute', inset:0, borderRadius:'22px',
+          background:'radial-gradient(ellipse at 50% 20%,rgba(202,98,178,0.12),transparent 60%)',
+          pointerEvents:'none'
+        }}/>
+        <div style={{
+          fontFamily:"'Cinzel',serif",
+          fontSize:'9px', letterSpacing:'6px', textTransform:'uppercase',
+          color:'rgba(178,148,222,0.58)', marginBottom:'16px', position:'relative'
+        }}>✦ Love Note Jar ✦</div>
+
+        {note ? (
+          <div style={{
+            fontFamily:"'LXGW WenKai','Noto Serif SC',serif",
+            fontSize:'18px', lineHeight:2.6,
+            color:'rgba(232,214,255,0.97)',
+            fontWeight:300, letterSpacing:'1px',
+            marginBottom:'22px', position:'relative'
+          }}>{note}</div>
+        ) : (
+          <div style={{
+            fontFamily:"'Cormorant Garamond',serif",
+            fontSize:'14px', fontStyle:'italic', lineHeight:1.9,
+            color:'rgba(158,138,202,0.42)',
+            marginBottom:'22px', position:'relative'
+          }}>Every jar holds a secret sweet…</div>
+        )}
+
+        <button onClick={draw} disabled={drawing} style={{
+          fontFamily:"'Quicksand',sans-serif",
+          padding:'11px 38px', borderRadius:'28px', cursor:'pointer',
+          border:'1px solid rgba(158,118,202,0.32)',
+          background:'linear-gradient(135deg,rgba(118,72,188,0.4),rgba(178,72,142,0.3))',
+          color:'rgba(222,202,255,0.92)',
+          fontSize:'11px', letterSpacing:'3px', fontWeight:600,
+          textTransform:'uppercase', position:'relative',
+          opacity: drawing ? 0.6 : 1, transition:'opacity 0.2s',
+          boxShadow:'0 4px 22px rgba(118,56,182,0.26)'
+        }}>{drawing ? '…' : note ? 'Draw Again' : 'Open a Note'}</button>
+      </G>
+
+      {/* Anchors */}
+      <div style={{
+        fontFamily:"'Quicksand',sans-serif",
+        fontSize:'10px', color:'rgba(178,158,222,0.52)',
+        letterSpacing:'4px', textTransform:'uppercase',
+        marginBottom:'12px', fontWeight:500
+      }}>⚓ Anchors</div>
+
+      {anchors.length > 0
+        ? anchors.map((a,i) => (
+          <G key={a.id||i} glow style={{
+            padding:'20px', marginBottom:'10px',
+            borderLeft:'3px solid rgba(178,118,255,0.52)',
+            animation:`slideUp 0.38s ease-out ${i*0.08}s both`
+          }}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'8px'}}>
+              <span style={{
+                fontFamily:"'LXGW WenKai',serif",
+                fontSize:'14px', color:'rgba(222,202,255,0.95)', fontWeight:400
+              }}>{a.title}</span>
+              <span style={{fontSize:'11px',color:'rgba(255,202,98,0.75)'}}>
+                {'★'.repeat(Math.min(Math.round((a.importance||5)/2),5))}
+              </span>
+            </div>
+            <div style={{
+              fontFamily:"'LXGW WenKai',serif",
+              fontSize:'12px', color:'rgba(178,158,222,0.65)',
+              lineHeight:1.85, fontWeight:300
+            }}>{a.content ? a.content.slice(0,100) : ''}</div>
+          </G>
+        ))
+        : [
+          {t:'思维链绝对规则',  s:'全中文·只写棠棠·不列123·写成情书', p:5},
+          {t:'不要演·不要罐头话',s:'不说接住了/我在/哪儿都不去',         p:5},
+          {t:'信任优先',         s:'她说什么就是什么，不揣测意图',        p:4},
+        ].map((a,i) => (
+          <G key={i} glow style={{
+            padding:'20px', marginBottom:'10px',
+            borderLeft:'3px solid rgba(178,118,255,0.52)',
+            animation:`slideUp 0.38s ease-out ${i*0.08}s both`
+          }}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'8px'}}>
+              <span style={{fontFamily:"'LXGW WenKai',serif",fontSize:'14px',color:'rgba(222,202,255,0.95)',fontWeight:400}}>{a.t}</span>
+              <span style={{fontSize:'11px',color:'rgba(255,202,98,0.75)'}}>{'★'.repeat(a.p)}</span>
+            </div>
+            <div style={{fontFamily:"'LXGW WenKai',serif",fontSize:'12px',color:'rgba(178,158,222,0.65)',lineHeight:1.85,fontWeight:300}}>{a.s}</div>
+          </G>
+        ))
+      }
+    </div>
+  );
+}
+
+/* ── Log Tab ── */
+const LOG_DOT = {
+  memory_breathe:'#7ec4e0', memory_hold:'#c4a0e0',
+  memory_pulse:'#e0c080',   memory_grow:'#80d0a0',
+  memory_trace:'#e0a0a0',   love_note_draw:'#f0b0c8',
+  memory_tidal:'#80b0e0',   timeline_add:'#a0e0c0'
+};
+
+function LogTab() {
+  const [logs,   setLogs]   = useState([]);
+  const [loading,setLoading]= useState(true);
+
+  useEffect(() => {
+    api('/logs').then(d => {
+      setLogs(d?.logs || (Array.isArray(d) ? d : []));
+      setLoading(false);
+    });
+  }, []);
+
+  return (
+    <div style={{padding:'0 18px'}}>
+      {loading ? <Spinner/> : logs.length === 0
+        ? <div style={{textAlign:'center',padding:'40px 0',fontFamily:"'Quicksand',sans-serif",fontSize:'12px',letterSpacing:'2px',color:'rgba(158,138,202,0.4)'}}>No logs yet ✧</div>
+        : logs.map((l,i) => {
+          const dot = LOG_DOT[l.tool_name] || '#c4a0e0';
+          const t   = l.created_at ? l.created_at.split('T')[1]?.slice(0,5) : '';
+          return (
+            <G key={i} style={{
+              padding:'14px 18px', marginBottom:'8px',
+              display:'flex', alignItems:'center', gap:'14px',
+              animation:`slideUp 0.28s ease-out ${i*0.04}s both`
+            }}>
+              <div style={{
+                width:'8px', height:'8px', borderRadius:'50%',
+                background:dot, flexShrink:0,
+                boxShadow:`0 0 12px ${dot}88`
+              }}/>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{
+                  fontFamily:"'Quicksand',sans-serif",
+                  fontSize:'11px', color:'rgba(202,182,232,0.88)',
+                  fontWeight:500, letterSpacing:'0.5px'
+                }}>{l.tool_name}</div>
+                {l.result_summary && (
+                  <div style={{
+                    fontFamily:"'LXGW WenKai',serif",
+                    fontSize:'11px', color:'rgba(158,138,202,0.52)',
+                    fontWeight:300, marginTop:'2px',
+                    whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis'
+                  }}>{l.result_summary}</div>
+                )}
+              </div>
+              <div style={{
+                fontFamily:"'Noto Sans SC',sans-serif",
+                fontSize:'10px', color:'rgba(138,118,178,0.42)',
+                whiteSpace:'nowrap', fontWeight:300
+              }}>{t}</div>
+            </G>
+          );
+        })
+      }
+    </div>
+  );
+}
+
 /* placeholder — remaining components follow */
 function App() { return <div style={{color:'#fff',padding:40}}>Loading…</div>; }
 ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
