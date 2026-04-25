@@ -26,7 +26,7 @@ NEW_ROUTES = '''
 # ── 棠予酿 补充 HTTP API v3 ──────────────────────────────────────────────
 
 @app.custom_route("/api/tang/love_note", methods=["GET", "POST"])
-async def tang_love_note_http(request: Request) -> JSONResponse:
+async def tang_love_note_http(request):
     """随机取一条 tag=\'message\' 或 domain=\'anchor\' 的记忆作为情话"""
     import sqlite3 as _sq3
     _DB = "/root/data/tang_yu_niang.db"
@@ -46,7 +46,7 @@ async def tang_love_note_http(request: Request) -> JSONResponse:
 
 
 @app.custom_route("/api/tang/logs", methods=["GET", "POST"])
-async def tang_logs_http(request: Request) -> JSONResponse:
+async def tang_logs_http(request):
     """最近 50 条工具调用日志（logs 表不存在时返回空列表）"""
     import sqlite3 as _sq3
     _DB = "/root/data/tang_yu_niang.db"
@@ -75,8 +75,8 @@ async def tang_logs_http(request: Request) -> JSONResponse:
 
 # ── 修复后的 memories 路由（完整替换）────────────────────────────────────
 FIXED_MEMORIES_ROUTE = '''@app.custom_route("/api/tang/memories", methods=["GET", "POST"])
-async def tang_memories_http(request: Request) -> JSONResponse:
-    """记忆库：按 importance DESC, access_count DESC 排序，strength = importance / 5.0"""
+async def tang_memories_http(request):
+    """记忆库：按 importance DESC, activation_count DESC 排序，strength = importance / 5.0"""
     import sqlite3 as _sq3
     _DB = "/root/data/tang_yu_niang.db"
     params = dict(request.query_params)
@@ -93,7 +93,7 @@ async def tang_memories_http(request: Request) -> JSONResponse:
         if q:
             sql += " AND (title LIKE ? OR content LIKE ? OR keywords LIKE ?)"
             args += [f"%{q}%", f"%{q}%", f"%{q}%"]
-        sql += " ORDER BY importance DESC, access_count DESC LIMIT 100"
+        sql += " ORDER BY importance DESC, activation_count DESC LIMIT 100"
         rows = conn.execute(sql, args).fetchall()
         conn.close()
         mems = []
