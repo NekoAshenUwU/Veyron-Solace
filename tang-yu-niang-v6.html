@@ -351,14 +351,14 @@ function Calendar() {
         textAlign:'center', marginBottom:'13px',
         fontFamily:"'Cinzel',serif",
         fontSize:'10px', letterSpacing:'4px', textTransform:'uppercase',
-        color:'rgba(198,176,242,0.72)', fontWeight:400
+        color:'rgba(225,210,255,0.95)', fontWeight:600
       }}>{MON[mo]} {y}</div>
       <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:'2px',marginBottom:'6px',textAlign:'center'}}>
         {['Su','Mo','Tu','We','Th','Fr','Sa'].map(w => (
           <div key={w} style={{
             fontFamily:"'Quicksand',sans-serif",
-            fontSize:'9px', color:'rgba(160,140,200,0.58)',
-            padding:'4px 0', fontWeight:400, letterSpacing:'0.5px'
+            fontSize:'10px', color:'rgba(222,208,255,0.92)',
+            padding:'4px 0', fontWeight:700, letterSpacing:'0.5px'
           }}>{w}</div>
         ))}
       </div>
@@ -848,9 +848,9 @@ function HomeTab({ pulse, onEnvelope, setTab }) {
               }}>{x.icon}</div>
               <div style={{
                 fontFamily:"'Quicksand',sans-serif",
-                fontSize:'8px', letterSpacing:'0.5px', fontWeight:500,
+                fontSize:'9px', letterSpacing:'0.5px', fontWeight:700,
                 textTransform:'uppercase',
-                color: on ? 'rgba(222,202,255,0.9)' : 'rgba(138,118,178,0.5)',
+                color: on ? 'rgba(255,245,255,1)' : 'rgba(218,205,250,0.92)',
                 transition:'color 0.15s'
               }}>{x.label}</div>
             </G>
