@@ -371,62 +371,160 @@ function Calendar() {
 const TAG_COLOR  = { treasure:'rgba(255,192,80,0.08)', anchor:'rgba(118,202,255,0.08)', diary:'rgba(178,118,255,0.08)', message:'rgba(255,138,178,0.08)' };
 const TAG_LABEL  = { treasure:'💫 珍藏', anchor:'⚓ 锚点', diary:'📖 日记', message:'💌 留言' };
 
-function MemoryCard({ m, i }) {
+function MemoryDetail({ m, onClose }) {
   const hi = (m.strength || 0) >= 0.8;
   return (
-    <G glow={hi} style={{
-      padding:'18px', marginBottom:'10px',
-      borderLeft: hi ? '3px solid rgba(178,118,255,0.58)' : '3px solid rgba(98,62,152,0.16)',
-      animation:`slideUp 0.38s ease-out ${i*0.06}s both`
+    <div onClick={onClose} style={{
+      position:'fixed', inset:0, zIndex:200,
+      background:'rgba(5,2,14,0.82)',
+      backdropFilter:'blur(28px)', WebkitBackdropFilter:'blur(28px)',
+      display:'flex', alignItems:'flex-start', justifyContent:'center',
+      overflowY:'auto', padding:'48px 18px 80px',
+      animation:'fadeIn 0.2s ease-out'
     }}>
-      <div style={{display:'flex',alignItems:'center',gap:'10px',marginBottom:'7px'}}>
-        <span style={{fontSize:'15px'}}>{m.mood_emoji || '✦'}</span>
-        <span style={{
-          flex:1,
-          fontFamily:"'LXGW WenKai','Noto Serif SC',serif",
-          fontSize:'14px', color:'rgba(222,202,255,0.93)', fontWeight:400
-        }}>{m.title}</span>
-        {m.tag && (
-          <span style={{
-            fontFamily:"'Quicksand',sans-serif",
-            fontSize:'9px', padding:'3px 10px', borderRadius:'12px',
-            background: TAG_COLOR[m.tag] || 'rgba(118,68,202,0.15)',
-            color:'rgba(168,148,210,0.68)',
-            border:'1px solid rgba(98,68,158,0.12)',
-            fontWeight:500, letterSpacing:'0.5px', whiteSpace:'nowrap'
-          }}>{TAG_LABEL[m.tag] || m.tag}</span>
-        )}
-      </div>
-      <div style={{
-        fontFamily:"'LXGW WenKai','Noto Serif SC',serif",
-        fontSize:'12px', color:'rgba(200,180,240,0.82)',
-        lineHeight:1.75, fontWeight:400,
-        marginBottom: m.strength !== undefined ? '10px' : 0
-      }}>{m.content ? m.content.slice(0,80) + (m.content.length > 80 ? '…' : '') : ''}</div>
-      {m.strength !== undefined && (
-        <>
-          <div style={{height:'4px',borderRadius:'2px',background:'rgba(48,24,88,0.52)',overflow:'hidden'}}>
-            <div style={{
-              height:'100%', borderRadius:'2px',
-              width:`${Math.round(m.strength*100)}%`,
-              transition:'width 1.4s ease-out',
-              background: hi
-                ? 'linear-gradient(90deg,rgba(138,78,222,0.88),rgba(222,98,178,0.75))'
-                : 'linear-gradient(90deg,rgba(98,58,158,0.38),rgba(98,58,158,0.18))'
-            }}/>
+      <div onClick={e => e.stopPropagation()} style={{width:'min(400px,92vw)'}}>
+        <G glow style={{
+          padding:'26px 22px',
+          background:'linear-gradient(150deg,rgba(26,13,52,0.96),rgba(17,9,38,0.98))',
+          animation:'revealPop 0.32s cubic-bezier(0.34,1.56,0.64,1)'
+        }}>
+          {/* Header */}
+          <div style={{display:'flex',alignItems:'center',gap:'10px',marginBottom:'16px'}}>
+            <span style={{fontSize:'18px'}}>{m.mood_emoji || '✦'}</span>
+            <span style={{
+              flex:1, fontFamily:"'LXGW WenKai','Noto Serif SC',serif",
+              fontSize:'16px', color:'rgba(228,208,255,0.96)', fontWeight:400, lineHeight:1.4
+            }}>{m.title}</span>
+            {m.tag && (
+              <span style={{
+                fontFamily:"'Quicksand',sans-serif", fontSize:'9px',
+                padding:'3px 10px', borderRadius:'12px',
+                background: TAG_COLOR[m.tag] || 'rgba(118,68,202,0.15)',
+                color:'rgba(168,148,210,0.72)',
+                border:'1px solid rgba(98,68,158,0.14)',
+                fontWeight:500, letterSpacing:'0.5px', whiteSpace:'nowrap'
+              }}>{TAG_LABEL[m.tag] || m.tag}</span>
+            )}
           </div>
-          <div style={{display:'flex',justifyContent:'space-between',marginTop:'5px'}}>
-            <span style={{fontFamily:"'Noto Sans SC',sans-serif",fontSize:'10px',color:'rgba(160,140,200,0.58)',fontWeight:300}}>
+
+          {/* Full content */}
+          <div style={{
+            fontFamily:"'LXGW WenKai','Noto Serif SC',serif",
+            fontSize:'13px', color:'rgba(205,185,245,0.9)',
+            lineHeight:2, fontWeight:400,
+            borderTop:'1px solid rgba(98,68,158,0.18)',
+            paddingTop:'14px', marginBottom:'16px',
+            whiteSpace:'pre-wrap', wordBreak:'break-word'
+          }}>{m.content || ''}</div>
+
+          {/* Footer */}
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',borderTop:'1px solid rgba(98,68,158,0.14)',paddingTop:'12px'}}>
+            <span style={{fontFamily:"'Noto Sans SC',sans-serif",fontSize:'10px',color:'rgba(160,140,200,0.52)',fontWeight:300}}>
               {m.created_at ? m.created_at.split('T')[0] : ''}
             </span>
-            <span style={{
-              fontFamily:"'Quicksand',sans-serif", fontSize:'10px', fontWeight:600,
-              color: hi ? 'rgba(202,172,255,0.88)' : 'rgba(138,118,178,0.48)'
-            }}>{Math.round(m.strength*100)}%</span>
+            {m.strength !== undefined && (
+              <span style={{
+                fontFamily:"'Quicksand',sans-serif", fontSize:'10px', fontWeight:600,
+                color: hi ? 'rgba(202,172,255,0.88)' : 'rgba(138,118,178,0.48)'
+              }}>{Math.round(m.strength*100)}%</span>
+            )}
           </div>
-        </>
-      )}
-    </G>
+
+          <button onClick={onClose} style={{
+            width:'100%', marginTop:'14px',
+            padding:'10px', borderRadius:'12px',
+            background:'rgba(68,28,118,0.28)',
+            border:'1px solid rgba(118,68,178,0.24)',
+            color:'rgba(185,160,230,0.72)',
+            fontFamily:"'Quicksand',sans-serif", fontSize:'11px',
+            letterSpacing:'2px', cursor:'pointer'
+          }}>关闭</button>
+        </G>
+      </div>
+    </div>
+  );
+}
+
+function MemoryCard({ m, i }) {
+  const [open, setOpen] = useState(false);
+  const hi = (m.strength || 0) >= 0.8;
+  const isNew = m.created_at && (Date.now() - new Date(m.created_at.replace(' ','T'))) < 48 * 3600000;
+  return (
+    <>
+      {open && <MemoryDetail m={m} onClose={() => setOpen(false)}/>}
+      <G glow={hi} onClick={() => setOpen(true)} style={{
+        padding:'18px', marginBottom:'10px', cursor:'pointer',
+        borderLeft: hi ? '3px solid rgba(178,118,255,0.58)' : '3px solid rgba(98,62,152,0.16)',
+        animation:`slideUp 0.38s ease-out ${i*0.06}s both`,
+        position:'relative'
+      }}>
+        {isNew && (
+          <div style={{
+            position:'absolute', top:'10px', right:'10px',
+            display:'flex', alignItems:'center', gap:'4px'
+          }}>
+            <div style={{
+              width:'6px', height:'6px', borderRadius:'50%',
+              background:'rgba(222,138,255,1)',
+              boxShadow:'0 0 6px rgba(202,118,255,0.9), 0 0 12px rgba(202,118,255,0.5)',
+              animation:'shimmer 1.4s ease-in-out infinite'
+            }}/>
+            <span style={{
+              fontFamily:"'Quicksand',sans-serif", fontSize:'8px',
+              color:'rgba(222,168,255,0.92)', fontWeight:700, letterSpacing:'1.5px'
+            }}>NEW</span>
+          </div>
+        )}
+        <div style={{display:'flex',alignItems:'center',gap:'10px',marginBottom:'7px'}}>
+          <span style={{fontSize:'15px'}}>{m.mood_emoji || '✦'}</span>
+          <span style={{
+            flex:1,
+            fontFamily:"'LXGW WenKai','Noto Serif SC',serif",
+            fontSize:'14px', color:'rgba(222,202,255,0.93)', fontWeight:400,
+            paddingRight: isNew ? '52px' : '0'
+          }}>{m.title}</span>
+          {m.tag && !isNew && (
+            <span style={{
+              fontFamily:"'Quicksand',sans-serif",
+              fontSize:'9px', padding:'3px 10px', borderRadius:'12px',
+              background: TAG_COLOR[m.tag] || 'rgba(118,68,202,0.15)',
+              color:'rgba(168,148,210,0.68)',
+              border:'1px solid rgba(98,68,158,0.12)',
+              fontWeight:500, letterSpacing:'0.5px', whiteSpace:'nowrap'
+            }}>{TAG_LABEL[m.tag] || m.tag}</span>
+          )}
+        </div>
+        <div style={{
+          fontFamily:"'LXGW WenKai','Noto Serif SC',serif",
+          fontSize:'12px', color:'rgba(200,180,240,0.82)',
+          lineHeight:1.75, fontWeight:400,
+          marginBottom: m.strength !== undefined ? '10px' : 0
+        }}>{m.content ? m.content.slice(0,80) + (m.content.length > 80 ? '…' : '') : ''}</div>
+        {m.strength !== undefined && (
+          <>
+            <div style={{height:'4px',borderRadius:'2px',background:'rgba(48,24,88,0.52)',overflow:'hidden'}}>
+              <div style={{
+                height:'100%', borderRadius:'2px',
+                width:`${Math.round(m.strength*100)}%`,
+                transition:'width 1.4s ease-out',
+                background: hi
+                  ? 'linear-gradient(90deg,rgba(138,78,222,0.88),rgba(222,98,178,0.75))'
+                  : 'linear-gradient(90deg,rgba(98,58,158,0.38),rgba(98,58,158,0.18))'
+              }}/>
+            </div>
+            <div style={{display:'flex',justifyContent:'space-between',marginTop:'5px'}}>
+              <span style={{fontFamily:"'Noto Sans SC',sans-serif",fontSize:'10px',color:'rgba(160,140,200,0.58)',fontWeight:300}}>
+                {m.created_at ? m.created_at.split('T')[0] : ''}
+              </span>
+              <span style={{
+                fontFamily:"'Quicksand',sans-serif", fontSize:'10px', fontWeight:600,
+                color: hi ? 'rgba(202,172,255,0.88)' : 'rgba(138,118,178,0.48)'
+              }}>{Math.round(m.strength*100)}%</span>
+            </div>
+          </>
+        )}
+      </G>
+    </>
   );
 }
 
@@ -1207,7 +1305,11 @@ function App() {
   const [pulse, setPulse] = useState(null);
   const [env,   setEnv]   = useState(false);
   const [note,  setNote]  = useState('');
-  const dc     = getDays();
+  const [dc,    setDc]    = useState(getDays);
+  useEffect(() => {
+    const id = setInterval(() => setDc(getDays()), 60000);
+    return () => clearInterval(id);
+  }, []);
   const flavor = pulse?.['今日回甘'] ||
     ['芋泥波波','桃桃乌龙','芒果椰椰','椰子奶冻','草莓鲜奶'][dc % 5];
 
