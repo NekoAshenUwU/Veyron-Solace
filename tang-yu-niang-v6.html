@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <meta name="theme-color" content="#0a0515">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>棠予酿</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Quicksand:wght@300;400;500;600&family=Noto+Sans+SC:wght@300;400&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css" rel="stylesheet">
+
+  <!-- React 18 + Babel -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+    html, body { height:100%; overflow-x:hidden; background:#0a0515; }
+    input, button { outline:none; -webkit-appearance:none; font-family:inherit; }
+    ::-webkit-scrollbar { display:none; }
+
+    /* ── Animations ── */
+    @keyframes shimmer    { 0%,100%{opacity:0.25} 50%{opacity:1} }
+    @keyframes starPulse  { 0%,100%{opacity:0.15;transform:scale(1)} 50%{opacity:1;transform:scale(1.8)} }
+    @keyframes starDrift  { 0%{transform:translate(0,0)} 30%{transform:translate(5px,-10px)} 60%{transform:translate(-4px,-3px)} 100%{transform:translate(0,0)} }
+
+    @keyframes meteorFall {
+      0%   { opacity:1; transform:translate(0,0) rotate(35deg); }
+      100% { opacity:0; transform:translate(110px,180px) rotate(35deg); }
+    }
+
+    @keyframes bf1 { 0%{left:-60px;top:22%;opacity:0} 8%{opacity:0.5} 35%{top:16%} 65%{top:26%} 88%{opacity:0.45} 100%{left:110%;top:20%;opacity:0} }
+    @keyframes bf2 { 0%{left:-60px;top:38%;opacity:0} 8%{opacity:0.45} 35%{top:44%} 65%{top:32%} 88%{opacity:0.4}  100%{left:110%;top:36%;opacity:0} }
+    @keyframes bf3 { 0%{left:-60px;top:14%;opacity:0} 8%{opacity:0.5} 35%{top:20%} 65%{top:11%} 88%{opacity:0.4}  100%{left:110%;top:16%;opacity:0} }
+    @keyframes bf4 { 0%{left:-60px;top:52%;opacity:0} 8%{opacity:0.4} 35%{top:46%} 65%{top:56%} 88%{opacity:0.35} 100%{left:110%;top:50%;opacity:0} }
+
+    @keyframes wingFlapL { 0%{transform:rotateY(0deg)}   100%{transform:rotateY(55deg)} }
+    @keyframes wingFlapR { 0%{transform:rotateY(0deg)}   100%{transform:rotateY(-55deg)} }
+
+    @keyframes float     { 0%,100%{transform:translateY(0)}   50%{transform:translateY(-8px)} }
+    @keyframes fadeIn    { from{opacity:0} to{opacity:1} }
+    @keyframes slideUp   { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes revealPop { 0%{opacity:0;transform:scale(0.88) translateY(8px)} 100%{opacity:1;transform:scale(1) translateY(0)} }
+    @keyframes drift     { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+    @keyframes nebula    { 0%,100%{opacity:0.05;transform:scale(1)} 50%{opacity:0.13;transform:scale(1.06)} }
+    @keyframes glow      { 0%,100%{text-shadow:0 0 30px rgba(176,128,224,.3)} 50%{text-shadow:0 0 60px rgba(176,128,224,.65),0 0 100px rgba(224,128,176,.25)} }
+    @keyframes spin      { to{transform:rotate(360deg)} }
+    @keyframes bounce    { 0%,100%{transform:scale(1)} 40%{transform:scale(0.92)} 70%{transform:scale(1.06)} }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<!-- PART 2 will be appended here -->
+</body>
+</html>
