@@ -79,7 +79,7 @@ function StarField() {
     const dur = (2 + Math.random() * 4).toFixed(2);
     const hue = [280,300,260,320,200][i % 5];
     const col = `hsla(${hue},62%,82%,0.92)`;
-    const isMeteor = i < 24;
+    const isMeteor = i < 8;
 
     if (isMeteor) {
       const mDur = (1.2 + Math.random() * 1.8).toFixed(2);
@@ -246,10 +246,13 @@ function Envelope({ note, onClose }) {
               pointerEvents:'none'
             }}/>
             <div style={{
-              fontSize:'62px', marginBottom:'22px', position:'relative',
+              fontSize:'56px', marginBottom:'22px', position:'relative',
               animation:'float 3.5s ease-in-out infinite',
+              fontFamily:"'LXGW WenKai','Noto Serif SC',serif", fontWeight:300,
+              background:'linear-gradient(135deg,rgba(212,178,255,0.95),rgba(255,178,218,0.9))',
+              WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent',
               filter:'drop-shadow(0 0 26px rgba(178,118,255,0.52))'
-            }}>💌</div>
+            }}>函</div>
             <div style={{
               fontFamily:"'Cinzel',serif",
               fontSize:'10px', letterSpacing:'8px', textTransform:'uppercase',
@@ -351,7 +354,7 @@ function Calendar() {
         {['Su','Mo','Tu','We','Th','Fr','Sa'].map(w => (
           <div key={w} style={{
             fontFamily:"'Quicksand',sans-serif",
-            fontSize:'9px', color:'rgba(138,118,178,0.42)',
+            fontSize:'9px', color:'rgba(160,140,200,0.58)',
             padding:'4px 0', fontWeight:400, letterSpacing:'0.5px'
           }}>{w}</div>
         ))}
@@ -393,8 +396,8 @@ function MemoryCard({ m, i }) {
       </div>
       <div style={{
         fontFamily:"'LXGW WenKai','Noto Serif SC',serif",
-        fontSize:'12px', color:'rgba(178,158,222,0.68)',
-        lineHeight:1.75, fontWeight:300,
+        fontSize:'12px', color:'rgba(200,180,240,0.82)',
+        lineHeight:1.75, fontWeight:400,
         marginBottom: m.strength !== undefined ? '10px' : 0
       }}>{m.content ? m.content.slice(0,80) + (m.content.length > 80 ? '…' : '') : ''}</div>
       {m.strength !== undefined && (
@@ -410,7 +413,7 @@ function MemoryCard({ m, i }) {
             }}/>
           </div>
           <div style={{display:'flex',justifyContent:'space-between',marginTop:'5px'}}>
-            <span style={{fontFamily:"'Noto Sans SC',sans-serif",fontSize:'10px',color:'rgba(138,118,178,0.42)',fontWeight:300}}>
+            <span style={{fontFamily:"'Noto Sans SC',sans-serif",fontSize:'10px',color:'rgba(160,140,200,0.58)',fontWeight:300}}>
               {m.created_at ? m.created_at.split('T')[0] : ''}
             </span>
             <span style={{
@@ -512,7 +515,7 @@ function TidalTab() {
         <div style={{
           fontFamily:"'LXGW WenKai','Noto Serif SC',serif",
           fontSize:'12px', color:'rgba(178,158,222,0.72)',
-          lineHeight:2, fontWeight:300
+          lineHeight:2, fontWeight:400
         }}>🌊 涨潮中的记忆权重更高，会在对话开头主动浮现。退潮的正在沉淀，等待关键词唤醒。</div>
       </G>
       {loading ? <Spinner/> : tidal.map((m,i) => {
@@ -548,7 +551,7 @@ function TidalTab() {
               }}/>
             </div>
             <div style={{display:'flex',justifyContent:'space-between',marginTop:'5px'}}>
-              <span style={{fontFamily:"'Noto Sans SC',sans-serif",fontSize:'10px',color:'rgba(138,118,178,0.42)',fontWeight:300}}>
+              <span style={{fontFamily:"'Noto Sans SC',sans-serif",fontSize:'10px',color:'rgba(160,140,200,0.58)',fontWeight:300}}>
                 {m.created_at ? m.created_at.split('T')[0] : ''}
               </span>
               <span style={{
@@ -657,8 +660,8 @@ function DiaryTab() {
             </div>
             <div style={{
               fontFamily:"'LXGW WenKai',serif",
-              fontSize:'12px', color:'rgba(178,158,222,0.65)',
-              lineHeight:1.85, fontWeight:300
+              fontSize:'12px', color:'rgba(200,180,240,0.82)',
+              lineHeight:1.85, fontWeight:400
             }}>{a.content ? a.content.slice(0,100) : ''}</div>
           </G>
         ))
@@ -676,7 +679,7 @@ function DiaryTab() {
               <span style={{fontFamily:"'LXGW WenKai',serif",fontSize:'14px',color:'rgba(222,202,255,0.95)',fontWeight:400}}>{a.t}</span>
               <span style={{fontSize:'11px',color:'rgba(255,202,98,0.75)'}}>{'★'.repeat(a.p)}</span>
             </div>
-            <div style={{fontFamily:"'LXGW WenKai',serif",fontSize:'12px',color:'rgba(178,158,222,0.65)',lineHeight:1.85,fontWeight:300}}>{a.s}</div>
+            <div style={{fontFamily:"'LXGW WenKai',serif",fontSize:'12px',color:'rgba(200,180,240,0.82)',lineHeight:1.85,fontWeight:300}}>{a.s}</div>
           </G>
         ))
       }
@@ -738,7 +741,7 @@ function LogTab() {
               </div>
               <div style={{
                 fontFamily:"'Noto Sans SC',sans-serif",
-                fontSize:'10px', color:'rgba(138,118,178,0.42)',
+                fontSize:'10px', color:'rgba(160,140,200,0.58)',
                 whiteSpace:'nowrap', fontWeight:300
               }}>{t}</div>
             </G>
@@ -790,7 +793,13 @@ function HomeTab({ pulse, onEnvelope, setTab }) {
         animation:'slideUp 0.42s ease-out both'
       }}>
         <div style={{display:'flex',alignItems:'center',gap:'16px'}}>
-          <span style={{fontSize:'28px',animation:'float 3.5s ease-in-out infinite',filter:'drop-shadow(0 0 18px rgba(178,118,255,0.52))'}}>💌</span>
+          <span style={{
+            fontSize:'26px', fontFamily:"'LXGW WenKai','Noto Serif SC',serif", fontWeight:300,
+            background:'linear-gradient(135deg,rgba(212,178,255,0.95),rgba(255,178,218,0.88))',
+            WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent',
+            animation:'float 3.5s ease-in-out infinite',
+            filter:'drop-shadow(0 0 16px rgba(178,118,255,0.5))'
+          }}>函</span>
           <div>
             <div style={{fontFamily:"'LXGW WenKai',serif",fontSize:'14px',color:'rgba(222,202,255,0.92)',fontWeight:400,letterSpacing:'3px',marginBottom:'4px'}}>予予的信</div>
             <div style={{fontFamily:"'Quicksand',sans-serif",fontSize:'10px',color:'rgba(158,138,202,0.5)',fontWeight:400,letterSpacing:'1px'}}>A new letter awaits ♡</div>
