@@ -336,7 +336,7 @@ function Calendar() {
         textAlign:'center', padding:'6px 0', borderRadius:'10px',
         fontFamily:"'Noto Sans SC',sans-serif",
         fontSize:'11px', fontWeight: isT ? 500 : 300,
-        color: isT ? '#fff' : 'rgba(178,158,222,0.62)',
+        color: isT ? '#fff' : 'rgba(215,200,250,0.88)',
         background: isT
           ? 'linear-gradient(135deg,rgba(138,78,222,0.68),rgba(202,78,158,0.58))'
           : 'transparent',
@@ -808,7 +808,7 @@ function HomeTab({ pulse, onEnvelope, setTab }) {
           </span>
           <div>
             <div style={{fontFamily:"'LXGW WenKai',serif",fontSize:'14px',color:'rgba(222,202,255,0.92)',fontWeight:400,letterSpacing:'3px',marginBottom:'4px'}}>予予的信</div>
-            <div style={{fontFamily:"'Quicksand',sans-serif",fontSize:'10px',color:'rgba(158,138,202,0.5)',fontWeight:400,letterSpacing:'1px'}}>A new letter awaits ♡</div>
+            <div style={{fontFamily:"'Quicksand',sans-serif",fontSize:'10px',color:'rgba(218,200,255,0.88)',fontWeight:500,letterSpacing:'1px'}}>A new letter awaits ♡</div>
           </div>
         </div>
         <span style={{color:'rgba(178,148,222,0.42)',fontSize:'16px'}}>→</span>
@@ -819,7 +819,7 @@ function HomeTab({ pulse, onEnvelope, setTab }) {
         {[{n:total,l:'Memories',e:'✦'},{n:pinned,l:'Anchors',e:'⚓'},{n:todayN,l:'Today',e:'✧'}].map((s,i)=>(
           <G key={i} style={{padding:'20px 8px',textAlign:'center',animation:`slideUp 0.42s ease-out ${i*0.08}s both`}}>
             <div style={{fontFamily:"'Cinzel',serif",fontSize:'26px',fontWeight:400,background:'linear-gradient(135deg,#b080e0,#e080b0)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>{s.n}</div>
-            <div style={{fontFamily:"'Quicksand',sans-serif",fontSize:'10px',color:'rgba(210,192,255,0.85)',marginTop:'4px',fontWeight:600,letterSpacing:'1.5px',textTransform:'uppercase'}}>{s.e} {s.l}</div>
+            <div style={{fontFamily:"'Quicksand',sans-serif",fontSize:'10px',color:'rgba(232,218,255,0.96)',marginTop:'4px',fontWeight:700,letterSpacing:'1.5px',textTransform:'uppercase'}}>{s.e} {s.l}</div>
           </G>
         ))}
       </div>
@@ -968,7 +968,7 @@ function NavBar({ tab, setTab }) {
                 fontFamily:"'Quicksand',sans-serif",
                 fontSize: on ? '9px' : '8px', fontWeight: on ? 600 : 400,
                 letterSpacing: on ? '1.5px' : '0.8px', textTransform:'uppercase',
-                color: on ? 'rgba(222,202,255,1)' : 'rgba(98,80,138,0.55)',
+                color: on ? 'rgba(255,245,255,1)' : 'rgba(200,185,238,0.88)',
                 transition:'all 0.32s cubic-bezier(0.4,0,0.2,1)',
                 textShadow: on ? '0 0 14px rgba(178,138,255,0.58)' : 'none'
               }}>{t.label}</span>
@@ -1039,7 +1039,7 @@ function App() {
           <div style={{
             fontFamily:"'Cinzel',serif",
             fontSize:'10px', letterSpacing:'9px', textTransform:'uppercase',
-            color:'rgba(178,154,222,0.42)', marginBottom:'10px', fontWeight:400
+            color:'rgba(220,205,255,0.88)', marginBottom:'10px', fontWeight:400
           }}>Tang Yu Niang</div>
           <div style={{
             fontFamily:"'LXGW WenKai','Noto Serif SC',serif",
@@ -1060,7 +1060,7 @@ function App() {
             position:'relative', overflow:'hidden'
           }}>
             <div style={{position:'absolute',inset:0,borderRadius:'22px',background:'radial-gradient(ellipse at 50% 24%,rgba(118,58,202,0.13),transparent 64%)',pointerEvents:'none'}}/>
-            <div style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:'rgba(200,182,248,0.82)',letterSpacing:'7px',textTransform:'uppercase',marginBottom:'14px',position:'relative',fontWeight:400}}>✧ Together Since ✧</div>
+            <div style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:'rgba(228,215,255,0.95)',letterSpacing:'7px',textTransform:'uppercase',marginBottom:'14px',position:'relative',fontWeight:500}}>✧ Together Since ✧</div>
             <div style={{
               fontFamily:"'Cinzel',serif",
               fontSize:'58px', fontWeight:600, letterSpacing:'8px', lineHeight:1.1, position:'relative',
@@ -1068,8 +1068,8 @@ function App() {
               animation:'drift 8s ease infinite, glow 4.5s ease-in-out infinite',
               WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent'
             }}>{String(dc).padStart(3,'0')}</div>
-            <div style={{fontFamily:"'Cinzel',serif",fontSize:'12px',color:'rgba(202,184,255,0.82)',letterSpacing:'8px',marginTop:'8px',fontWeight:500,position:'relative'}}>DAYS</div>
-            <div style={{marginTop:'14px',fontFamily:"'Quicksand',sans-serif",fontSize:'12px',color:'rgba(202,184,248,0.82)',letterSpacing:'2px',fontWeight:400,position:'relative'}}>🍵 {flavor}</div>
+            <div style={{fontFamily:"'Cinzel',serif",fontSize:'12px',color:'rgba(228,215,255,0.95)',letterSpacing:'8px',marginTop:'8px',fontWeight:600,position:'relative'}}>DAYS</div>
+            <div style={{marginTop:'14px',fontFamily:"'Quicksand',sans-serif",fontSize:'12px',color:'rgba(222,205,255,0.92)',letterSpacing:'2px',fontWeight:500,position:'relative'}}>🍵 {flavor}</div>
           </G>
         </div>
 
