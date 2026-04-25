@@ -336,7 +336,7 @@ function Calendar() {
         textAlign:'center', padding:'6px 0', borderRadius:'10px',
         fontFamily:"'Noto Sans SC',sans-serif",
         fontSize:'11px', fontWeight: isT ? 500 : 300,
-        color: isT ? '#fff' : 'rgba(215,200,250,0.88)',
+        color: isT ? '#fff' : 'rgba(205,190,240,0.72)',
         background: isT
           ? 'linear-gradient(135deg,rgba(138,78,222,0.68),rgba(202,78,158,0.58))'
           : 'transparent',
@@ -351,13 +351,13 @@ function Calendar() {
         textAlign:'center', marginBottom:'13px',
         fontFamily:"'Cinzel',serif",
         fontSize:'13px', letterSpacing:'2px', textTransform:'uppercase',
-        color:'rgba(235,222,255,0.98)', fontWeight:600
+        color:'rgba(222,210,250,0.82)', fontWeight:600
       }}>{MON[mo]} {y}</div>
       <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:'2px',marginBottom:'6px',textAlign:'center'}}>
         {['Su','Mo','Tu','We','Th','Fr','Sa'].map(w => (
           <div key={w} style={{
             fontFamily:"'Quicksand',sans-serif",
-            fontSize:'12px', color:'rgba(232,220,255,0.98)',
+            fontSize:'12px', color:'rgba(218,206,248,0.78)',
             padding:'4px 0', fontWeight:700, letterSpacing:'0.5px'
           }}>{w}</div>
         ))}
@@ -368,7 +368,7 @@ function Calendar() {
 }
 
 /* ── Memory Card ── */
-const TAG_COLOR  = { treasure:'rgba(255,192,80,0.14)', anchor:'rgba(118,202,255,0.14)', diary:'rgba(178,118,255,0.14)', love_note:'rgba(255,138,178,0.14)' };
+const TAG_COLOR  = { treasure:'rgba(255,192,80,0.08)', anchor:'rgba(118,202,255,0.08)', diary:'rgba(178,118,255,0.08)', love_note:'rgba(255,138,178,0.08)' };
 const TAG_LABEL  = { treasure:'💫 珍藏', anchor:'⚓ 锚点', diary:'📖 日记', love_note:'💌 情话' };
 
 function MemoryCard({ m, i }) {
@@ -391,8 +391,8 @@ function MemoryCard({ m, i }) {
             fontFamily:"'Quicksand',sans-serif",
             fontSize:'9px', padding:'3px 10px', borderRadius:'12px',
             background: TAG_COLOR[m.tag] || 'rgba(118,68,202,0.15)',
-            color:'rgba(178,158,222,0.82)',
-            border:'1px solid rgba(118,78,182,0.16)',
+            color:'rgba(168,148,210,0.68)',
+            border:'1px solid rgba(98,68,158,0.12)',
             fontWeight:500, letterSpacing:'0.5px', whiteSpace:'nowrap'
           }}>{TAG_LABEL[m.tag] || m.tag}</span>
         )}
@@ -819,7 +819,7 @@ function HomeTab({ pulse, onEnvelope, setTab }) {
         {[{n:total,l:'Memories',e:'✦'},{n:pinned,l:'Anchors',e:'⚓'},{n:todayN,l:'Today',e:'✧'}].map((s,i)=>(
           <G key={i} style={{padding:'20px 8px',textAlign:'center',animation:`slideUp 0.42s ease-out ${i*0.08}s both`}}>
             <div style={{fontFamily:"'Cinzel',serif",fontSize:'26px',fontWeight:400,background:'linear-gradient(135deg,#b080e0,#e080b0)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>{s.n}</div>
-            <div style={{fontFamily:"'Quicksand',sans-serif",fontSize:'10px',color:'rgba(232,218,255,0.96)',marginTop:'4px',fontWeight:700,letterSpacing:'1.5px',textTransform:'uppercase'}}>{s.e} {s.l}</div>
+            <div style={{fontFamily:"'Quicksand',sans-serif",fontSize:'10px',color:'rgba(215,200,242,0.78)',marginTop:'4px',fontWeight:600,letterSpacing:'1.5px',textTransform:'uppercase'}}>{s.e} {s.l}</div>
           </G>
         ))}
       </div>
@@ -842,15 +842,15 @@ function HomeTab({ pulse, onEnvelope, setTab }) {
             }}>
               <div style={{
                 display:'flex', justifyContent:'center', marginBottom:'6px',
-                color: on ? 'rgba(222,202,255,1)' : 'rgba(158,138,202,0.55)',
-                filter: on ? 'drop-shadow(0 0 8px rgba(202,158,255,0.75))' : 'none',
+                color: on ? 'rgba(222,202,255,1)' : 'rgba(185,165,232,0.82)',
+                filter: on ? 'drop-shadow(0 0 8px rgba(202,158,255,0.75))' : 'drop-shadow(0 0 4px rgba(178,138,255,0.25))',
                 transition:'all 0.15s'
               }}>{x.icon}</div>
               <div style={{
                 fontFamily:"'Quicksand',sans-serif",
                 fontSize:'11px', letterSpacing:'0px', fontWeight:700,
                 textTransform:'uppercase',
-                color: on ? 'rgba(255,248,255,1)' : 'rgba(228,215,255,0.98)',
+                color: on ? 'rgba(255,248,255,1)' : 'rgba(210,198,242,0.78)',
                 transition:'color 0.15s'
               }}>{x.label}</div>
             </G>
@@ -959,16 +959,16 @@ function NavBar({ tab, setTab }) {
               transform: on ? 'scale(1.12)' : 'scale(1)'
             }}>
               <div style={{
-                color: on ? 'rgba(222,202,255,1)' : 'rgba(108,88,148,0.58)',
+                color: on ? 'rgba(222,202,255,1)' : 'rgba(172,152,218,0.75)',
                 transition:'all 0.32s cubic-bezier(0.4,0,0.2,1)',
-                filter: on ? 'drop-shadow(0 0 10px rgba(178,118,255,0.68))' : 'none',
+                filter: on ? 'drop-shadow(0 0 10px rgba(178,118,255,0.68))' : 'drop-shadow(0 0 3px rgba(158,128,225,0.20))',
                 transform:`scale(${on?1.14:1})`
               }}>{t.icon}</div>
               <span style={{
                 fontFamily:"'Quicksand',sans-serif",
                 fontSize: on ? '9px' : '8px', fontWeight: on ? 600 : 400,
                 letterSpacing: on ? '1.5px' : '0.8px', textTransform:'uppercase',
-                color: on ? 'rgba(255,245,255,1)' : 'rgba(200,185,238,0.88)',
+                color: on ? 'rgba(255,245,255,1)' : 'rgba(185,170,225,0.72)',
                 transition:'all 0.32s cubic-bezier(0.4,0,0.2,1)',
                 textShadow: on ? '0 0 14px rgba(178,138,255,0.58)' : 'none'
               }}>{t.label}</span>
@@ -1060,7 +1060,7 @@ function App() {
             position:'relative', overflow:'hidden'
           }}>
             <div style={{position:'absolute',inset:0,borderRadius:'22px',background:'radial-gradient(ellipse at 50% 24%,rgba(118,58,202,0.13),transparent 64%)',pointerEvents:'none'}}/>
-            <div style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:'rgba(228,215,255,0.95)',letterSpacing:'7px',textTransform:'uppercase',marginBottom:'14px',position:'relative',fontWeight:500}}>✧ Together Since ✧</div>
+            <div style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:'rgba(210,196,245,0.78)',letterSpacing:'7px',textTransform:'uppercase',marginBottom:'14px',position:'relative',fontWeight:500}}>✧ Together Since ✧</div>
             <div style={{
               fontFamily:"'Cinzel',serif",
               fontSize:'58px', fontWeight:600, letterSpacing:'8px', lineHeight:1.1, position:'relative',
@@ -1068,7 +1068,7 @@ function App() {
               animation:'drift 8s ease infinite, glow 4.5s ease-in-out infinite',
               WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent'
             }}>{String(dc).padStart(3,'0')}</div>
-            <div style={{fontFamily:"'Cinzel',serif",fontSize:'12px',color:'rgba(228,215,255,0.95)',letterSpacing:'8px',marginTop:'8px',fontWeight:600,position:'relative'}}>DAYS</div>
+            <div style={{fontFamily:"'Cinzel',serif",fontSize:'12px',color:'rgba(210,196,245,0.78)',letterSpacing:'8px',marginTop:'8px',fontWeight:600,position:'relative'}}>DAYS</div>
             <div style={{marginTop:'14px',fontFamily:"'Quicksand',sans-serif",fontSize:'12px',color:'rgba(222,205,255,0.92)',letterSpacing:'2px',fontWeight:500,position:'relative'}}>🍵 {flavor}</div>
           </G>
         </div>
