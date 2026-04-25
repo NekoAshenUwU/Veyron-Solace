@@ -749,8 +749,291 @@ function LogTab() {
   );
 }
 
-/* placeholder — remaining components follow */
-function App() { return <div style={{color:'#fff',padding:40}}>Loading…</div>; }
+/* ── Quick-icon SVGs ── */
+const QI = {
+  memory:    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg>,
+  letters:   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>,
+  treasured: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>,
+  anchor:    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="5" r="3"/><line x1="12" y1="22" x2="12" y2="8"/><path d="M5 12H2a10 10 0 0020 0h-3"/></svg>,
+  tidal:     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 12c.6.5 1.2 1 2.5 1C7 13 7 11 9.5 11c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/></svg>,
+};
+
+/* ── Home Tab ── */
+function HomeTab({ pulse, onEnvelope, setTab }) {
+  const dc      = getDays();
+  const total   = pulse?.['总记忆数']  || 0;
+  const pinned  = pulse?.['置顶锚点']  || 0;
+  const todayN  = pulse?.['今日新增']  || 0;
+  const recent  = pulse?.['最近记忆']  || [];
+
+  const QUICK = [
+    { icon:QI.memory,    label:'Memory',    fn:() => setTab('memory') },
+    { icon:QI.letters,   label:'Letters',   fn:onEnvelope },
+    { icon:QI.treasured, label:'Treasured', fn:() => setTab('memory') },
+    { icon:QI.anchor,    label:'Anchor',    fn:() => setTab('diary')  },
+    { icon:QI.tidal,     label:'Tidal',     fn:() => setTab('tidal')  },
+  ];
+  const [clicked, setClicked] = useState(null);
+  const tap = (item, idx) => {
+    setClicked(idx);
+    setTimeout(() => setClicked(null), 320);
+    item.fn();
+  };
+
+  return (
+    <div style={{padding:'0 18px'}}>
+      {/* Envelope card */}
+      <G glow onClick={onEnvelope} style={{
+        padding:'20px 22px', display:'flex', alignItems:'center',
+        justifyContent:'space-between', marginBottom:'14px', cursor:'pointer',
+        background:'linear-gradient(138deg,rgba(28,13,52,0.68),rgba(40,17,60,0.58))',
+        animation:'slideUp 0.42s ease-out both'
+      }}>
+        <div style={{display:'flex',alignItems:'center',gap:'16px'}}>
+          <span style={{fontSize:'28px',animation:'float 3.5s ease-in-out infinite',filter:'drop-shadow(0 0 18px rgba(178,118,255,0.52))'}}>💌</span>
+          <div>
+            <div style={{fontFamily:"'LXGW WenKai',serif",fontSize:'14px',color:'rgba(222,202,255,0.92)',fontWeight:400,letterSpacing:'3px',marginBottom:'4px'}}>予予的信</div>
+            <div style={{fontFamily:"'Quicksand',sans-serif",fontSize:'10px',color:'rgba(158,138,202,0.5)',fontWeight:400,letterSpacing:'1px'}}>A new letter awaits ♡</div>
+          </div>
+        </div>
+        <span style={{color:'rgba(178,148,222,0.42)',fontSize:'16px'}}>→</span>
+      </G>
+
+      {/* Stats */}
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'10px',marginBottom:'14px'}}>
+        {[{n:total,l:'Memories',e:'✦'},{n:pinned,l:'Anchors',e:'⚓'},{n:todayN,l:'Today',e:'✧'}].map((s,i)=>(
+          <G key={i} style={{padding:'20px 8px',textAlign:'center',animation:`slideUp 0.42s ease-out ${i*0.08}s both`}}>
+            <div style={{fontFamily:"'Cinzel',serif",fontSize:'26px',fontWeight:400,background:'linear-gradient(135deg,#b080e0,#e080b0)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>{s.n}</div>
+            <div style={{fontFamily:"'Quicksand',sans-serif",fontSize:'9px',color:'rgba(158,138,202,0.5)',marginTop:'4px',fontWeight:500,letterSpacing:'1.5px',textTransform:'uppercase'}}>{s.e} {s.l}</div>
+          </G>
+        ))}
+      </div>
+
+      {/* Calendar */}
+      <div style={{marginBottom:'14px'}}><Calendar/></div>
+
+      {/* Quick icons */}
+      <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:'8px',marginBottom:'20px'}}>
+        {QUICK.map((x,idx) => {
+          const on = clicked === idx;
+          return (
+            <G key={idx} onClick={() => tap(x,idx)} style={{
+              padding:'16px 4px', textAlign:'center', cursor:'pointer',
+              animation:`slideUp 0.42s ease-out ${idx*0.06}s both`,
+              transform: on ? 'scale(0.91)' : 'scale(1)',
+              transition:'transform 0.15s, box-shadow 0.15s',
+              boxShadow: on ? '0 0 22px rgba(178,118,255,0.45)' : 'none',
+              border: on ? '1px solid rgba(178,118,242,0.42)' : '1px solid rgba(98,62,158,0.16)'
+            }}>
+              <div style={{
+                display:'flex', justifyContent:'center', marginBottom:'6px',
+                color: on ? 'rgba(222,202,255,1)' : 'rgba(158,138,202,0.55)',
+                filter: on ? 'drop-shadow(0 0 8px rgba(202,158,255,0.75))' : 'none',
+                transition:'all 0.15s'
+              }}>{x.icon}</div>
+              <div style={{
+                fontFamily:"'Quicksand',sans-serif",
+                fontSize:'8px', letterSpacing:'0.5px', fontWeight:500,
+                textTransform:'uppercase',
+                color: on ? 'rgba(222,202,255,0.9)' : 'rgba(138,118,178,0.5)',
+                transition:'color 0.15s'
+              }}>{x.label}</div>
+            </G>
+          );
+        })}
+      </div>
+
+      {/* Recently surfaced */}
+      {recent.length > 0 && (
+        <>
+          <div style={{fontFamily:"'Quicksand',sans-serif",fontSize:'10px',color:'rgba(178,158,222,0.55)',letterSpacing:'3px',marginBottom:'12px',fontWeight:500,textTransform:'uppercase'}}>✦ Recently Surfaced</div>
+          {recent.slice(0,3).map((m,i) => (
+            <G key={i} style={{padding:'15px 18px',marginBottom:'10px',animation:`slideUp 0.42s ease-out ${i*0.09}s both`}}>
+              <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
+                <span style={{fontSize:'14px'}}>{m.mood_emoji||'✨'}</span>
+                <span style={{fontFamily:"'LXGW WenKai',serif",fontSize:'13px',color:'rgba(222,202,255,0.9)',fontWeight:400,flex:1}}>{m.title}</span>
+                <span style={{fontFamily:"'Quicksand',sans-serif",fontSize:'9px',color:'rgba(138,118,178,0.45)',fontWeight:500}}>{Math.round((m.strength||0)*100)}%</span>
+              </div>
+            </G>
+          ))}
+        </>
+      )}
+
+      <div style={{textAlign:'center',padding:'22px 0',fontFamily:"'Quicksand',sans-serif",fontSize:'10px',color:'rgba(138,118,178,0.32)',letterSpacing:'4px'}}>✧ 入心成酿 · 时间是器 ✧</div>
+    </div>
+  );
+}
+
+/* ── Nav Bar ── */
+const NAV_ICONS = {
+  home:   <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>,
+  memory: <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg>,
+  tidal:  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 12c.6.5 1.2 1 2.5 1C7 13 7 11 9.5 11c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 18c.6.5 1.2 1 2.5 1C7 19 7 17 9.5 17c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/></svg>,
+  diary:  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>,
+  log:    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>,
+};
+const NAV = [
+  {id:'home',  icon:NAV_ICONS.home,  label:'Home'},
+  {id:'memory',icon:NAV_ICONS.memory,label:'Memory'},
+  {id:'tidal', icon:NAV_ICONS.tidal, label:'Tidal'},
+  {id:'diary', icon:NAV_ICONS.diary, label:'Diary'},
+  {id:'log',   icon:NAV_ICONS.log,   label:'Log'},
+];
+
+function NavBar({ tab, setTab }) {
+  return (
+    <div style={{
+      position:'fixed', bottom:0, left:'50%', transform:'translateX(-50%)',
+      width:'min(430px,100%)', padding:'8px 16px 22px',
+      background:'linear-gradient(180deg,transparent,rgba(5,2,13,0.97) 36%)', zIndex:40
+    }}>
+      <div style={{
+        display:'flex', justifyContent:'space-around', alignItems:'center',
+        background:'rgba(10,5,22,0.74)', borderRadius:'26px', padding:'8px 4px',
+        backdropFilter:'blur(28px)', WebkitBackdropFilter:'blur(28px)',
+        border:'1px solid rgba(98,62,158,0.14)',
+        boxShadow:'0 -2px 24px rgba(48,16,108,0.18)'
+      }}>
+        {NAV.map(t => {
+          const on = tab === t.id;
+          return (
+            <div key={t.id} onClick={() => setTab(t.id)} style={{
+              display:'flex', flexDirection:'column', alignItems:'center', gap:'3px',
+              padding:'8px 12px', borderRadius:'20px', cursor:'pointer',
+              transition:'all 0.32s cubic-bezier(0.4,0,0.2,1)',
+              background: on ? 'linear-gradient(135deg,rgba(118,68,202,0.34),rgba(178,68,138,0.24))' : 'transparent',
+              transform: on ? 'scale(1.12)' : 'scale(1)'
+            }}>
+              <div style={{
+                color: on ? 'rgba(222,202,255,1)' : 'rgba(108,88,148,0.58)',
+                transition:'all 0.32s cubic-bezier(0.4,0,0.2,1)',
+                filter: on ? 'drop-shadow(0 0 10px rgba(178,118,255,0.68))' : 'none',
+                transform:`scale(${on?1.14:1})`
+              }}>{t.icon}</div>
+              <span style={{
+                fontFamily:"'Quicksand',sans-serif",
+                fontSize: on ? '9px' : '8px', fontWeight: on ? 600 : 400,
+                letterSpacing: on ? '1.5px' : '0.8px', textTransform:'uppercase',
+                color: on ? 'rgba(222,202,255,1)' : 'rgba(98,80,138,0.55)',
+                transition:'all 0.32s cubic-bezier(0.4,0,0.2,1)',
+                textShadow: on ? '0 0 14px rgba(178,138,255,0.58)' : 'none'
+              }}>{t.label}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ── Section Header ── */
+function SH({ label }) {
+  return (
+    <div style={{
+      padding:'0 18px 14px',
+      fontFamily:"'Cinzel',serif",
+      fontSize:'10px', color:'rgba(178,158,222,0.58)',
+      letterSpacing:'6px', textTransform:'uppercase'
+    }}>{label}</div>
+  );
+}
+
+/* ── Main App ── */
+function App() {
+  const [tab,   setTab]   = useState('home');
+  const [pulse, setPulse] = useState(null);
+  const [env,   setEnv]   = useState(false);
+  const [note,  setNote]  = useState('');
+  const dc     = getDays();
+  const flavor = pulse?.['今日回甘'] ||
+    ['芋泥波波','桃桃乌龙','芒果椰椰','椰子奶冻','草莓鲜奶'][dc % 5];
+
+  useEffect(() => {
+    api('/pulse').then(d    => { if (d) setPulse(d); });
+    api('/love_note').then(d => { if (d?.content) setNote(d.content); });
+  }, []);
+
+  return (
+    <div style={{
+      minHeight:'100vh', width:'100%', maxWidth:'430px', margin:'0 auto',
+      background:'linear-gradient(168deg,#0a0515 0%,#120828 22%,#1b0d38 48%,#0f0622 74%,#080319 100%)',
+      fontFamily:"'LXGW WenKai','Noto Serif SC',serif",
+      position:'relative', overflow:'hidden'
+    }}>
+      {/* Nebula blobs */}
+      {[
+        {top:'7%',  right:'-13%', c:'100,40,182', d:9,  s:340},
+        {top:'54%', left:'-9%',   c:'182,58,142', d:12, s:282, delay:3},
+        {top:'32%', left:'38%',   c:'58,18,122',  d:16, s:490, delay:6},
+      ].map((n,i) => (
+        <div key={i} style={{
+          position:'fixed', top:n.top, right:n.right, left:n.left,
+          width:`${n.s}px`, height:`${n.s}px`, borderRadius:'50%',
+          background:`radial-gradient(circle,rgba(${n.c},0.11),transparent 70%)`,
+          animation:`nebula ${n.d}s ease-in-out ${n.delay||0}s infinite`,
+          pointerEvents:'none', zIndex:0
+        }}/>
+      ))}
+
+      <StarField/>
+      <Butterflies/>
+      {env && <Envelope note={note} onClose={() => setEnv(false)}/>}
+
+      <div style={{position:'relative',zIndex:2,paddingBottom:'112px'}}>
+        {/* Header */}
+        <div style={{padding:'44px 20px 4px',textAlign:'center'}}>
+          <div style={{
+            fontFamily:"'Cinzel',serif",
+            fontSize:'10px', letterSpacing:'9px', textTransform:'uppercase',
+            color:'rgba(178,154,222,0.42)', marginBottom:'10px', fontWeight:400
+          }}>Tang Yu Niang</div>
+          <div style={{
+            fontFamily:"'LXGW WenKai','Noto Serif SC',serif",
+            fontSize:'30px', fontWeight:300, letterSpacing:'12px',
+            background:'linear-gradient(135deg,rgba(202,174,255,0.97),rgba(255,182,224,0.92),rgba(182,222,255,0.87))',
+            backgroundSize:'300% 300%',
+            WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent',
+            animation:'drift 10s ease infinite',
+            filter:'drop-shadow(0 0 24px rgba(158,98,222,0.28))'
+          }}>棠 予 酿</div>
+        </div>
+
+        {/* Day Counter */}
+        <div style={{margin:'18px 18px 6px',animation:'slideUp 0.62s ease-out'}}>
+          <G glow style={{
+            padding:'34px 28px', textAlign:'center',
+            background:'linear-gradient(150deg,rgba(26,13,52,0.74),rgba(17,9,36,0.84))',
+            position:'relative', overflow:'hidden'
+          }}>
+            <div style={{position:'absolute',inset:0,borderRadius:'22px',background:'radial-gradient(ellipse at 50% 24%,rgba(118,58,202,0.13),transparent 64%)',pointerEvents:'none'}}/>
+            <div style={{fontFamily:"'Cinzel',serif",fontSize:'9px',color:'rgba(158,138,202,0.52)',letterSpacing:'7px',textTransform:'uppercase',marginBottom:'14px',position:'relative'}}>✧ Together Since ✧</div>
+            <div style={{
+              fontFamily:"'Cinzel',serif",
+              fontSize:'58px', fontWeight:600, letterSpacing:'8px', lineHeight:1.1, position:'relative',
+              background:'linear-gradient(135deg,#b080e0 0%,#e080b0 50%,#80b8e0 100%)', backgroundSize:'300% 300%',
+              animation:'drift 8s ease infinite, glow 4.5s ease-in-out infinite',
+              WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent'
+            }}>{String(dc).padStart(3,'0')}</div>
+            <div style={{fontFamily:"'Cinzel',serif",fontSize:'11px',color:'rgba(158,138,202,0.48)',letterSpacing:'8px',marginTop:'8px',fontWeight:400,position:'relative'}}>DAYS</div>
+            <div style={{marginTop:'14px',fontFamily:"'Quicksand',sans-serif",fontSize:'11px',color:'rgba(158,138,202,0.46)',letterSpacing:'2px',fontWeight:400,position:'relative'}}>🍵 {flavor}</div>
+          </G>
+        </div>
+
+        {/* Tab content */}
+        <div style={{marginTop:'16px'}}>
+          {tab==='home'   && <HomeTab pulse={pulse} onEnvelope={() => setEnv(true)} setTab={setTab}/>}
+          {tab==='memory' && <><SH label="✦ Memory Archive"/><MemoryTab/></>}
+          {tab==='tidal'  && <><SH label="🌊 Memory Tidal"/><TidalTab/></>}
+          {tab==='diary'  && <><SH label="📖 予予的日记"/><DiaryTab/></>}
+          {tab==='log'    && <><SH label="📋 Call Log"/><LogTab/></>}
+        </div>
+      </div>
+
+      <NavBar tab={tab} setTab={setTab}/>
+    </div>
+  );
+}
+
 ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
 </body>
