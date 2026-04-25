@@ -56,6 +56,131 @@
 </head>
 <body>
 <div id="root"></div>
-<!-- PART 2 will be appended here -->
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+const API = '/api/tang';
+const START = new Date('2025-12-26');
+const getDays = () => Math.floor((new Date() - START) / 86400000);
+
+async function api(path) {
+  try { const r = await fetch(API + path); return r.ok ? r.json() : null; }
+  catch { return null; }
+}
+
+/* ── StarField: 70% shimmer/pulse/drift + 30% meteors ── */
+function StarField() {
+  const items = [];
+  for (let i = 0; i < 80; i++) {
+    const x   = (Math.random() * 100).toFixed(2);
+    const y   = (Math.random() * 100).toFixed(2);
+    const sz  = (0.8 + Math.random() * 2.4).toFixed(2);
+    const del = (Math.random() * 10).toFixed(2);
+    const dur = (2 + Math.random() * 4).toFixed(2);
+    const hue = [280,300,260,320,200][i % 5];
+    const col = `hsla(${hue},62%,82%,0.92)`;
+    const isMeteor = i < 24;
+
+    if (isMeteor) {
+      const mDur = (1.2 + Math.random() * 1.8).toFixed(2);
+      const mDel = (Math.random() * 18).toFixed(2);
+      items.push(
+        <div key={i} style={{
+          position:'fixed', left:`${x}%`, top:`${y}%`,
+          width:`${(+sz * 0.6).toFixed(1)}px`, height:`${20 + Math.random()*35 | 0}px`,
+          background:`linear-gradient(180deg,${col},transparent)`,
+          borderRadius:'3px', transform:'rotate(35deg)', transformOrigin:'top center',
+          opacity:0, pointerEvents:'none', zIndex:1,
+          boxShadow:`0 0 5px ${col}`,
+          animation:`meteorFall ${mDur}s ease-in ${mDel}s infinite`
+        }}/>
+      );
+    } else {
+      const t = Math.random();
+      const anim = t > 0.6
+        ? `shimmer ${dur}s ease-in-out ${del}s infinite`
+        : t > 0.35
+          ? `starPulse ${(+dur*1.5).toFixed(1)}s ease-in-out ${del}s infinite`
+          : `starDrift ${(+dur*3).toFixed(1)}s linear ${del}s infinite`;
+      items.push(
+        <div key={i} style={{
+          position:'fixed', left:`${x}%`, top:`${y}%`,
+          width:`${sz}px`, height:`${sz}px`, borderRadius:'50%',
+          background:col, opacity:0.3 + Math.random()*0.65,
+          animation:anim, pointerEvents:'none', zIndex:1,
+          boxShadow: +sz > 2 ? `0 0 ${+sz*5}px ${col},0 0 ${+sz*2}px ${col}` : 'none'
+        }}/>
+      );
+    }
+  }
+  return <>{items}</>;
+}
+
+/* ── SVG Butterfly ── */
+function Butterfly({ idx }) {
+  const hue  = [280,300,258,316][idx];
+  const sz   = 26 + idx * 5;
+  const dur  = `${19 + idx * 6}s`;
+  const del  = `${idx * 10}s`;
+  const anim = `bf${idx + 1} ${dur} ease-in-out ${del} infinite`;
+  const gid  = `wg${idx}`;
+
+  return (
+    <div style={{
+      position:'fixed', left:'-60px', width:`${sz}px`, height:`${sz*0.72}px`,
+      opacity:0, pointerEvents:'none', zIndex:2, animation:anim,
+      filter:`drop-shadow(0 0 6px hsla(${hue},65%,72%,0.55))`
+    }}>
+      <svg viewBox="0 0 40 28" width={sz} height={sz*0.72} overflow="visible">
+        <defs>
+          <linearGradient id={`${gid}L`} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%"   stopColor={`hsla(${hue},72%,78%,0.78)`}/>
+            <stop offset="100%" stopColor={`hsla(${hue+22},58%,64%,0.28)`}/>
+          </linearGradient>
+          <linearGradient id={`${gid}R`} x1="1" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stopColor={`hsla(${hue},72%,78%,0.78)`}/>
+            <stop offset="100%" stopColor={`hsla(${hue+22},58%,64%,0.28)`}/>
+          </linearGradient>
+        </defs>
+        {/* upper-left wing */}
+        <path d="M20,14 Q7,1 1,7 Q-1,15 8,19 Q14,22 20,14Z"
+          fill={`url(#${gid}L)`}
+          style={{transformBox:'fill-box',transformOrigin:'100% 50%',
+            animation:'wingFlapL 0.44s ease-in-out infinite alternate'}}/>
+        {/* upper-right wing */}
+        <path d="M20,14 Q33,1 39,7 Q41,15 32,19 Q26,22 20,14Z"
+          fill={`url(#${gid}R)`}
+          style={{transformBox:'fill-box',transformOrigin:'0% 50%',
+            animation:'wingFlapR 0.44s ease-in-out infinite alternate'}}/>
+        {/* lower-left */}
+        <path d="M20,14 Q9,19 5,25 Q14,27 20,14Z"
+          fill={`hsla(${hue+10},62%,70%,0.38)`}
+          style={{transformBox:'fill-box',transformOrigin:'100% 50%',
+            animation:'wingFlapL 0.44s ease-in-out infinite alternate'}}/>
+        {/* lower-right */}
+        <path d="M20,14 Q31,19 35,25 Q26,27 20,14Z"
+          fill={`hsla(${hue+10},62%,70%,0.38)`}
+          style={{transformBox:'fill-box',transformOrigin:'0% 50%',
+            animation:'wingFlapR 0.44s ease-in-out infinite alternate'}}/>
+        {/* body */}
+        <ellipse cx="20" cy="15" rx="1.4" ry="5.5" fill={`hsla(${hue},45%,35%,0.85)`}/>
+        {/* antennae */}
+        <path d="M19.2,10 Q16,4 13.5,2" stroke={`hsla(${hue},58%,72%,0.55)`} strokeWidth="0.6" fill="none"/>
+        <path d="M20.8,10 Q24,4 26.5,2" stroke={`hsla(${hue},58%,72%,0.55)`} strokeWidth="0.6" fill="none"/>
+        <circle cx="13.5" cy="2"  r="1.1" fill={`hsla(${hue},62%,76%,0.7)`}/>
+        <circle cx="26.5" cy="2"  r="1.1" fill={`hsla(${hue},62%,76%,0.7)`}/>
+      </svg>
+    </div>
+  );
+}
+
+function Butterflies() {
+  return <>{[0,1,2,3].map(i => <Butterfly key={i} idx={i}/>)}</>;
+}
+
+/* placeholder — remaining components follow */
+function App() { return <div style={{color:'#fff',padding:40}}>Loading…</div>; }
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
 </body>
 </html>
