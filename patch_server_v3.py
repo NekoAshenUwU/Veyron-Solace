@@ -100,7 +100,7 @@ async def tang_memories_http(request):
         for r in rows:
             d = dict(r)
             imp = d.get("importance") or 5
-            d["strength"] = round(imp / 5.0, 3)
+            d["strength"] = round(min(imp / 5.0, 1.0), 3)
             mems.append(d)
         return JSONResponse({"memories": mems})
     except Exception as e:
