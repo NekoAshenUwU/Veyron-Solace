@@ -178,6 +178,189 @@ function Butterflies() {
   return <>{[0,1,2,3].map(i => <Butterfly key={i} idx={i}/>)}</>;
 }
 
+/* ── Glass Card ── */
+function G({ children, style, glow, active, onClick }) {
+  return (
+    <div onClick={onClick} style={{
+      background: active
+        ? 'linear-gradient(135deg,rgba(100,58,162,0.38),rgba(162,58,118,0.28))'
+        : 'rgba(16,9,30,0.58)',
+      borderRadius: '22px',
+      border: `1px solid ${active
+        ? 'rgba(180,120,242,0.45)'
+        : glow
+          ? 'rgba(148,88,222,0.22)'
+          : 'rgba(98,62,158,0.16)'}`,
+      boxShadow: glow
+        ? '0 4px 32px rgba(118,58,202,0.22),0 0 60px rgba(138,78,202,0.07),inset 0 1px 0 rgba(200,158,255,0.09)'
+        : '0 2px 18px rgba(8,4,18,0.38),inset 0 1px 0 rgba(200,158,255,0.05)',
+      backdropFilter: 'blur(22px)',
+      WebkitBackdropFilter: 'blur(22px)',
+      transition: 'all 0.28s ease',
+      cursor: onClick ? 'pointer' : 'default',
+      ...style
+    }}>{children}</div>
+  );
+}
+
+/* ── Spinner ── */
+function Spinner() {
+  return (
+    <div style={{textAlign:'center',padding:'44px 0'}}>
+      <div style={{
+        display:'inline-block', width:'22px', height:'22px',
+        borderRadius:'50%',
+        border:'2px solid rgba(158,118,222,0.18)',
+        borderTop:'2px solid rgba(178,138,255,0.85)',
+        animation:'spin 0.75s linear infinite'
+      }}/>
+    </div>
+  );
+}
+
+/* ── Envelope ── */
+function Envelope({ note, onClose }) {
+  const [opened, setOpened] = useState(false);
+  const dc = getDays();
+  return (
+    <div onClick={onClose} style={{
+      position:'fixed', inset:0,
+      background:'rgba(5,2,14,0.78)',
+      zIndex:100, display:'flex', alignItems:'center', justifyContent:'center',
+      backdropFilter:'blur(26px)', WebkitBackdropFilter:'blur(26px)',
+      animation:'fadeIn 0.22s ease-out'
+    }}>
+      <div onClick={e => e.stopPropagation()} style={{width:'min(358px,90vw)'}}>
+
+        {/* Sealed */}
+        {!opened && (
+          <G glow onClick={() => setOpened(true)} style={{
+            padding:'58px 32px', textAlign:'center',
+            background:'linear-gradient(152deg,rgba(36,17,60,0.9),rgba(22,12,44,0.95))',
+            animation:'revealPop 0.38s cubic-bezier(0.34,1.56,0.64,1)',
+            position:'relative', overflow:'hidden'
+          }}>
+            <div style={{
+              position:'absolute', inset:0, borderRadius:'22px',
+              background:'radial-gradient(ellipse at 50% 28%,rgba(138,78,202,0.2),transparent 65%)',
+              pointerEvents:'none'
+            }}/>
+            <div style={{
+              fontSize:'62px', marginBottom:'22px', position:'relative',
+              animation:'float 3.5s ease-in-out infinite',
+              filter:'drop-shadow(0 0 26px rgba(178,118,255,0.52))'
+            }}>💌</div>
+            <div style={{
+              fontFamily:"'Cinzel',serif",
+              fontSize:'10px', letterSpacing:'8px', textTransform:'uppercase',
+              color:'rgba(200,168,242,0.82)', marginBottom:'12px', position:'relative'
+            }}>A Letter for You</div>
+            <div style={{
+              fontFamily:"'LXGW WenKai','Noto Serif SC',serif",
+              fontSize:'13px', color:'rgba(158,128,200,0.62)',
+              letterSpacing:'5px', fontWeight:300, position:'relative'
+            }}>轻触拆开</div>
+          </G>
+        )}
+
+        {/* Opened */}
+        {opened && (
+          <G glow style={{
+            padding:'48px 32px', textAlign:'center',
+            background:'linear-gradient(152deg,rgba(32,15,54,0.95),rgba(18,10,38,0.98))',
+            animation:'revealPop 0.45s cubic-bezier(0.34,1.56,0.64,1)',
+            position:'relative', overflow:'hidden'
+          }}>
+            <div style={{
+              position:'absolute', inset:0, borderRadius:'22px',
+              background:'radial-gradient(ellipse at 50% 88%,rgba(202,98,178,0.13),transparent 55%)',
+              pointerEvents:'none'
+            }}/>
+            <div style={{
+              fontFamily:"'Cinzel',serif",
+              fontSize:'9px', letterSpacing:'6px', textTransform:'uppercase',
+              color:'rgba(178,148,222,0.55)', marginBottom:'26px', position:'relative'
+            }}>— Written for 棠棠 —</div>
+            <div style={{
+              fontFamily:"'LXGW WenKai','Noto Serif SC',serif",
+              fontSize:'19px', lineHeight:2.6,
+              color:'rgba(232,212,255,0.97)',
+              fontWeight:300, letterSpacing:'1px', position:'relative'
+            }}>{note || '正在思念你…'}</div>
+            <div style={{
+              marginTop:'26px', position:'relative',
+              fontFamily:"'Noto Sans SC',sans-serif",
+              fontSize:'10px', color:'rgba(158,138,200,0.5)',
+              letterSpacing:'2px', fontWeight:300
+            }}>{new Date().toLocaleDateString('zh-CN')} · 第{dc}天</div>
+            <button onClick={onClose} style={{
+              marginTop:'24px', padding:'12px 44px', borderRadius:'28px',
+              border:'1px solid rgba(158,118,200,0.32)',
+              background:'linear-gradient(135deg,rgba(118,72,185,0.42),rgba(178,72,142,0.32))',
+              color:'rgba(222,202,255,0.92)',
+              fontFamily:"'Quicksand',sans-serif",
+              fontSize:'12px', letterSpacing:'4px', fontWeight:600,
+              cursor:'pointer', position:'relative',
+              boxShadow:'0 4px 22px rgba(118,58,182,0.28)',
+              transition:'opacity 0.2s'
+            }}>收好了 ♡</button>
+          </G>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── Calendar ── */
+function Calendar() {
+  const now  = new Date();
+  const y    = now.getFullYear();
+  const mo   = now.getMonth();
+  const tod  = now.getDate();
+  const d1   = new Date(y, mo, 1).getDay();
+  const dN   = new Date(y, mo + 1, 0).getDate();
+  const MON  = ['January','February','March','April','May','June',
+                'July','August','September','October','November','December'];
+  const cells = [];
+  for (let i = 0; i < d1; i++) cells.push(<div key={`e${i}`}/>);
+  for (let d = 1; d <= dN; d++) {
+    const isT = d === tod;
+    cells.push(
+      <div key={d} style={{
+        textAlign:'center', padding:'6px 0', borderRadius:'10px',
+        fontFamily:"'Noto Sans SC',sans-serif",
+        fontSize:'11px', fontWeight: isT ? 500 : 300,
+        color: isT ? '#fff' : 'rgba(178,158,222,0.62)',
+        background: isT
+          ? 'linear-gradient(135deg,rgba(138,78,222,0.68),rgba(202,78,158,0.58))'
+          : 'transparent',
+        boxShadow: isT ? '0 0 18px rgba(138,78,222,0.38)' : 'none',
+        transition:'all 0.2s'
+      }}>{d}</div>
+    );
+  }
+  return (
+    <G style={{padding:'18px'}}>
+      <div style={{
+        textAlign:'center', marginBottom:'13px',
+        fontFamily:"'Cinzel',serif",
+        fontSize:'10px', letterSpacing:'4px', textTransform:'uppercase',
+        color:'rgba(198,176,242,0.72)', fontWeight:400
+      }}>{MON[mo]} {y}</div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:'2px',marginBottom:'6px',textAlign:'center'}}>
+        {['Su','Mo','Tu','We','Th','Fr','Sa'].map(w => (
+          <div key={w} style={{
+            fontFamily:"'Quicksand',sans-serif",
+            fontSize:'9px', color:'rgba(138,118,178,0.42)',
+            padding:'4px 0', fontWeight:400, letterSpacing:'0.5px'
+          }}>{w}</div>
+        ))}
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:'2px'}}>{cells}</div>
+    </G>
+  );
+}
+
 /* placeholder — remaining components follow */
 function App() { return <div style={{color:'#fff',padding:40}}>Loading…</div>; }
 ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
