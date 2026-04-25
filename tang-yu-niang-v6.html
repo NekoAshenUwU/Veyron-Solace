@@ -61,8 +61,12 @@
 const { useState, useEffect, useRef } = React;
 
 const API = '/api/tang';
-const START = new Date('2025-12-26');
-const getDays = () => Math.floor((new Date() - START) / 86400000);
+const START = new Date(2025, 11, 26); // Dec 26 本地午夜
+const getDays = () => {
+  const t = new Date();
+  const today = new Date(t.getFullYear(), t.getMonth(), t.getDate());
+  return Math.floor((today - START) / 86400000);
+};
 
 async function api(path) {
   try { const r = await fetch(API + path, {method:'POST'}); return r.ok ? r.json() : null; }
