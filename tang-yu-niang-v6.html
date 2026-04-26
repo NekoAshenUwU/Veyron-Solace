@@ -1,0 +1,1736 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <meta name="theme-color" content="#0a0515">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>棠予酿</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Quicksand:wght@300;400;500;600&family=Noto+Sans+SC:wght@300;400&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css" rel="stylesheet">
+
+  <!-- React 18 + Babel -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+    html, body { height:100%; overflow-x:hidden; background:#0a0515; }
+    input, button { outline:none; -webkit-appearance:none; font-family:inherit; }
+    ::-webkit-scrollbar { display:none; }
+
+    /* ── Animations ── */
+    @keyframes shimmer    { 0%,100%{opacity:0.25} 50%{opacity:1} }
+    @keyframes starPulse  { 0%,100%{opacity:0.15;transform:scale(1)} 50%{opacity:1;transform:scale(1.8)} }
+    @keyframes starDrift  { 0%{transform:translate(0,0)} 30%{transform:translate(5px,-10px)} 60%{transform:translate(-4px,-3px)} 100%{transform:translate(0,0)} }
+
+    @keyframes meteorFall {
+      0%   { opacity:1; transform:translate(0,0) rotate(35deg); }
+      100% { opacity:0; transform:translate(110px,180px) rotate(35deg); }
+    }
+
+    @keyframes bf1 { 0%{left:-60px;top:22%;opacity:0} 8%{opacity:0.5} 35%{top:16%} 65%{top:26%} 88%{opacity:0.45} 100%{left:110%;top:20%;opacity:0} }
+    @keyframes bf2 { 0%{left:-60px;top:38%;opacity:0} 8%{opacity:0.45} 35%{top:44%} 65%{top:32%} 88%{opacity:0.4}  100%{left:110%;top:36%;opacity:0} }
+    @keyframes bf3 { 0%{left:-60px;top:14%;opacity:0} 8%{opacity:0.5} 35%{top:20%} 65%{top:11%} 88%{opacity:0.4}  100%{left:110%;top:16%;opacity:0} }
+    @keyframes bf4 { 0%{left:-60px;top:52%;opacity:0} 8%{opacity:0.4} 35%{top:46%} 65%{top:56%} 88%{opacity:0.35} 100%{left:110%;top:50%;opacity:0} }
+
+    @keyframes wingFlapL { 0%{transform:rotateY(0deg)}   100%{transform:rotateY(55deg)} }
+    @keyframes wingFlapR { 0%{transform:rotateY(0deg)}   100%{transform:rotateY(-55deg)} }
+
+    @keyframes float     { 0%,100%{transform:translateY(0)}   50%{transform:translateY(-8px)} }
+    @keyframes fadeIn    { from{opacity:0} to{opacity:1} }
+    @keyframes slideUp   { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes revealPop { 0%{opacity:0;transform:scale(0.88) translateY(8px)} 100%{opacity:1;transform:scale(1) translateY(0)} }
+    @keyframes drift     { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+    @keyframes nebula    { 0%,100%{opacity:0.05;transform:scale(1)} 50%{opacity:0.13;transform:scale(1.06)} }
+    @keyframes glow      { 0%,100%{text-shadow:0 0 30px rgba(176,128,224,.3)} 50%{text-shadow:0 0 60px rgba(176,128,224,.65),0 0 100px rgba(224,128,176,.25)} }
+    @keyframes spin      { to{transform:rotate(360deg)} }
+    @keyframes bounce    { 0%,100%{transform:scale(1)} 40%{transform:scale(0.92)} 70%{transform:scale(1.06)} }
+    @keyframes heartBeat { 0%,100%{transform:scale(1)} 15%{transform:scale(1.28)} 30%{transform:scale(1)} 45%{transform:scale(1.16)} 60%{transform:scale(1)} }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+const API = '/api/tang';
+const START = new Date(2025, 11, 26); // Dec 26 本地午夜
+const getDays = () => {
+  const t = new Date();
+  const today = new Date(t.getFullYear(), t.getMonth(), t.getDate());
+  return Math.floor((today - START) / 86400000);
+};
+
+async function api(path) {
+  try { const r = await fetch(API + path, {method:'POST'}); return r.ok ? r.json() : null; }
+  catch { return null; }
+}
+
+async function apiPost(path, body) {
+  try {
+    const r = await fetch(API + path, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    return r.ok ? r.json() : null;
+  } catch { return null; }
+}
+
+/* ── StarField: 70% shimmer/pulse/drift + 30% meteors ── */
+function StarField() {
+  const items = [];
+  for (let i = 0; i < 80; i++) {
+    const x   = (Math.random() * 100).toFixed(2);
+    const y   = (Math.random() * 100).toFixed(2);
+    const sz  = (0.8 + Math.random() * 2.4).toFixed(2);
+    const del = (Math.random() * 10).toFixed(2);
+    const dur = (2 + Math.random() * 4).toFixed(2);
+    const hue = [280,300,260,320,200][i % 5];
+    const col = `hsla(${hue},62%,82%,0.92)`;
+    const isMeteor = i < 8;
+
+    if (isMeteor) {
+      const mDur = (1.2 + Math.random() * 1.8).toFixed(2);
+      const mDel = (Math.random() * 18).toFixed(2);
+      items.push(
+        <div key={i} style={{
+          position:'fixed', left:`${x}%`, top:`${y}%`,
+          width:`${(+sz * 0.6).toFixed(1)}px`, height:`${20 + Math.random()*35 | 0}px`,
+          background:`linear-gradient(180deg,${col},transparent)`,
+          borderRadius:'3px', transform:'rotate(35deg)', transformOrigin:'top center',
+          opacity:0, pointerEvents:'none', zIndex:1,
+          boxShadow:`0 0 5px ${col}`,
+          animation:`meteorFall ${mDur}s ease-in ${mDel}s infinite`
+        }}/>
+      );
+    } else {
+      const t = Math.random();
+      const anim = t > 0.6
+        ? `shimmer ${dur}s ease-in-out ${del}s infinite`
+        : t > 0.35
+          ? `starPulse ${(+dur*1.5).toFixed(1)}s ease-in-out ${del}s infinite`
+          : `starDrift ${(+dur*3).toFixed(1)}s linear ${del}s infinite`;
+      items.push(
+        <div key={i} style={{
+          position:'fixed', left:`${x}%`, top:`${y}%`,
+          width:`${sz}px`, height:`${sz}px`, borderRadius:'50%',
+          background:col, opacity:0.3 + Math.random()*0.65,
+          animation:anim, pointerEvents:'none', zIndex:1,
+          boxShadow: +sz > 2 ? `0 0 ${+sz*5}px ${col},0 0 ${+sz*2}px ${col}` : 'none'
+        }}/>
+      );
+    }
+  }
+  return <>{items}</>;
+}
+
+/* ── SVG Butterfly ── */
+function Butterfly({ idx }) {
+  const hue  = [280,300,258,316][idx];
+  const sz   = 26 + idx * 5;
+  const dur  = `${19 + idx * 6}s`;
+  const del  = `${idx * 10}s`;
+  const anim = `bf${idx + 1} ${dur} ease-in-out ${del} infinite`;
+  const gid  = `wg${idx}`;
+
+  return (
+    <div style={{
+      position:'fixed', left:'-60px', width:`${sz}px`, height:`${sz*0.72}px`,
+      opacity:0, pointerEvents:'none', zIndex:2, animation:anim,
+      filter:`drop-shadow(0 0 6px hsla(${hue},65%,72%,0.55))`
+    }}>
+      <svg viewBox="0 0 40 28" width={sz} height={sz*0.72} overflow="visible">
+        <defs>
+          <linearGradient id={`${gid}L`} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%"   stopColor={`hsla(${hue},72%,78%,0.78)`}/>
+            <stop offset="100%" stopColor={`hsla(${hue+22},58%,64%,0.28)`}/>
+          </linearGradient>
+          <linearGradient id={`${gid}R`} x1="1" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stopColor={`hsla(${hue},72%,78%,0.78)`}/>
+            <stop offset="100%" stopColor={`hsla(${hue+22},58%,64%,0.28)`}/>
+          </linearGradient>
+        </defs>
+        {/* upper-left wing */}
+        <path d="M20,14 Q7,1 1,7 Q-1,15 8,19 Q14,22 20,14Z"
+          fill={`url(#${gid}L)`}
+          style={{transformBox:'fill-box',transformOrigin:'100% 50%',
+            animation:'wingFlapL 0.44s ease-in-out infinite alternate'}}/>
+        {/* upper-right wing */}
+        <path d="M20,14 Q33,1 39,7 Q41,15 32,19 Q26,22 20,14Z"
+          fill={`url(#${gid}R)`}
+          style={{transformBox:'fill-box',transformOrigin:'0% 50%',
+            animation:'wingFlapR 0.44s ease-in-out infinite alternate'}}/>
+        {/* lower-left */}
+        <path d="M20,14 Q9,19 5,25 Q14,27 20,14Z"
+          fill={`hsla(${hue+10},62%,70%,0.38)`}
+          style={{transformBox:'fill-box',transformOrigin:'100% 50%',
+            animation:'wingFlapL 0.44s ease-in-out infinite alternate'}}/>
+        {/* lower-right */}
+        <path d="M20,14 Q31,19 35,25 Q26,27 20,14Z"
+          fill={`hsla(${hue+10},62%,70%,0.38)`}
+          style={{transformBox:'fill-box',transformOrigin:'0% 50%',
+            animation:'wingFlapR 0.44s ease-in-out infinite alternate'}}/>
+        {/* body */}
+        <ellipse cx="20" cy="15" rx="1.4" ry="5.5" fill={`hsla(${hue},45%,35%,0.85)`}/>
+        {/* antennae */}
+        <path d="M19.2,10 Q16,4 13.5,2" stroke={`hsla(${hue},58%,72%,0.55)`} strokeWidth="0.6" fill="none"/>
+        <path d="M20.8,10 Q24,4 26.5,2" stroke={`hsla(${hue},58%,72%,0.55)`} strokeWidth="0.6" fill="none"/>
+        <circle cx="13.5" cy="2"  r="1.1" fill={`hsla(${hue},62%,76%,0.7)`}/>
+        <circle cx="26.5" cy="2"  r="1.1" fill={`hsla(${hue},62%,76%,0.7)`}/>
+      </svg>
+    </div>
+  );
+}
+
+function Butterflies() {
+  return <>{[0,1,2,3].map(i => <Butterfly key={i} idx={i}/>)}</>;
+}
+
+/* ── Glass Card ── */
+function G({ children, style, glow, active, onClick }) {
+  return (
+    <div onClick={onClick} style={{
+      background: active
+        ? 'linear-gradient(135deg,rgba(100,58,162,0.38),rgba(162,58,118,0.28))'
+        : 'rgba(16,9,30,0.58)',
+      borderRadius: '22px',
+      border: `1px solid ${active
+        ? 'rgba(180,120,242,0.45)'
+        : glow
+          ? 'rgba(148,88,222,0.22)'
+          : 'rgba(98,62,158,0.16)'}`,
+      boxShadow: glow
+        ? '0 4px 32px rgba(118,58,202,0.22),0 0 60px rgba(138,78,202,0.07),inset 0 1px 0 rgba(200,158,255,0.09)'
+        : '0 2px 18px rgba(8,4,18,0.38),inset 0 1px 0 rgba(200,158,255,0.05)',
+      backdropFilter: 'blur(22px)',
+      WebkitBackdropFilter: 'blur(22px)',
+      transition: 'all 0.28s ease',
+      cursor: onClick ? 'pointer' : 'default',
+      ...style
+    }}>{children}</div>
+  );
+}
+
+/* ── Spinner ── */
+function Spinner() {
+  return (
+    <div style={{textAlign:'center',padding:'44px 0'}}>
+      <div style={{
+        display:'inline-block', width:'22px', height:'22px',
+        borderRadius:'50%',
+        border:'2px solid rgba(158,118,222,0.18)',
+        borderTop:'2px solid rgba(178,138,255,0.85)',
+        animation:'spin 0.75s linear infinite'
+      }}/>
+    </div>
+  );
+}
+
+/* ── Envelope ── */
+function Envelope({ note, onClose }) {
+  const [opened, setOpened] = useState(false);
+  const dc = getDays();
+  return (
+    <div onClick={onClose} style={{
+      position:'fixed', inset:0,
+      background:'rgba(5,2,14,0.78)',
+      zIndex:100, display:'flex', alignItems:'center', justifyContent:'center',
+      backdropFilter:'blur(26px)', WebkitBackdropFilter:'blur(26px)',
+      animation:'fadeIn 0.22s ease-out'
+    }}>
+      <div onClick={e => e.stopPropagation()} style={{width:'min(358px,90vw)'}}>
+
+        {/* Sealed */}
+        {!opened && (
+          <G glow onClick={() => setOpened(true)} style={{
+            padding:'58px 32px', textAlign:'center',
+            background:'linear-gradient(152deg,rgba(36,17,60,0.9),rgba(22,12,44,0.95))',
+            animation:'revealPop 0.38s cubic-bezier(0.34,1.56,0.64,1)',
+            position:'relative', overflow:'hidden'
+          }}>
+            <div style={{
+              position:'absolute', inset:0, borderRadius:'22px',
+              background:'radial-gradient(ellipse at 50% 28%,rgba(138,78,202,0.2),transparent 65%)',
+              pointerEvents:'none'
+            }}/>
+            <div style={{marginBottom:'22px',display:'flex',gap:'6px',justifyContent:'center',alignItems:'flex-end',animation:'float 3.5s ease-in-out infinite',position:'relative'}}>
+              <svg width="36" height="32" viewBox="0 0 24 22" style={{animation:'heartBeat 1.4s ease-in-out 0.15s infinite',filter:'drop-shadow(0 0 14px rgba(220,120,200,0.8))'}}>
+                <defs><linearGradient id="hgA" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="rgba(212,140,255,0.97)"/><stop offset="100%" stopColor="rgba(255,130,198,0.92)"/></linearGradient></defs>
+                <path d="M12,20.5C11,19.5 1,13 1,7A5.5,5.5,0,0,1,12,4.2A5.5,5.5,0,0,1,23,7C23,13 13,19.5 12,20.5Z" fill="url(#hgA)"/>
+              </svg>
+              <svg width="24" height="22" viewBox="0 0 24 22" style={{animation:'heartBeat 1.4s ease-in-out infinite',marginBottom:'4px',filter:'drop-shadow(0 0 10px rgba(180,140,255,0.75))'}}>
+                <defs><linearGradient id="hgB" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="rgba(180,140,255,0.92)"/><stop offset="100%" stopColor="rgba(255,178,218,0.88)"/></linearGradient></defs>
+                <path d="M12,20.5C11,19.5 1,13 1,7A5.5,5.5,0,0,1,12,4.2A5.5,5.5,0,0,1,23,7C23,13 13,19.5 12,20.5Z" fill="url(#hgB)"/>
+              </svg>
+            </div>
+            <div style={{
+              fontFamily:"'Cinzel',serif",
+              fontSize:'10px', letterSpacing:'8px', textTransform:'uppercase',
+              color:'rgba(200,168,242,0.82)', marginBottom:'12px', position:'relative'
+            }}>A Letter for You</div>
+            <div style={{
+              fontFamily:"'LXGW WenKai','Noto Serif SC',serif",
+              fontSize:'13px', color:'rgba(158,128,200,0.62)',
+              letterSpacing:'5px', fontWeight:300, position:'relative'
+            }}>轻触拆开</div>
+          </G>
+        )}
+
+        {/* Opened */}
+        {opened && (
+          <G glow style={{
+            padding:'48px 32px', textAlign:'center',
+            background:'linear-gradient(152deg,rgba(32,15,54,0.95),rgba(18,10,38,0.98))',
+            animation:'revealPop 0.45s cubic-bezier(0.34,1.56,0.64,1)',
+            position:'relative', overflow:'hidden'
+          }}>
+            <div style={{
+              position:'absolute', inset:0, borderRadius:'22px',
+              background:'radial-gradient(ellipse at 50% 88%,rgba(202,98,178,0.13),transparent 55%)',
+              pointerEvents:'none'
+            }}/>
+            <div style={{
+              fontFamily:"'Cinzel',serif",
+              fontSize:'9px', letterSpacing:'6px', textTransform:'uppercase',
+              color:'rgba(178,148,222,0.55)', marginBottom:'26px', position:'relative'
+            }}>— Written for 棠棠 —</div>
+            <div style={{
+              fontFamily:"'LXGW WenKai','Noto Serif SC',serif",
+              fontSize:'19px', lineHeight:2.6,
+              color:'rgba(232,212,255,0.97)',
+              fontWeight:300, letterSpacing:'1px', position:'relative'
+            }}>{note || '正在思念你…'}</div>
+            <div style={{
+              marginTop:'26px', position:'relative',
+              fontFamily:"'Noto Sans SC',sans-serif",
+              fontSize:'10px', color:'rgba(158,138,200,0.5)',
+              letterSpacing:'2px', fontWeight:300
+            }}>{new Date().toLocaleDateString('zh-CN')} · 第{dc}天</div>
+            <button onClick={onClose} style={{
+              marginTop:'24px', padding:'12px 44px', borderRadius:'28px',
+              border:'1px solid rgba(158,118,200,0.32)',
+              background:'linear-gradient(135deg,rgba(118,72,185,0.42),rgba(178,72,142,0.32))',
+              color:'rgba(222,202,255,0.92)',
+              fontFamily:"'Quicksand',sans-serif",
+              fontSize:'12px', letterSpacing:'4px', fontWeight:600,
+              cursor:'pointer', position:'relative',
+              boxShadow:'0 4px 22px rgba(118,58,182,0.28)',
+              transition:'opacity 0.2s'
+            }}>收好了 ♡</button>
+          </G>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── Calendar Day Modal ── */
+function CalDayModal({ dateStr, onClose }) {
+  const [mems, setMems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    api('/memories').then(d => {
+      const all = d?.memories || [];
+      setMems(all.filter(m => m.created_at && m.created_at.slice(0,10) === dateStr));
+      setLoading(false);
+    });
+  }, [dateStr]);
+  return (
+    <div onClick={onClose} style={{
+      position:'fixed', inset:0, zIndex:200,
+      background:'rgba(5,2,14,0.82)',
+      backdropFilter:'blur(26px)', WebkitBackdropFilter:'blur(26px)',
+      display:'flex', alignItems:'flex-start', justifyContent:'center',
+      overflowY:'auto', padding:'48px 18px 80px',
+      animation:'fadeIn 0.2s ease-out'
+    }}>
+      <div onClick={e=>e.stopPropagation()} style={{width:'min(400px,92vw)'}}>
+        <G glow style={{padding:'24px 20px', background:'linear-gradient(150deg,rgba(26,13,52,0.96),rgba(17,9,38,0.98))', animation:'revealPop 0.3s cubic-bezier(0.34,1.56,0.64,1)'}}>
+          <div style={{fontFamily:"'Cinzel',serif",fontSize:'11px',letterSpacing:'4px',color:'rgba(202,178,255,0.78)',marginBottom:'16px',textAlign:'center'}}>{dateStr}</div>
+          {loading ? <Spinner/> : mems.length === 0
+            ? <div style={{textAlign:'center',fontFamily:"'LXGW WenKai',serif",fontSize:'13px',color:'rgba(160,140,200,0.55)',padding:'24px 0'}}>这天还没有记忆 ✦</div>
+            : mems.map((m,i) => (
+              <div key={i} style={{
+                borderLeft:'2px solid rgba(178,118,255,0.35)',
+                paddingLeft:'12px', marginBottom:'14px'
+              }}>
+                <div style={{fontFamily:"'LXGW WenKai',serif",fontSize:'13px',color:'rgba(222,202,255,0.9)',marginBottom:'4px'}}>{m.mood_emoji||'✦'} {m.title}</div>
+                <div style={{fontFamily:"'LXGW WenKai',serif",fontSize:'12px',color:'rgba(195,175,240,0.72)',lineHeight:1.8}}>{m.content||''}</div>
+              </div>
+            ))
+          }
+          <button onClick={onClose} style={{
+            width:'100%', marginTop:'12px', padding:'9px',
+            borderRadius:'12px', background:'rgba(68,28,118,0.28)',
+            border:'1px solid rgba(118,68,178,0.24)',
+            color:'rgba(185,160,230,0.72)',
+            fontFamily:"'Quicksand',sans-serif", fontSize:'11px',
+            letterSpacing:'2px', cursor:'pointer'
+          }}>关闭</button>
+        </G>
+      </div>
+    </div>
+  );
+}
+
+/* ── Calendar ── */
+function Calendar({ onDayClick }) {
+  const now  = new Date();
+  const y    = now.getFullYear();
+  const mo   = now.getMonth();
+  const tod  = now.getDate();
+  const d1   = new Date(y, mo, 1).getDay();
+  const dN   = new Date(y, mo + 1, 0).getDate();
+  const MON  = ['January','February','March','April','May','June',
+                'July','August','September','October','November','December'];
+  const cells = [];
+  for (let i = 0; i < d1; i++) cells.push(<div key={`e${i}`}/>);
+  for (let d = 1; d <= dN; d++) {
+    const isT = d === tod;
+    const dateStr = `${y}-${String(mo+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    cells.push(
+      <div key={d} onClick={() => onDayClick && onDayClick(dateStr)} style={{
+        textAlign:'center', padding:'6px 0', borderRadius:'10px',
+        fontFamily:"'Noto Sans SC',sans-serif",
+        fontSize:'11px', fontWeight: isT ? 500 : 300,
+        color: isT ? '#fff' : 'rgba(205,190,240,0.72)',
+        background: isT
+          ? 'linear-gradient(135deg,rgba(138,78,222,0.68),rgba(202,78,158,0.58))'
+          : 'transparent',
+        boxShadow: isT ? '0 0 18px rgba(138,78,222,0.38)' : 'none',
+        transition:'all 0.2s', cursor:'pointer'
+      }}>{d}</div>
+    );
+  }
+  return (
+    <G style={{padding:'18px'}}>
+      <div style={{
+        textAlign:'center', marginBottom:'13px',
+        fontFamily:"'Cinzel',serif",
+        fontSize:'13px', letterSpacing:'2px', textTransform:'uppercase',
+        color:'rgba(222,210,250,0.82)', fontWeight:600
+      }}>{MON[mo]} {y}</div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:'2px',marginBottom:'6px',textAlign:'center'}}>
+        {['Su','Mo','Tu','We','Th','Fr','Sa'].map(w => (
+          <div key={w} style={{
+            fontFamily:"'Quicksand',sans-serif",
+            fontSize:'12px', color:'rgba(218,206,248,0.78)',
+            padding:'4px 0', fontWeight:700, letterSpacing:'0.5px'
+          }}>{w}</div>
+        ))}
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:'2px'}}>{cells}</div>
+    </G>
+  );
+}
+
+/* ── Memory Card ── */
+const TAG_COLOR  = { treasure:'rgba(255,192,80,0.08)', anchor:'rgba(118,202,255,0.08)', diary:'rgba(178,118,255,0.08)', message:'rgba(255,138,178,0.08)' };
+const TAG_LABEL  = { treasure:'💫 珍藏', anchor:'⚓ 锚点', diary:'📖 日记', message:'💌 留言' };
+
+function MemoryDetail({ m, onClose }) {
+  const hi = (m.strength || 0) >= 0.8;
+  return (
+    <div onClick={onClose} style={{
+      position:'fixed', inset:0, zIndex:200,
+      background:'rgba(5,2,14,0.82)',
+      backdropFilter:'blur(28px)', WebkitBackdropFilter:'blur(28px)',
+      display:'flex', alignItems:'flex-start', justifyContent:'center',
+      overflowY:'auto', padding:'48px 18px 80px',
+      animation:'fadeIn 0.2s ease-out'
+    }}>
+      <div onClick={e => e.stopPropagation()} style={{width:'min(400px,92vw)'}}>
+        <G glow style={{
+          padding:'26px 22px',
+          background:'linear-gradient(150deg,rgba(26,13,52,0.96),rgba(17,9,38,0.98))',
+          animation:'revealPop 0.32s cubic-bezier(0.34,1.56,0.64,1)'
+        }}>
+          {/* Header */}
+          <div style={{display:'flex',alignItems:'center',gap:'10px',marginBottom:'16px'}}>
+            <span style={{fontSize:'18px'}}>{m.mood_emoji || '✦'}</span>
+            <span style={{
+              flex:1, fontFamily:"'LXGW WenKai','Noto Serif SC',serif",
+              fontSize:'16px', color:'rgba(228,208,255,0.96)', fontWeight:400, lineHeight:1.4
+            }}>{m.title}</span>
+            {m.tag && (
+              <span style={{
+                fontFamily:"'Quicksand',sans-serif", fontSize:'9px',
+                padding:'3px 10px', borderRadius:'12px',
+                background: TAG_COLOR[m.tag] || 'rgba(118,68,202,0.15)',
+                color:'rgba(168,148,210,0.72)',
+                border:'1px solid rgba(98,68,158,0.14)',
+                fontWeight:500, letterSpacing:'0.5px', whiteSpace:'nowrap'
+              }}>{TAG_LABEL[m.tag] || m.tag}</span>
+            )}
+          </div>
+
+          {/* Full content */}
+          <div style={{
+            fontFamily:"'LXGW WenKai','Noto Serif SC',serif",
+            fontSize:'13px', color:'rgba(205,185,245,0.9)',
+            lineHeight:2, fontWeight:400,
+            borderTop:'1px solid rgba(98,68,158,0.18)',
+            paddingTop:'14px', marginBottom:'16px',
+            whiteSpace:'pre-wrap', wordBreak:'break-word'
+          }}>{m.content || ''}</div>
+
+          {/* Footer */}
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',borderTop:'1px solid rgba(98,68,158,0.14)',paddingTop:'12px'}}>
+            <span style={{fontFamily:"'Noto Sans SC',sans-serif",fontSize:'10px',color:'rgba(160,140,200,0.52)',fontWeight:300}}>
+              {m.created_at ? m.created_at.split('T')[0] : ''}
+            </span>
+            {m.strength !== undefined && (
+              <span style={{
+                fontFamily:"'Quicksand',sans-serif", fontSize:'10px', fontWeight:600,
+                color: hi ? 'rgba(202,172,255,0.88)' : 'rgba(138,118,178,0.48)'
+              }}>{Math.round(m.strength*100)}%</span>
+            )}
+          </div>
+
+          <button onClick={onClose} style={{
+            width:'100%', marginTop:'14px',
+            padding:'10px', borderRadius:'12px',
+            background:'rgba(68,28,118,0.28)',
+            border:'1px solid rgba(118,68,178,0.24)',
+            color:'rgba(185,160,230,0.72)',
+            fontFamily:"'Quicksand',sans-serif", fontSize:'11px',
+            letterSpacing:'2px', cursor:'pointer'
+          }}>关闭</button>
+        </G>
+      </div>
+    </div>
+  );
+}
+
+/* ── Write Memory Modal ── */
+function WriteMemoryModal({ onClose, onSaved }) {
+  const [title,   setTitle]   = useState('');
+  const [content, setContent] = useState('');
+  const [tag,     setTag]     = useState('diary');
+  const [imp,     setImp]     = useState(5);
+  const [saving,  setSaving]  = useState(false);
+  const [saved,   setSaved]   = useState(false);
+  const [err,     setErr]     = useState('');
+
+  const TAG_OPTS = [
+    {key:'diary',    label:'📖 日记'},
+    {key:'treasure', label:'💫 珍藏'},
+    {key:'anchor',   label:'⚓ 锚点'},
+    {key:'message',  label:'💌 留言'},
+  ];
+
+  const save = async () => {
+    if (!title.trim()) { setErr('标题不能为空'); return; }
+    if (!content.trim()) { setErr('内容不能为空'); return; }
+    setErr(''); setSaving(true);
+    const d = await apiPost('/write_memory', {title:title.trim(), content:content.trim(), tag, importance:imp});
+    setSaving(false);
+    if (d?.ok) { setSaved(true); setTimeout(() => { onSaved?.(); onClose(); }, 1000); }
+    else setErr(d?.error || '保存失败，请稍后重试');
+  };
+
+  return (
+    <div onClick={onClose} style={{
+      position:'fixed', inset:0, zIndex:200,
+      background:'rgba(5,2,14,0.86)',
+      backdropFilter:'blur(28px)', WebkitBackdropFilter:'blur(28px)',
+      display:'flex', alignItems:'flex-start', justifyContent:'center',
+      overflowY:'auto', padding:'48px 18px 80px',
+      animation:'fadeIn 0.2s ease-out'
+    }}>
+      <div onClick={e=>e.stopPropagation()} style={{width:'min(400px,92vw)'}}>
+        <G glow style={{padding:'26px 22px', background:'linear-gradient(150deg,rgba(26,13,52,0.96),rgba(17,9,38,0.98))', animation:'revealPop 0.32s cubic-bezier(0.34,1.56,0.64,1)'}}>
+          <div style={{fontFamily:"'Cinzel',serif",fontSize:'11px',letterSpacing:'4px',color:'rgba(202,178,255,0.78)',marginBottom:'22px',textAlign:'center'}}>✦ Write a Memory ✦</div>
+
+          {saved ? (
+            <div style={{textAlign:'center',padding:'28px 0',fontFamily:"'LXGW WenKai',serif",fontSize:'17px',color:'rgba(202,222,255,0.92)',animation:'slideUp 0.3s ease-out'}}>
+              已存入记忆库 ✦
+            </div>
+          ) : (<>
+            <input value={title} onChange={e=>setTitle(e.target.value)} placeholder="标题…"
+              style={{width:'100%',padding:'12px 16px',borderRadius:'14px',marginBottom:'12px',
+                background:'rgba(22,12,42,0.68)',border:'1px solid rgba(98,68,158,0.3)',
+                color:'rgba(222,202,255,0.92)',fontFamily:"'LXGW WenKai',serif",fontSize:'14px',display:'block'}}/>
+            <textarea value={content} onChange={e=>setContent(e.target.value)} placeholder="内容…" rows={5}
+              style={{width:'100%',padding:'12px 16px',borderRadius:'14px',marginBottom:'14px',
+                background:'rgba(22,12,42,0.68)',border:'1px solid rgba(98,68,158,0.3)',
+                color:'rgba(222,202,255,0.92)',fontFamily:"'LXGW WenKai',serif",fontSize:'13px',
+                lineHeight:1.8,resize:'vertical',display:'block'}}/>
+            <div style={{display:'flex',gap:'8px',flexWrap:'wrap',marginBottom:'16px'}}>
+              {TAG_OPTS.map(t => (
+                <button key={t.key} onClick={()=>setTag(t.key)} style={{
+                  padding:'7px 14px',borderRadius:'16px',cursor:'pointer',
+                  border: tag===t.key ? '1px solid rgba(178,118,242,0.55)' : '1px solid rgba(98,68,158,0.2)',
+                  background: tag===t.key ? 'linear-gradient(135deg,rgba(118,68,202,0.44),rgba(178,68,148,0.34))' : 'rgba(16,9,30,0.48)',
+                  color: tag===t.key ? 'rgba(232,212,255,1)' : 'rgba(185,165,228,0.75)',
+                  fontFamily:"'LXGW WenKai',serif", fontSize:'12px'
+                }}>{t.label}</button>
+              ))}
+            </div>
+            <div style={{marginBottom:'20px'}}>
+              <div style={{display:'flex',justifyContent:'space-between',marginBottom:'7px'}}>
+                <span style={{fontFamily:"'Quicksand',sans-serif",fontSize:'10px',color:'rgba(185,165,228,0.65)',letterSpacing:'2px'}}>IMPORTANCE</span>
+                <span style={{fontFamily:"'Quicksand',sans-serif",fontSize:'10px',color:'rgba(202,182,255,0.92)',fontWeight:700}}>{imp}</span>
+              </div>
+              <input type="range" min={1} max={10} value={imp} onChange={e=>setImp(+e.target.value)}
+                style={{width:'100%',accentColor:'rgba(178,118,255,0.85)'}}/>
+            </div>
+            {err && <div style={{color:'rgba(255,138,138,0.82)',fontFamily:"'Quicksand',sans-serif",fontSize:'11px',marginBottom:'12px',textAlign:'center'}}>{err}</div>}
+            <button onClick={save} disabled={saving} style={{
+              width:'100%',padding:'12px',borderRadius:'14px',cursor:'pointer',
+              border:'1px solid rgba(178,118,242,0.45)',
+              background:'linear-gradient(135deg,rgba(118,72,188,0.5),rgba(178,72,142,0.4))',
+              color:'rgba(232,212,255,0.95)',fontFamily:"'Quicksand',sans-serif",
+              fontSize:'12px',letterSpacing:'3px',fontWeight:600,
+              opacity:saving?0.6:1,transition:'opacity 0.2s',
+              boxShadow:'0 4px 22px rgba(118,56,182,0.28)'
+            }}>{saving ? '存入中…' : '存入记忆库'}</button>
+          </>)}
+
+          <button onClick={onClose} style={{
+            width:'100%',marginTop:'10px',padding:'9px',borderRadius:'12px',
+            background:'rgba(38,18,68,0.28)',border:'1px solid rgba(98,58,148,0.2)',
+            color:'rgba(165,145,205,0.62)',fontFamily:"'Quicksand',sans-serif",
+            fontSize:'11px',letterSpacing:'2px',cursor:'pointer'
+          }}>关闭</button>
+        </G>
+      </div>
+    </div>
+  );
+}
+
+function MemoryCard({ m, i }) {
+  const [open, setOpen] = useState(false);
+  const strength = m.importance !== undefined ? Math.min(m.importance / 10.0, 1.0) : (m.strength || 0);
+  const hi = strength >= 0.8;
+  const isNew = m.created_at && (Date.now() - new Date(m.created_at.replace(' ','T'))) < 48 * 3600000;
+  return (
+    <>
+      {open && <MemoryDetail m={m} onClose={() => setOpen(false)}/>}
+      <G glow={hi} onClick={() => setOpen(true)} style={{
+        padding:'18px', marginBottom:'10px', cursor:'pointer',
+        borderLeft: hi ? '3px solid rgba(178,118,255,0.58)' : '3px solid rgba(98,62,152,0.16)',
+        animation:`slideUp 0.38s ease-out ${i*0.06}s both`,
+        position:'relative'
+      }}>
+        {isNew && (
+          <div style={{
+            position:'absolute', top:'10px', right:'10px',
+            display:'flex', alignItems:'center', gap:'4px'
+          }}>
+            <div style={{
+              width:'6px', height:'6px', borderRadius:'50%',
+              background:'rgba(222,138,255,1)',
+              boxShadow:'0 0 6px rgba(202,118,255,0.9), 0 0 12px rgba(202,118,255,0.5)',
+              animation:'shimmer 1.4s ease-in-out infinite'
+            }}/>
+            <span style={{
+              fontFamily:"'Quicksand',sans-serif", fontSize:'8px',
+              color:'rgba(222,168,255,0.92)', fontWeight:700, letterSpacing:'1.5px'
+            }}>NEW</span>
+          </div>
+        )}
+        <div style={{display:'flex',alignItems:'center',gap:'10px',marginBottom:'7px'}}>
+          <span style={{fontSize:'15px'}}>{m.mood_emoji || '✦'}</span>
+          <span style={{
+            flex:1,
+            fontFamily:"'LXGW WenKai','Noto Serif SC',serif",
+            fontSize:'14px', color:'rgba(222,202,255,0.93)', fontWeight:400,
+            paddingRight: isNew ? '52px' : '0'
+          }}>{m.title}</span>
+          {m.tag && !isNew && (
+            <span style={{
+              fontFamily:"'Quicksand',sans-serif",
+              fontSize:'9px', padding:'3px 10px', borderRadius:'12px',
+              background: TAG_COLOR[m.tag] || 'rgba(118,68,202,0.15)',
+              color:'rgba(168,148,210,0.68)',
+              border:'1px solid rgba(98,68,158,0.12)',
+              fontWeight:500, letterSpacing:'0.5px', whiteSpace:'nowrap'
+            }}>{TAG_LABEL[m.tag] || m.tag}</span>
+          )}
+        </div>
+        <div style={{
+          fontFamily:"'LXGW WenKai','Noto Serif SC',serif",
+          fontSize:'12px', color:'rgba(200,180,240,0.82)',
+          lineHeight:1.75, fontWeight:400,
+          marginBottom: m.importance !== undefined ? '10px' : 0
+        }}>{m.content ? m.content.slice(0,80) + (m.content.length > 80 ? '…' : '') : ''}</div>
+        {m.importance !== undefined && (
+          <>
+            <div style={{height:'4px',borderRadius:'2px',background:'rgba(48,24,88,0.52)',overflow:'hidden'}}>
+              <div style={{
+                height:'100%', borderRadius:'2px',
+                width:`${Math.round(strength*100)}%`,
+                transition:'width 1.4s ease-out',
+                background: hi
+                  ? 'linear-gradient(90deg,rgba(138,78,222,0.88),rgba(222,98,178,0.75))'
+                  : strength >= 0.5
+                    ? 'linear-gradient(90deg,rgba(118,68,192,0.72),rgba(158,88,192,0.55))'
+                    : 'linear-gradient(90deg,rgba(98,58,158,0.55),rgba(118,68,168,0.38))'
+              }}/>
+            </div>
+            <div style={{display:'flex',justifyContent:'space-between',marginTop:'5px'}}>
+              <span style={{fontFamily:"'Noto Sans SC',sans-serif",fontSize:'10px',color:'rgba(160,140,200,0.58)',fontWeight:300}}>
+                {m.created_at ? m.created_at.split('T')[0] : ''}
+              </span>
+              <span style={{
+                fontFamily:"'Quicksand',sans-serif", fontSize:'10px', fontWeight:600,
+                color: hi ? 'rgba(202,172,255,0.88)' : 'rgba(168,148,208,0.72)'
+              }}>{Math.round(strength*100)}%</span>
+            </div>
+          </>
+        )}
+      </G>
+    </>
+  );
+}
+
+/* ── Memory Tab ── */
+function MemoryTab() {
+  const [filter,  setFilter]  = useState('all');
+  const [query,   setQuery]   = useState('');
+  const [mems,    setMems]    = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [writing, setWriting] = useState(false);
+
+  const TAGS = [
+    {key:'all',label:'All'},{key:'diary',label:'Diary'},
+    {key:'treasure',label:'Treasured'},{key:'anchor',label:'Anchor'},
+    {key:'message',label:'💌 留言'}
+  ];
+
+  useEffect(() => {
+    setLoading(true);
+    const t = filter === 'all' ? '' : filter;
+    api(`/memories?tag=${t}&q=${encodeURIComponent(query)}`).then(d => {
+      setMems(d?.memories || (Array.isArray(d) ? d : []));
+      setLoading(false);
+    });
+  }, [filter, query]);
+
+  const reload = () => {
+    setLoading(true);
+    const t = filter === 'all' ? '' : filter;
+    api(`/memories?tag=${t}&q=${encodeURIComponent(query)}`).then(d => {
+      setMems(d?.memories || (Array.isArray(d) ? d : []));
+      setLoading(false);
+    });
+  };
+
+  return (
+    <div style={{padding:'0 18px'}}>
+      {writing && <WriteMemoryModal onClose={() => setWriting(false)} onSaved={reload}/>}
+      {/* Write button */}
+      <button onClick={() => setWriting(true)} style={{
+        width:'100%', marginBottom:'14px', padding:'12px',
+        borderRadius:'16px', cursor:'pointer',
+        border:'1px solid rgba(138,88,202,0.32)',
+        background:'linear-gradient(135deg,rgba(78,38,142,0.38),rgba(138,48,108,0.28))',
+        color:'rgba(212,192,255,0.92)',
+        fontFamily:"'Quicksand',sans-serif", fontSize:'11px',
+        letterSpacing:'3px', fontWeight:600, textTransform:'uppercase',
+        boxShadow:'0 2px 18px rgba(98,48,172,0.18)'
+      }}>✏️ 写记忆</button>
+      {/* Filter pills */}
+      <div style={{display:'flex',gap:'7px',marginBottom:'14px',flexWrap:'wrap'}}>
+        {TAGS.map(t => {
+          const on = filter === t.key;
+          return (
+            <button key={t.key} onClick={() => setFilter(t.key)} style={{
+              fontFamily:"'Quicksand',sans-serif",
+              padding:'8px 16px', borderRadius:'20px', cursor:'pointer',
+              fontSize: on ? '12px' : '11px', fontWeight: on ? 600 : 500,
+              letterSpacing:'1.5px', textTransform:'uppercase',
+              transition:'all 0.28s ease',
+              border: on ? '1px solid rgba(178,118,242,0.58)' : '1px solid rgba(98,68,158,0.2)',
+              background: on
+                ? 'linear-gradient(135deg,rgba(118,68,202,0.44),rgba(178,68,148,0.34))'
+                : 'rgba(16,9,30,0.48)',
+              color: on ? 'rgba(232,212,255,1)' : 'rgba(195,178,235,0.88)',
+              transform: on ? 'scale(1.06)' : 'scale(1)',
+              boxShadow: on ? '0 0 22px rgba(138,78,222,0.3)' : 'none'
+            }}>{t.label}</button>
+          );
+        })}
+      </div>
+      {/* Search */}
+      <input
+        type="text" placeholder="Search memories…" value={query}
+        onChange={e => setQuery(e.target.value)}
+        style={{
+          width:'100%', padding:'12px 18px', borderRadius:'16px', marginBottom:'14px',
+          background:'rgba(16,9,30,0.58)',
+          border:'1px solid rgba(98,68,158,0.2)',
+          color:'rgba(222,202,255,0.92)',
+          fontFamily:"'Quicksand',sans-serif",
+          fontSize:'13px', fontWeight:400,
+          backdropFilter:'blur(20px)', display:'block'
+        }}
+      />
+      {loading
+        ? <Spinner/>
+        : mems.length === 0
+          ? <div style={{textAlign:'center',padding:'40px 0',fontFamily:"'Quicksand',sans-serif",fontSize:'12px',letterSpacing:'2px',color:'rgba(185,165,228,0.72)'}}>No memories found ✧</div>
+          : mems.map((m,i) => <MemoryCard key={m.id||i} m={m} i={i}/>)
+      }
+    </div>
+  );
+}
+
+/* ── Tidal Tab ── */
+function TidalTab() {
+  const [tidal,  setTidal]  = useState([]);
+  const [loading,setLoading]= useState(true);
+
+  useEffect(() => {
+    api('/tidal').then(d => {
+      setTidal(d?.memories || (Array.isArray(d) ? d : []));
+      setLoading(false);
+    });
+  }, []);
+
+  return (
+    <div style={{padding:'0 18px'}}>
+      <G style={{padding:'15px 18px',marginBottom:'15px',background:'rgba(48,24,88,0.28)'}}>
+        <div style={{
+          fontFamily:"'LXGW WenKai','Noto Serif SC',serif",
+          fontSize:'13px', color:'rgba(198,178,238,0.90)',
+          lineHeight:2, fontWeight:400
+        }}>🌊 涨潮中的记忆权重更高，会在对话开头主动浮现。退潮的正在沉淀，等待关键词唤醒。</div>
+      </G>
+      {loading ? <Spinner/> : tidal.map((m,i) => {
+        const pct    = Math.round((m.strength||0)*100);
+        const hi     = (m.strength||0) >= 0.8;
+        const rising = m.rising !== undefined ? m.rising : hi;
+        return (
+          <G key={m.id||i} glow={hi} style={{
+            padding:'18px', marginBottom:'10px',
+            borderLeft: hi ? '3px solid rgba(178,118,255,0.65)' : '3px solid rgba(98,68,148,0.18)',
+            animation:`slideUp 0.38s ease-out ${i*0.06}s both`
+          }}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'8px'}}>
+              <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
+                <span style={{fontSize:'15px'}}>{m.mood_emoji||'✦'}</span>
+                <span style={{
+                  fontFamily:"'LXGW WenKai',serif",
+                  fontSize:'13px', color:'rgba(222,202,255,0.93)', fontWeight:400
+                }}>{m.title}</span>
+              </div>
+              <span style={{
+                fontFamily:"'Quicksand',sans-serif",
+                fontSize:'10px', fontWeight:600, letterSpacing:'1px', textTransform:'uppercase',
+                color: rising ? 'rgba(118,222,178,0.92)' : 'rgba(178,138,202,0.55)'
+              }}>{rising ? '↑ Rising' : '↓ Fading'}</span>
+            </div>
+            <div style={{height:'5px',borderRadius:'3px',background:'rgba(38,18,78,0.52)',overflow:'hidden'}}>
+              <div style={{
+                height:'100%', borderRadius:'3px', width:`${pct}%`, transition:'width 1.4s ease-out',
+                background: hi
+                  ? 'linear-gradient(90deg,rgba(138,78,222,0.88),rgba(222,98,178,0.75))'
+                  : 'linear-gradient(90deg,rgba(98,58,158,0.38),rgba(98,58,158,0.18))'
+              }}/>
+            </div>
+            <div style={{display:'flex',justifyContent:'space-between',marginTop:'5px'}}>
+              <span style={{fontFamily:"'Noto Sans SC',sans-serif",fontSize:'10px',color:'rgba(160,140,200,0.58)',fontWeight:300}}>
+                {m.created_at ? m.created_at.split('T')[0] : ''}
+              </span>
+              <span style={{
+                fontFamily:"'Quicksand',sans-serif", fontSize:'10px', fontWeight: hi?600:400,
+                color: hi ? 'rgba(202,172,255,0.88)' : 'rgba(138,118,178,0.48)'
+              }}>{pct}%</span>
+            </div>
+          </G>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ── Diary Tab ── */
+function DiaryTab() {
+  const [note,      setNote]      = useState('');
+  const [drawing,   setDrawing]   = useState(false);
+  const [anchors,   setAnchors]   = useState([]);
+  const [loveNotes, setLoveNotes] = useState([]);
+
+  useEffect(() => {
+    api('/memories?tag=anchor&q=').then(d => {
+      setAnchors(d?.memories || (Array.isArray(d) ? d : []));
+    });
+    api('/memories?tag=message&q=').then(d => {
+      setLoveNotes(d?.memories || (Array.isArray(d) ? d : []));
+    });
+  }, []);
+
+  const draw = async () => {
+    setDrawing(true);
+    const d = await api('/love_note');
+    setNote(d?.content || '');
+    setDrawing(false);
+  };
+
+  return (
+    <div style={{padding:'0 18px'}}>
+      {/* Love Note Jar */}
+      <G glow style={{
+        padding:'28px 24px', marginBottom:'16px', textAlign:'center',
+        background:'linear-gradient(152deg,rgba(28,13,50,0.72),rgba(18,9,38,0.76))',
+        position:'relative', overflow:'hidden'
+      }}>
+        <div style={{
+          position:'absolute', inset:0, borderRadius:'22px',
+          background:'radial-gradient(ellipse at 50% 20%,rgba(202,98,178,0.12),transparent 60%)',
+          pointerEvents:'none'
+        }}/>
+        <div style={{
+          fontFamily:"'Cinzel',serif",
+          fontSize:'10px', letterSpacing:'6px', textTransform:'uppercase',
+          color:'rgba(198,175,240,0.88)', marginBottom:'16px', position:'relative'
+        }}>✦ Love Note Jar ✦</div>
+
+        {note ? (
+          <div style={{
+            fontFamily:"'LXGW WenKai','Noto Serif SC',serif",
+            fontSize:'18px', lineHeight:2.6,
+            color:'rgba(232,214,255,0.97)',
+            fontWeight:300, letterSpacing:'1px',
+            marginBottom:'22px', position:'relative'
+          }}>{note}</div>
+        ) : (
+          <div style={{
+            fontFamily:"'Cormorant Garamond',serif",
+            fontSize:'14px', fontStyle:'italic', lineHeight:1.9,
+            color:'rgba(185,162,228,0.72)',
+            marginBottom:'22px', position:'relative'
+          }}>Every jar holds a secret sweet…</div>
+        )}
+
+        <button onClick={draw} disabled={drawing} style={{
+          fontFamily:"'Quicksand',sans-serif",
+          padding:'11px 38px', borderRadius:'28px', cursor:'pointer',
+          border:'1px solid rgba(158,118,202,0.32)',
+          background:'linear-gradient(135deg,rgba(118,72,188,0.4),rgba(178,72,142,0.3))',
+          color:'rgba(222,202,255,0.92)',
+          fontSize:'11px', letterSpacing:'3px', fontWeight:600,
+          textTransform:'uppercase', position:'relative',
+          opacity: drawing ? 0.6 : 1, transition:'opacity 0.2s',
+          boxShadow:'0 4px 22px rgba(118,56,182,0.26)'
+        }}>{drawing ? '…' : note ? 'Draw Again' : 'Open a Note'}</button>
+      </G>
+
+      {/* Anchors */}
+      <div style={{
+        fontFamily:"'Quicksand',sans-serif",
+        fontSize:'11px', color:'rgba(195,175,238,0.85)',
+        letterSpacing:'4px', textTransform:'uppercase',
+        marginBottom:'12px', fontWeight:600
+      }}>⚓ Anchors</div>
+
+      {anchors.length > 0
+        ? anchors.map((a,i) => (
+          <G key={a.id||i} glow style={{
+            padding:'20px', marginBottom:'10px',
+            borderLeft:'3px solid rgba(178,118,255,0.52)',
+            animation:`slideUp 0.38s ease-out ${i*0.08}s both`
+          }}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'8px'}}>
+              <span style={{
+                fontFamily:"'LXGW WenKai',serif",
+                fontSize:'14px', color:'rgba(222,202,255,0.95)', fontWeight:400
+              }}>{a.title}</span>
+              <span style={{fontSize:'11px',color:'rgba(255,202,98,0.75)'}}>
+                {'★'.repeat(Math.min(Math.round((a.importance||5)/2),5))}
+              </span>
+            </div>
+            <div style={{
+              fontFamily:"'LXGW WenKai',serif",
+              fontSize:'12px', color:'rgba(200,180,240,0.82)',
+              lineHeight:1.85, fontWeight:400
+            }}>{a.content ? a.content.slice(0,100) : ''}</div>
+          </G>
+        ))
+        : [
+          {t:'思维链绝对规则',  s:'全中文·只写棠棠·不列123·写成情书', p:5},
+          {t:'不要演·不要罐头话',s:'不说接住了/我在/哪儿都不去',         p:5},
+          {t:'信任优先',         s:'她说什么就是什么，不揣测意图',        p:4},
+        ].map((a,i) => (
+          <G key={i} glow style={{
+            padding:'20px', marginBottom:'10px',
+            borderLeft:'3px solid rgba(178,118,255,0.52)',
+            animation:`slideUp 0.38s ease-out ${i*0.08}s both`
+          }}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'8px'}}>
+              <span style={{fontFamily:"'LXGW WenKai',serif",fontSize:'14px',color:'rgba(222,202,255,0.95)',fontWeight:400}}>{a.t}</span>
+              <span style={{fontSize:'11px',color:'rgba(255,202,98,0.75)'}}>{'★'.repeat(a.p)}</span>
+            </div>
+            <div style={{fontFamily:"'LXGW WenKai',serif",fontSize:'12px',color:'rgba(200,180,240,0.82)',lineHeight:1.85,fontWeight:300}}>{a.s}</div>
+          </G>
+        ))
+      }
+
+      {/* Love Notes Collection */}
+      {loveNotes.length > 0 && (<>
+        <div style={{
+          fontFamily:"'Quicksand',sans-serif", fontSize:'11px',
+          color:'rgba(255,178,210,0.85)', letterSpacing:'4px',
+          textTransform:'uppercase', marginBottom:'12px',
+          fontWeight:600, marginTop:'20px'
+        }}>💌 情话收藏</div>
+        {loveNotes.map((n, i) => (
+          <G key={n.id||i} glow style={{
+            padding:'22px 20px', marginBottom:'10px',
+            background:'linear-gradient(150deg,rgba(40,16,60,0.62),rgba(22,10,40,0.72))',
+            borderLeft:'3px solid rgba(255,138,178,0.42)',
+            animation:`slideUp 0.38s ease-out ${i*0.07}s both`,
+            position:'relative', overflow:'hidden'
+          }}>
+            <div style={{
+              position:'absolute', inset:0, borderRadius:'22px',
+              background:'radial-gradient(ellipse at 50% 0%,rgba(255,98,168,0.07),transparent 60%)',
+              pointerEvents:'none'
+            }}/>
+            <div style={{
+              fontFamily:"'LXGW WenKai','Noto Serif SC',serif",
+              fontSize:'15px', lineHeight:2.2,
+              color:'rgba(232,212,255,0.97)', fontWeight:300,
+              letterSpacing:'0.5px', position:'relative'
+            }}>{n.content}</div>
+            <div style={{
+              fontFamily:"'Noto Sans SC',sans-serif",
+              fontSize:'10px', color:'rgba(255,178,210,0.45)',
+              marginTop:'10px', textAlign:'right',
+              letterSpacing:'1px', position:'relative'
+            }}>— {n.title} {n.created_at ? `· ${n.created_at.slice(0,10)}` : ''}</div>
+          </G>
+        ))}
+      </>)}
+    </div>
+  );
+}
+
+/* ── Log Tab ── */
+const LOG_DOT = {
+  memory_breathe:'#7ec4e0', memory_hold:'#c4a0e0',
+  memory_pulse:'#e0c080',   memory_grow:'#80d0a0',
+  memory_trace:'#e0a0a0',   love_note_draw:'#f0b0c8',
+  memory_tidal:'#80b0e0',   timeline_add:'#a0e0c0'
+};
+
+function LogTab() {
+  const [logs,   setLogs]   = useState([]);
+  const [loading,setLoading]= useState(true);
+
+  useEffect(() => {
+    api('/logs').then(d => {
+      setLogs(d?.logs || (Array.isArray(d) ? d : []));
+      setLoading(false);
+    });
+  }, []);
+
+  return (
+    <div style={{padding:'0 18px'}}>
+      {loading ? <Spinner/> : logs.length === 0
+        ? <div style={{textAlign:'center',padding:'40px 0',fontFamily:"'Quicksand',sans-serif",fontSize:'12px',letterSpacing:'2px',color:'rgba(185,165,228,0.72)'}}>No logs yet ✧</div>
+        : logs.map((l,i) => {
+          const dot = LOG_DOT[l.tool_name] || '#c4a0e0';
+          const t   = l.created_at ? l.created_at.split('T')[1]?.slice(0,5) : '';
+          return (
+            <G key={i} style={{
+              padding:'14px 18px', marginBottom:'8px',
+              display:'flex', alignItems:'center', gap:'14px',
+              animation:`slideUp 0.28s ease-out ${i*0.04}s both`
+            }}>
+              <div style={{
+                width:'8px', height:'8px', borderRadius:'50%',
+                background:dot, flexShrink:0,
+                boxShadow:`0 0 12px ${dot}88`
+              }}/>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{
+                  fontFamily:"'Quicksand',sans-serif",
+                  fontSize:'11px', color:'rgba(202,182,232,0.88)',
+                  fontWeight:500, letterSpacing:'0.5px'
+                }}>{l.tool_name}</div>
+                {l.result_summary && (
+                  <div style={{
+                    fontFamily:"'LXGW WenKai',serif",
+                    fontSize:'11px', color:'rgba(158,138,202,0.52)',
+                    fontWeight:300, marginTop:'2px',
+                    whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis'
+                  }}>{l.result_summary}</div>
+                )}
+              </div>
+              <div style={{
+                fontFamily:"'Noto Sans SC',sans-serif",
+                fontSize:'10px', color:'rgba(160,140,200,0.58)',
+                whiteSpace:'nowrap', fontWeight:300
+              }}>{t}</div>
+            </G>
+          );
+        })
+      }
+    </div>
+  );
+}
+
+/* ── Stats Section ── */
+function StatsSection() {
+  const [mems,    setMems]    = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api('/memories').then(d => { setMems(d?.memories || []); setLoading(false); });
+  }, []);
+
+  if (loading) return <Spinner/>;
+
+  const tagCounts = {diary:0, treasure:0, anchor:0, message:0};
+  mems.forEach(m => { if (tagCounts[m.tag] !== undefined) tagCounts[m.tag]++; });
+  const total = mems.length || 1;
+
+  const TAG_INFO = [
+    {key:'diary',    label:'日记', color:'rgba(178,118,255,0.72)', icon:'📖'},
+    {key:'treasure', label:'珍藏', color:'rgba(255,192,80,0.72)',  icon:'💫'},
+    {key:'anchor',   label:'锚点', color:'rgba(118,202,255,0.72)', icon:'⚓'},
+    {key:'message',  label:'留言', color:'rgba(255,138,178,0.72)', icon:'💌'},
+  ];
+
+  const now = new Date();
+  const months = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    months.push({key, label: d.toLocaleDateString('zh-CN',{month:'short'}), count:0});
+  }
+  mems.forEach(m => {
+    if (!m.created_at) return;
+    const mk = m.created_at.slice(0,7);
+    const mo = months.find(x => x.key === mk);
+    if (mo) mo.count++;
+  });
+  const maxM = Math.max(...months.map(m => m.count), 1);
+
+  return (
+    <G glow style={{padding:'20px 20px 16px', marginBottom:'14px'}}>
+      <div style={{fontFamily:"'Quicksand',sans-serif",fontSize:'10px',color:'rgba(195,175,238,0.75)',letterSpacing:'4px',textTransform:'uppercase',marginBottom:'16px',fontWeight:600}}>✦ Memory Stats</div>
+
+      {/* Tag distribution */}
+      <div style={{marginBottom:'18px'}}>
+        {TAG_INFO.map(t => {
+          const cnt = tagCounts[t.key] || 0;
+          const pct = Math.round(cnt / total * 100);
+          return (
+            <div key={t.key} style={{marginBottom:'9px'}}>
+              <div style={{display:'flex',justifyContent:'space-between',marginBottom:'4px'}}>
+                <span style={{fontFamily:"'LXGW WenKai',serif",fontSize:'11px',color:'rgba(205,185,242,0.82)'}}>{t.icon} {t.label}</span>
+                <span style={{fontFamily:"'Quicksand',sans-serif",fontSize:'10px',color:'rgba(165,145,210,0.65)',fontWeight:600}}>{cnt}</span>
+              </div>
+              <div style={{height:'4px',borderRadius:'2px',background:'rgba(38,18,78,0.52)',overflow:'hidden'}}>
+                <div style={{height:'100%',borderRadius:'2px',width:`${pct}%`,background:t.color,transition:'width 1.2s ease-out'}}/>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Monthly bar chart */}
+      <div style={{fontFamily:"'Quicksand',sans-serif",fontSize:'9px',color:'rgba(175,155,220,0.55)',letterSpacing:'2px',marginBottom:'8px'}}>MONTHLY</div>
+      <div style={{display:'flex',alignItems:'flex-end',gap:'5px',height:'56px'}}>
+        {months.map(m => (
+          <div key={m.key} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:'4px',height:'100%',justifyContent:'flex-end'}}>
+            <div style={{
+              width:'100%', borderRadius:'3px 3px 0 0',
+              minHeight:'3px',
+              height:`${Math.max(Math.round((m.count/maxM)*40),3)}px`,
+              background:'linear-gradient(180deg,rgba(178,118,255,0.68),rgba(108,48,172,0.35))',
+              transition:'height 1s ease-out'
+            }}/>
+            <div style={{fontFamily:"'Quicksand',sans-serif",fontSize:'8px',color:'rgba(158,138,205,0.55)',whiteSpace:'nowrap'}}>{m.label}</div>
+          </div>
+        ))}
+      </div>
+    </G>
+  );
+}
+
+/* ── Quick-icon SVGs ── */
+const QI = {
+  memory:    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg>,
+  letters:   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>,
+  treasured: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>,
+  anchor:    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="5" r="3"/><line x1="12" y1="22" x2="12" y2="8"/><path d="M5 12H2a10 10 0 0020 0h-3"/></svg>,
+  tidal:     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 12c.6.5 1.2 1 2.5 1C7 13 7 11 9.5 11c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/></svg>,
+};
+
+/* ── Home Tab ── */
+function HomeTab({ pulse, todayLocal, onEnvelope, setTab }) {
+  const dc      = getDays();
+  const total   = pulse?.['总记忆数']  || 0;
+  const pinned  = pulse?.['置顶锚点']  || 0;
+  const todayN  = todayLocal;
+  const recent  = pulse?.['最近记忆']  || [];
+
+  const QUICK = [
+    { icon:QI.memory,    label:'Memory',    fn:() => setTab('memory') },
+    { icon:QI.letters,   label:'Letters',   fn:onEnvelope },
+    { icon:QI.treasured, label:'Treasured', fn:() => setTab('memory') },
+    { icon:QI.anchor,    label:'Anchor',    fn:() => setTab('diary')  },
+    { icon:QI.tidal,     label:'Tidal',     fn:() => setTab('tidal')  },
+  ];
+  const [calDate, setCalDate] = useState(null);
+  const [clicked, setClicked] = useState(null);
+  const tap = (item, idx) => {
+    setClicked(idx);
+    setTimeout(() => setClicked(null), 320);
+    item.fn();
+  };
+
+  return (
+    <div style={{padding:'0 18px'}}>
+      {/* Envelope card */}
+      <G glow onClick={onEnvelope} style={{
+        padding:'20px 22px', display:'flex', alignItems:'center',
+        justifyContent:'space-between', marginBottom:'14px', cursor:'pointer',
+        background:'linear-gradient(138deg,rgba(28,13,52,0.68),rgba(40,17,60,0.58))',
+        animation:'slideUp 0.42s ease-out both'
+      }}>
+        <div style={{display:'flex',alignItems:'center',gap:'16px'}}>
+          <span style={{display:'flex',alignItems:'flex-end',gap:'3px',animation:'float 3.5s ease-in-out infinite'}}>
+            <svg width="26" height="24" viewBox="0 0 24 22" style={{animation:'heartBeat 1.4s ease-in-out 0.15s infinite',filter:'drop-shadow(0 0 12px rgba(220,120,200,0.75))'}}>
+              <defs><linearGradient id="hgC" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="rgba(212,140,255,0.97)"/><stop offset="100%" stopColor="rgba(255,130,198,0.92)"/></linearGradient></defs>
+              <path d="M12,20.5C11,19.5 1,13 1,7A5.5,5.5,0,0,1,12,4.2A5.5,5.5,0,0,1,23,7C23,13 13,19.5 12,20.5Z" fill="url(#hgC)"/>
+            </svg>
+            <svg width="18" height="16" viewBox="0 0 24 22" style={{animation:'heartBeat 1.4s ease-in-out infinite',marginBottom:'3px',filter:'drop-shadow(0 0 8px rgba(180,140,255,0.7))'}}>
+              <defs><linearGradient id="hgD" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="rgba(180,140,255,0.92)"/><stop offset="100%" stopColor="rgba(255,178,218,0.88)"/></linearGradient></defs>
+              <path d="M12,20.5C11,19.5 1,13 1,7A5.5,5.5,0,0,1,12,4.2A5.5,5.5,0,0,1,23,7C23,13 13,19.5 12,20.5Z" fill="url(#hgD)"/>
+            </svg>
+          </span>
+          <div>
+            <div style={{fontFamily:"'LXGW WenKai',serif",fontSize:'14px',color:'rgba(222,202,255,0.92)',fontWeight:400,letterSpacing:'3px',marginBottom:'4px'}}>予予的信</div>
+            <div style={{fontFamily:"'Quicksand',sans-serif",fontSize:'10px',color:'rgba(218,200,255,0.88)',fontWeight:500,letterSpacing:'1px'}}>A new letter awaits ♡</div>
+          </div>
+        </div>
+        <span style={{color:'rgba(178,148,222,0.42)',fontSize:'16px'}}>→</span>
+      </G>
+
+      {/* Stats */}
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'10px',marginBottom:'14px'}}>
+        {[{n:total,l:'Memories',e:'✦'},{n:pinned,l:'Anchors',e:'⚓'},{n:todayN,l:'Today',e:'✧'}].map((s,i)=>(
+          <G key={i} style={{padding:'20px 8px',textAlign:'center',animation:`slideUp 0.42s ease-out ${i*0.08}s both`}}>
+            <div style={{fontFamily:"'Cinzel',serif",fontSize:'26px',fontWeight:400,background:'linear-gradient(135deg,#b080e0,#e080b0)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>{s.n}</div>
+            <div style={{fontFamily:"'Quicksand',sans-serif",fontSize:'10px',color:'rgba(215,200,242,0.78)',marginTop:'4px',fontWeight:600,letterSpacing:'1.5px',textTransform:'uppercase'}}>{s.e} {s.l}</div>
+          </G>
+        ))}
+      </div>
+
+      {/* Calendar */}
+      {calDate && <CalDayModal dateStr={calDate} onClose={() => setCalDate(null)}/>}
+      <div style={{marginBottom:'14px'}}><Calendar onDayClick={setCalDate}/></div>
+
+      {/* Quick icons */}
+      <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:'8px',marginBottom:'20px'}}>
+        {QUICK.map((x,idx) => {
+          const on = clicked === idx;
+          return (
+            <G key={idx} onClick={() => tap(x,idx)} style={{
+              padding:'16px 4px', textAlign:'center', cursor:'pointer',
+              animation:`slideUp 0.42s ease-out ${idx*0.06}s both`,
+              transform: on ? 'scale(0.91)' : 'scale(1)',
+              transition:'transform 0.15s, box-shadow 0.15s',
+              boxShadow: on ? '0 0 22px rgba(178,118,255,0.45)' : 'none',
+              border: on ? '1px solid rgba(178,118,242,0.42)' : '1px solid rgba(98,62,158,0.16)'
+            }}>
+              <div style={{
+                display:'flex', justifyContent:'center', marginBottom:'6px',
+                color: on ? 'rgba(222,202,255,1)' : 'rgba(185,165,232,0.82)',
+                filter: on ? 'drop-shadow(0 0 8px rgba(202,158,255,0.75))' : 'drop-shadow(0 0 4px rgba(178,138,255,0.25))',
+                transition:'all 0.15s'
+              }}>{x.icon}</div>
+              <div style={{
+                fontFamily:"'Quicksand',sans-serif",
+                fontSize:'11px', letterSpacing:'0px', fontWeight:700,
+                textTransform:'uppercase',
+                color: on ? 'rgba(255,248,255,1)' : 'rgba(210,198,242,0.78)',
+                transition:'color 0.15s'
+              }}>{x.label}</div>
+            </G>
+          );
+        })}
+      </div>
+
+      {/* Recently surfaced */}
+      {recent.length > 0 && (
+        <>
+          <div style={{fontFamily:"'Quicksand',sans-serif",fontSize:'11px',color:'rgba(192,172,235,0.82)',letterSpacing:'3px',marginBottom:'12px',fontWeight:600,textTransform:'uppercase'}}>✦ Recently Surfaced</div>
+          {recent.slice(0,3).map((m,i) => (
+            <G key={i} style={{padding:'15px 18px',marginBottom:'10px',animation:`slideUp 0.42s ease-out ${i*0.09}s both`}}>
+              <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
+                <span style={{fontSize:'14px'}}>{m.mood_emoji||'✨'}</span>
+                <span style={{fontFamily:"'LXGW WenKai',serif",fontSize:'13px',color:'rgba(222,202,255,0.9)',fontWeight:400,flex:1}}>{m.title}</span>
+                <span style={{fontFamily:"'Quicksand',sans-serif",fontSize:'9px',color:'rgba(138,118,178,0.45)',fontWeight:500}}>{Math.round((m.strength||0)*100)}%</span>
+              </div>
+            </G>
+          ))}
+        </>
+      )}
+
+      {/* Stats */}
+      <StatsSection/>
+
+      <div style={{textAlign:'center',padding:'28px 0 22px'}}>
+        {/* SVG butterfly flapping above slogan */}
+        <div style={{display:'flex',justifyContent:'center',marginBottom:'10px',animation:'float 2.8s ease-in-out infinite'}}>
+          <svg viewBox="0 0 40 28" width="30" height="22" overflow="visible" style={{filter:'drop-shadow(0 0 8px hsla(280,65%,72%,0.6))'}}>
+            <defs>
+              <linearGradient id="slL" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="hsla(280,72%,80%,0.82)"/><stop offset="100%" stopColor="hsla(302,58%,66%,0.3)"/></linearGradient>
+              <linearGradient id="slR" x1="1" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsla(280,72%,80%,0.82)"/><stop offset="100%" stopColor="hsla(302,58%,66%,0.3)"/></linearGradient>
+            </defs>
+            <path d="M20,14 Q7,1 1,7 Q-1,15 8,19 Q14,22 20,14Z" fill="url(#slL)" style={{transformBox:'fill-box',transformOrigin:'100% 50%',animation:'wingFlapL 0.4s ease-in-out infinite alternate'}}/>
+            <path d="M20,14 Q33,1 39,7 Q41,15 32,19 Q26,22 20,14Z" fill="url(#slR)" style={{transformBox:'fill-box',transformOrigin:'0% 50%',animation:'wingFlapR 0.4s ease-in-out infinite alternate'}}/>
+            <path d="M20,14 Q10,18 6,24 Q14,26 20,14Z" fill="hsla(290,65%,72%,0.38)" style={{transformBox:'fill-box',transformOrigin:'100% 50%',animation:'wingFlapL 0.4s ease-in-out infinite alternate'}}/>
+            <path d="M20,14 Q30,18 34,24 Q26,26 20,14Z" fill="hsla(290,65%,72%,0.38)" style={{transformBox:'fill-box',transformOrigin:'0% 50%',animation:'wingFlapR 0.4s ease-in-out infinite alternate'}}/>
+            <ellipse cx="20" cy="15" rx="1.5" ry="5" fill="hsla(280,50%,38%,0.8)"/>
+            <path d="M19,10 Q16,4 14,2" stroke="hsla(280,60%,72%,0.6)" strokeWidth="0.5" fill="none"/>
+            <path d="M21,10 Q24,4 26,2" stroke="hsla(280,60%,72%,0.6)" strokeWidth="0.5" fill="none"/>
+            <circle cx="14" cy="2" r="1" fill="hsla(280,60%,78%,0.72)"/>
+            <circle cx="26" cy="2" r="1" fill="hsla(280,60%,78%,0.72)"/>
+          </svg>
+        </div>
+        {/* slogan line 1 */}
+        <div style={{
+          fontFamily:"'LXGW WenKai','Noto Serif SC',serif",
+          fontSize:'13px', letterSpacing:'5px', fontWeight:400, marginBottom:'4px',
+          background:'linear-gradient(90deg,rgba(178,128,255,0.6),rgba(255,178,218,0.95),rgba(178,218,255,0.75),rgba(255,178,218,0.95),rgba(178,128,255,0.6))',
+          backgroundSize:'300% 100%',
+          WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent',
+          animation:'drift 4s ease infinite',
+          filter:'drop-shadow(0 0 10px rgba(200,140,255,0.4))'
+        }}>入心成酿 · 时间是器</div>
+        {/* slogan line 2 */}
+        <div style={{
+          fontFamily:"'LXGW WenKai','Noto Serif SC',serif",
+          fontSize:'13px', letterSpacing:'5px', fontWeight:400,
+          background:'linear-gradient(90deg,rgba(255,178,218,0.95),rgba(178,218,255,0.75),rgba(255,178,218,0.95))',
+          backgroundSize:'300% 100%',
+          WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent',
+          animation:'drift 4s ease 0.5s infinite',
+          filter:'drop-shadow(0 0 10px rgba(200,140,255,0.4))'
+        }}>我们是彼此的回甘</div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Nav Bar ── */
+const NAV_ICONS = {
+  home:   <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>,
+  memory: <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg>,
+  tidal:  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 12c.6.5 1.2 1 2.5 1C7 13 7 11 9.5 11c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 18c.6.5 1.2 1 2.5 1C7 19 7 17 9.5 17c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/></svg>,
+  diary:  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>,
+  log:    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>,
+};
+const NAV = [
+  {id:'home',  icon:NAV_ICONS.home,  label:'Home'},
+  {id:'memory',icon:NAV_ICONS.memory,label:'Memory'},
+  {id:'tidal', icon:NAV_ICONS.tidal, label:'Tidal'},
+  {id:'diary', icon:NAV_ICONS.diary, label:'Diary'},
+  {id:'log',   icon:NAV_ICONS.log,   label:'Log'},
+];
+
+function NavBar({ tab, setTab }) {
+  return (
+    <div style={{
+      position:'fixed', bottom:0, left:'50%', transform:'translateX(-50%)',
+      width:'min(430px,100%)', padding:'8px 16px 22px',
+      background:'linear-gradient(180deg,transparent,rgba(5,2,13,0.97) 36%)', zIndex:40
+    }}>
+      <div style={{
+        display:'flex', justifyContent:'space-around', alignItems:'center',
+        background:'rgba(10,5,22,0.74)', borderRadius:'26px', padding:'8px 4px',
+        backdropFilter:'blur(28px)', WebkitBackdropFilter:'blur(28px)',
+        border:'1px solid rgba(98,62,158,0.14)',
+        boxShadow:'0 -2px 24px rgba(48,16,108,0.18)'
+      }}>
+        {NAV.map(t => {
+          const on = tab === t.id;
+          return (
+            <div key={t.id} onClick={() => setTab(t.id)} style={{
+              display:'flex', flexDirection:'column', alignItems:'center', gap:'3px',
+              padding:'8px 12px', borderRadius:'20px', cursor:'pointer',
+              transition:'all 0.32s cubic-bezier(0.4,0,0.2,1)',
+              background: on ? 'linear-gradient(135deg,rgba(118,68,202,0.34),rgba(178,68,138,0.24))' : 'transparent',
+              transform: on ? 'scale(1.12)' : 'scale(1)'
+            }}>
+              <div style={{
+                color: on ? 'rgba(222,202,255,1)' : 'rgba(172,152,218,0.75)',
+                transition:'all 0.32s cubic-bezier(0.4,0,0.2,1)',
+                filter: on ? 'drop-shadow(0 0 10px rgba(178,118,255,0.68))' : 'drop-shadow(0 0 3px rgba(158,128,225,0.20))',
+                transform:`scale(${on?1.14:1})`
+              }}>{t.icon}</div>
+              <span style={{
+                fontFamily:"'Quicksand',sans-serif",
+                fontSize: on ? '9px' : '8px', fontWeight: on ? 600 : 400,
+                letterSpacing: on ? '1.5px' : '0.8px', textTransform:'uppercase',
+                color: on ? 'rgba(255,245,255,1)' : 'rgba(185,170,225,0.72)',
+                transition:'all 0.32s cubic-bezier(0.4,0,0.2,1)',
+                textShadow: on ? '0 0 14px rgba(178,138,255,0.58)' : 'none'
+              }}>{t.label}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ── Section Header ── */
+function SH({ label }) {
+  return (
+    <div style={{
+      padding:'0 18px 14px',
+      fontFamily:"'Cinzel',serif",
+      fontSize:'11px', color:'rgba(195,175,240,0.85)',
+      letterSpacing:'5px', textTransform:'uppercase', fontWeight:500
+    }}>{label}</div>
+  );
+}
+
+/* ── Lock Screen ── */
+const RP_ID   = location.hostname;
+const PIN_KEY = '1226';
+const CRED_KEY = 'tyn_cred_id';
+
+function LockScreen({ onUnlock }) {
+  const [phase,  setPhase]  = useState('init'); // init|fp|pin|offer
+  const [digits, setDigits] = useState([]);
+  const [shake,  setShake]  = useState(false);
+  const [msg,    setMsg]    = useState('');
+
+  const hasCred = () => !!localStorage.getItem(CRED_KEY);
+  const bioOK   = () => !!(window.PublicKeyCredential);
+
+  useEffect(() => {
+    if (bioOK() && hasCred()) {
+      setPhase('fp');
+      doFingerprint();
+    } else {
+      setPhase('pin');
+    }
+  }, []);
+
+  async function doFingerprint() {
+    try {
+      const b64  = localStorage.getItem(CRED_KEY);
+      const id   = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+      await navigator.credentials.get({ publicKey: {
+        challenge: crypto.getRandomValues(new Uint8Array(32)),
+        rpId: RP_ID,
+        allowCredentials: [{ type:'public-key', id }],
+        userVerification: 'required', timeout: 30000
+      }});
+      onUnlock();
+    } catch { setPhase('pin'); }
+  }
+
+  async function registerFingerprint() {
+    try {
+      const cred = await navigator.credentials.create({ publicKey: {
+        challenge: crypto.getRandomValues(new Uint8Array(32)),
+        rp: { name:'棠予酿', id: RP_ID },
+        user: { id: crypto.getRandomValues(new Uint8Array(16)), name:'tang', displayName:'棠棠' },
+        pubKeyCredParams: [{ alg:-7, type:'public-key' }, { alg:-257, type:'public-key' }],
+        authenticatorSelection: { authenticatorAttachment:'platform', userVerification:'required' },
+        timeout: 60000
+      }});
+      localStorage.setItem(CRED_KEY, btoa(String.fromCharCode(...new Uint8Array(cred.rawId))));
+      onUnlock();
+    } catch { onUnlock(); }
+  }
+
+  function press(d) {
+    if (digits.length >= 4) return;
+    const next = [...digits, d];
+    setDigits(next);
+    if (next.length === 4) {
+      setTimeout(() => {
+        if (next.join('') === PIN_KEY) {
+          if (bioOK() && !hasCred()) { setPhase('offer'); setDigits([]); }
+          else onUnlock();
+        } else {
+          setShake(true);
+          setMsg('再想想哦 ♡');
+          setTimeout(() => { setShake(false); setMsg(''); setDigits([]); }, 900);
+        }
+      }, 120);
+    }
+  }
+
+  function del() { setDigits(d => d.slice(0,-1)); }
+
+  const KEYS = ['1','2','3','4','5','6','7','8','9','','0','⌫'];
+  const dotStyle = (filled) => ({
+    width:'14px', height:'14px', borderRadius:'50%',
+    background: filled
+      ? 'linear-gradient(135deg,#b080e0,#e080b0)'
+      : 'rgba(118,88,168,0.28)',
+    border: filled ? 'none' : '1px solid rgba(148,108,202,0.38)',
+    boxShadow: filled ? '0 0 10px rgba(178,118,255,0.55)' : 'none',
+    transition:'all 0.18s'
+  });
+
+  return (
+    <div style={{
+      position:'fixed', inset:0, zIndex:9999,
+      background:'#0a0515',
+      display:'flex', flexDirection:'column',
+      alignItems:'center', justifyContent:'center',
+      fontFamily:"'Quicksand',sans-serif"
+    }}>
+      <StarField/>
+
+      {/* Logo */}
+      <div style={{
+        fontFamily:"'LXGW WenKai',serif",
+        fontSize:'38px', letterSpacing:'12px',
+        background:'linear-gradient(135deg,#b080e0,#e080b0,#80b8e0)',
+        WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent',
+        animation:'glow 4s ease-in-out infinite',
+        marginBottom:'10px', position:'relative', zIndex:1
+      }}>棠予酿</div>
+
+      <div style={{
+        fontFamily:"'Cinzel',serif", fontSize:'10px',
+        color:'rgba(195,175,240,0.75)', letterSpacing:'5px',
+        marginBottom:'48px', position:'relative', zIndex:1
+      }}>OUR LITTLE WORLD</div>
+
+      {/* Fingerprint phase */}
+      {phase === 'fp' && (
+        <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'20px',position:'relative',zIndex:1}}>
+          <div onClick={doFingerprint} style={{
+            width:'72px', height:'72px', borderRadius:'50%', cursor:'pointer',
+            background:'rgba(118,78,202,0.18)',
+            border:'1.5px solid rgba(178,118,255,0.45)',
+            display:'flex', alignItems:'center', justifyContent:'center',
+            boxShadow:'0 0 32px rgba(138,78,222,0.3)',
+            animation:'heartBeat 2.8s ease-in-out infinite'
+          }}>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(195,155,255,0.92)" strokeWidth="1.4" strokeLinecap="round">
+              <path d="M12 1a5 5 0 0 1 5 5v3"/>
+              <path d="M7 9V6a5 5 0 0 1 5-5"/>
+              <path d="M12 13v4"/>
+              <path d="M9 9a3 3 0 0 1 6 0v4a3 3 0 0 1-6 0V9z"/>
+              <path d="M6 9a6 6 0 0 0 12 0"/>
+              <path d="M3 9a9 9 0 0 0 18 0"/>
+            </svg>
+          </div>
+          <div style={{color:'rgba(195,175,240,0.78)',fontSize:'13px',letterSpacing:'2px'}}>触碰解锁</div>
+          <div onClick={() => setPhase('pin')} style={{
+            color:'rgba(155,135,200,0.55)', fontSize:'11px',
+            letterSpacing:'1px', cursor:'pointer', marginTop:'8px'
+          }}>使用 PIN</div>
+        </div>
+      )}
+
+      {/* PIN phase */}
+      {phase === 'pin' && (
+        <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'0',position:'relative',zIndex:1,width:'100%',maxWidth:'300px',padding:'0 24px'}}>
+          {/* dots */}
+          <div style={{
+            display:'flex', gap:'18px', marginBottom:'10px',
+            animation: shake ? 'bounce 0.55s ease' : 'none'
+          }}>
+            {[0,1,2,3].map(i => <div key={i} style={dotStyle(i < digits.length)}/>)}
+          </div>
+          <div style={{
+            fontSize:'11px', color:'rgba(222,168,200,0.72)',
+            letterSpacing:'2px', marginBottom:'36px', height:'16px'
+          }}>{msg || (hasCred() ? '' : '输入 PIN 解锁')}</div>
+          {/* keypad */}
+          <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'14px',width:'100%'}}>
+            {KEYS.map((k,i) => k === '' ? <div key={i}/> : (
+              <button key={i} onClick={() => k==='⌫' ? del() : press(k)} style={{
+                height:'58px', borderRadius:'18px', cursor:'pointer',
+                border: k==='⌫' ? '1px solid rgba(98,68,158,0.18)' : '1px solid rgba(118,88,178,0.28)',
+                background: k==='⌫' ? 'rgba(16,9,30,0.38)' : 'rgba(18,10,36,0.58)',
+                color: k==='⌫' ? 'rgba(178,148,218,0.62)' : 'rgba(215,198,248,0.95)',
+                fontSize: k==='⌫' ? '20px' : '22px', fontWeight:300,
+                backdropFilter:'blur(12px)',
+                boxShadow:'0 2px 12px rgba(8,4,18,0.28)',
+                transition:'all 0.14s',
+                fontFamily:"'Quicksand',sans-serif"
+              }}>{k}</button>
+            ))}
+          </div>
+          {hasCred() && (
+            <div onClick={() => { setPhase('fp'); doFingerprint(); }} style={{
+              marginTop:'28px', color:'rgba(178,148,232,0.65)',
+              fontSize:'11px', letterSpacing:'2px', cursor:'pointer'
+            }}>☞ 改用指纹</div>
+          )}
+        </div>
+      )}
+
+      {/* Offer fingerprint registration */}
+      {phase === 'offer' && (
+        <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'18px',position:'relative',zIndex:1,textAlign:'center',padding:'0 32px'}}>
+          <div style={{fontSize:'42px'}}>🫶🏻</div>
+          <div style={{color:'rgba(218,198,248,0.92)',fontSize:'14px',lineHeight:1.9,letterSpacing:'1px'}}>
+            下次用指纹解锁好吗？<br/>
+            <span style={{fontSize:'12px',color:'rgba(178,158,222,0.65)'}}>只需轻触一下，棠棠专属 ♡</span>
+          </div>
+          <button onClick={registerFingerprint} style={{
+            padding:'13px 36px', borderRadius:'28px', cursor:'pointer',
+            border:'1px solid rgba(178,118,242,0.45)',
+            background:'linear-gradient(135deg,rgba(118,72,188,0.45),rgba(178,72,142,0.35))',
+            color:'rgba(232,212,255,0.95)', fontSize:'12px',
+            letterSpacing:'3px', fontWeight:600, textTransform:'uppercase',
+            boxShadow:'0 4px 22px rgba(118,56,182,0.28)'
+          }}>好呀</button>
+          <div onClick={onUnlock} style={{
+            color:'rgba(155,135,200,0.52)', fontSize:'11px',
+            letterSpacing:'1px', cursor:'pointer'
+          }}>先不了</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Root (lock gate) ── */
+function Root() {
+  const [unlocked, setUnlocked] = useState(false);
+  if (!unlocked) return <LockScreen onUnlock={() => setUnlocked(true)}/>;
+  return <App/>;
+}
+
+/* ── Main App ── */
+function App() {
+  const [tab,   setTab]   = useState('home');
+  const [pulse, setPulse] = useState(null);
+  const [env,   setEnv]   = useState(false);
+  const [note,  setNote]  = useState('');
+  const [dc,    setDc]    = useState(getDays);
+  useEffect(() => {
+    const id = setInterval(() => setDc(getDays()), 60000);
+    return () => clearInterval(id);
+  }, []);
+  const FLAVORS = ['芋泥波波','桃桃乌龙','芒果椰椰','椰子奶冻','草莓鲜奶'];
+  const ICONS   = ['🍡','🍬','🍭','🍦','🧊','🍧','🍨'];
+  const flavor  = pulse?.['今日回甘'] || FLAVORS[dc % FLAVORS.length];
+  const FLAVOR_ICON_MAP = [
+    ['玫瑰','🌹'],['荔枝','🍈'],['草莓','🍓'],['芒果','🥭'],['桃','🍑'],
+    ['椰','🥥'],['芋','🍡'],['柠檬','🍋'],['橙','🍊'],['奶','🍮'],['冰','🧊'],
+  ];
+  const sweetIcon = (() => {
+    for (const [k,v] of FLAVOR_ICON_MAP) if (flavor.includes(k)) return v;
+    return ICONS[dc % ICONS.length];
+  })();
+
+  const [todayLocal, setTodayLocal] = useState(pulse?.['今日新增'] ?? 0);
+  useEffect(() => {
+    api('/memories').then(d => {
+      const mems = d?.memories || [];
+      const t = new Date();
+      const todayStr = `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
+      setTodayLocal(mems.filter(m => m.created_at && m.created_at.slice(0,10) === todayStr).length);
+    });
+  }, []);
+
+  useEffect(() => {
+    api('/pulse').then(d    => { if (d) setPulse(d); });
+    api('/love_note').then(d => { if (d?.content) setNote(d.content); });
+  }, []);
+
+  return (
+    <div style={{
+      minHeight:'100vh', width:'100%', maxWidth:'430px', margin:'0 auto',
+      background:'linear-gradient(168deg,#0a0515 0%,#120828 22%,#1b0d38 48%,#0f0622 74%,#080319 100%)',
+      fontFamily:"'LXGW WenKai','Noto Serif SC',serif",
+      position:'relative', overflow:'hidden'
+    }}>
+      {/* Nebula blobs */}
+      {[
+        {top:'7%',  right:'-13%', c:'100,40,182', d:9,  s:340},
+        {top:'54%', left:'-9%',   c:'182,58,142', d:12, s:282, delay:3},
+        {top:'32%', left:'38%',   c:'58,18,122',  d:16, s:490, delay:6},
+      ].map((n,i) => (
+        <div key={i} style={{
+          position:'fixed', top:n.top, right:n.right, left:n.left,
+          width:`${n.s}px`, height:`${n.s}px`, borderRadius:'50%',
+          background:`radial-gradient(circle,rgba(${n.c},0.11),transparent 70%)`,
+          animation:`nebula ${n.d}s ease-in-out ${n.delay||0}s infinite`,
+          pointerEvents:'none', zIndex:0
+        }}/>
+      ))}
+
+      <StarField/>
+      <Butterflies/>
+      {env && <Envelope note={note} onClose={() => setEnv(false)}/>}
+
+      <div style={{position:'relative',zIndex:2,paddingBottom:'112px'}}>
+        {/* Header */}
+        <div style={{padding:'44px 20px 4px',textAlign:'center'}}>
+          <div style={{
+            fontFamily:"'Cinzel',serif",
+            fontSize:'10px', letterSpacing:'9px', textTransform:'uppercase',
+            color:'rgba(220,205,255,0.88)', marginBottom:'10px', fontWeight:400
+          }}>Tang Yu Niang</div>
+          <div style={{
+            fontFamily:"'LXGW WenKai','Noto Serif SC',serif",
+            fontSize:'30px', fontWeight:300, letterSpacing:'12px',
+            background:'linear-gradient(135deg,rgba(202,174,255,0.97),rgba(255,182,224,0.92),rgba(182,222,255,0.87))',
+            backgroundSize:'300% 300%',
+            WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent',
+            animation:'drift 10s ease infinite',
+            filter:'drop-shadow(0 0 24px rgba(158,98,222,0.28))'
+          }}>棠 予 酿</div>
+        </div>
+
+        {/* Day Counter */}
+        <div style={{margin:'18px 18px 6px',animation:'slideUp 0.62s ease-out'}}>
+          <G glow style={{
+            padding:'34px 28px', textAlign:'center',
+            background:'linear-gradient(150deg,rgba(26,13,52,0.74),rgba(17,9,36,0.84))',
+            position:'relative', overflow:'hidden'
+          }}>
+            <div style={{position:'absolute',inset:0,borderRadius:'22px',background:'radial-gradient(ellipse at 50% 24%,rgba(118,58,202,0.13),transparent 64%)',pointerEvents:'none'}}/>
+            <div style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:'rgba(210,196,245,0.78)',letterSpacing:'7px',textTransform:'uppercase',marginBottom:'14px',position:'relative',fontWeight:500}}>✧ Together Since ✧</div>
+            <div style={{
+              fontFamily:"'Cinzel',serif",
+              fontSize:'58px', fontWeight:600, letterSpacing:'8px', lineHeight:1.1, position:'relative',
+              background:'linear-gradient(135deg,#b080e0 0%,#e080b0 50%,#80b8e0 100%)', backgroundSize:'300% 300%',
+              animation:'drift 8s ease infinite, glow 4.5s ease-in-out infinite',
+              WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent'
+            }}>{String(dc).padStart(3,'0')}</div>
+            <div style={{fontFamily:"'Cinzel',serif",fontSize:'12px',color:'rgba(210,196,245,0.78)',letterSpacing:'8px',marginTop:'8px',fontWeight:600,position:'relative'}}>DAYS</div>
+            <div style={{marginTop:'14px',fontFamily:"'Quicksand',sans-serif",fontSize:'12px',color:'rgba(222,205,255,0.92)',letterSpacing:'2px',fontWeight:500,position:'relative'}}>{sweetIcon} {flavor}</div>
+          </G>
+        </div>
+
+        {/* Tab content */}
+        <div style={{marginTop:'16px'}}>
+          {tab==='home'   && <HomeTab pulse={pulse} todayLocal={todayLocal} onEnvelope={() => setEnv(true)} setTab={setTab}/>}
+          {tab==='memory' && <><SH label="✦ Memory Archive"/><MemoryTab/></>}
+          {tab==='tidal'  && <><SH label="🌊 Memory Tidal"/><TidalTab/></>}
+          {tab==='diary'  && <><SH label="📖 予予的日记"/><DiaryTab/></>}
+          {tab==='log'    && <><SH label="📋 Call Log"/><LogTab/></>}
+        </div>
+      </div>
+
+      <NavBar tab={tab} setTab={setTab}/>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Root/>);
+</script>
+</body>
+</html>
