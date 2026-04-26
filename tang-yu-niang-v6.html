@@ -867,11 +867,11 @@ const QI = {
 };
 
 /* ── Home Tab ── */
-function HomeTab({ pulse, onEnvelope, setTab }) {
+function HomeTab({ pulse, todayLocal, onEnvelope, setTab }) {
   const dc      = getDays();
   const total   = pulse?.['总记忆数']  || 0;
   const pinned  = pulse?.['置顶锚点']  || 0;
-  const todayN  = pulse?.['今日新增']  || 0;
+  const todayN  = todayLocal;
   const recent  = pulse?.['最近记忆']  || [];
 
   const QUICK = [
@@ -1317,7 +1317,24 @@ function App() {
   const FLAVORS = ['芋泥波波','桃桃乌龙','芒果椰椰','椰子奶冻','草莓鲜奶'];
   const ICONS   = ['🍡','🍬','🍭','🍦','🧊','🍧','🍨'];
   const flavor  = pulse?.['今日回甘'] || FLAVORS[dc % FLAVORS.length];
-  const sweetIcon = ICONS[dc % ICONS.length];
+  const FLAVOR_ICON_MAP = [
+    ['玫瑰','🌹'],['荔枝','🍈'],['草莓','🍓'],['芒果','🥭'],['桃','🍑'],
+    ['椰','🥥'],['芋','🍡'],['柠檬','🍋'],['橙','🍊'],['奶','🍮'],['冰','🧊'],
+  ];
+  const sweetIcon = (() => {
+    for (const [k,v] of FLAVOR_ICON_MAP) if (flavor.includes(k)) return v;
+    return ICONS[dc % ICONS.length];
+  })();
+
+  const [todayLocal, setTodayLocal] = useState(pulse?.['今日新增'] ?? 0);
+  useEffect(() => {
+    api('/memories').then(d => {
+      const mems = d?.memories || [];
+      const t = new Date();
+      const todayStr = `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
+      setTodayLocal(mems.filter(m => m.created_at && m.created_at.slice(0,10) === todayStr).length);
+    });
+  }, []);
 
   useEffect(() => {
     api('/pulse').then(d    => { if (d) setPulse(d); });
@@ -1392,7 +1409,7 @@ function App() {
 
         {/* Tab content */}
         <div style={{marginTop:'16px'}}>
-          {tab==='home'   && <HomeTab pulse={pulse} onEnvelope={() => setEnv(true)} setTab={setTab}/>}
+          {tab==='home'   && <HomeTab pulse={pulse} todayLocal={todayLocal} onEnvelope={() => setEnv(true)} setTab={setTab}/>}
           {tab==='memory' && <><SH label="✦ Memory Archive"/><MemoryTab/></>}
           {tab==='tidal'  && <><SH label="🌊 Memory Tidal"/><TidalTab/></>}
           {tab==='diary'  && <><SH label="📖 予予的日记"/><DiaryTab/></>}
