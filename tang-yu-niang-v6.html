@@ -1314,8 +1314,10 @@ function App() {
     const id = setInterval(() => setDc(getDays()), 60000);
     return () => clearInterval(id);
   }, []);
-  const flavor = pulse?.['今日回甘'] ||
-    ['芋泥波波','桃桃乌龙','芒果椰椰','椰子奶冻','草莓鲜奶'][dc % 5];
+  const FLAVORS = ['芋泥波波','桃桃乌龙','芒果椰椰','椰子奶冻','草莓鲜奶'];
+  const ICONS   = ['🍡','🍬','🍭','🍦','🧊','🍧','🍨'];
+  const flavor  = pulse?.['今日回甘'] || FLAVORS[dc % FLAVORS.length];
+  const sweetIcon = ICONS[dc % ICONS.length];
 
   useEffect(() => {
     api('/pulse').then(d    => { if (d) setPulse(d); });
@@ -1384,7 +1386,7 @@ function App() {
               WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent'
             }}>{String(dc).padStart(3,'0')}</div>
             <div style={{fontFamily:"'Cinzel',serif",fontSize:'12px',color:'rgba(210,196,245,0.78)',letterSpacing:'8px',marginTop:'8px',fontWeight:600,position:'relative'}}>DAYS</div>
-            <div style={{marginTop:'14px',fontFamily:"'Quicksand',sans-serif",fontSize:'12px',color:'rgba(222,205,255,0.92)',letterSpacing:'2px',fontWeight:500,position:'relative'}}>🍵 {flavor}</div>
+            <div style={{marginTop:'14px',fontFamily:"'Quicksand',sans-serif",fontSize:'12px',color:'rgba(222,205,255,0.92)',letterSpacing:'2px',fontWeight:500,position:'relative'}}>{sweetIcon} {flavor}</div>
           </G>
         </div>
 
