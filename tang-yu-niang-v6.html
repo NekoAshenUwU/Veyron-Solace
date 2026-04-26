@@ -321,8 +321,57 @@ function Envelope({ note, onClose }) {
   );
 }
 
+/* ── Calendar Day Modal ── */
+function CalDayModal({ dateStr, onClose }) {
+  const [mems, setMems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    api('/memories').then(d => {
+      const all = d?.memories || [];
+      setMems(all.filter(m => m.created_at && m.created_at.slice(0,10) === dateStr));
+      setLoading(false);
+    });
+  }, [dateStr]);
+  return (
+    <div onClick={onClose} style={{
+      position:'fixed', inset:0, zIndex:200,
+      background:'rgba(5,2,14,0.82)',
+      backdropFilter:'blur(26px)', WebkitBackdropFilter:'blur(26px)',
+      display:'flex', alignItems:'flex-start', justifyContent:'center',
+      overflowY:'auto', padding:'48px 18px 80px',
+      animation:'fadeIn 0.2s ease-out'
+    }}>
+      <div onClick={e=>e.stopPropagation()} style={{width:'min(400px,92vw)'}}>
+        <G glow style={{padding:'24px 20px', background:'linear-gradient(150deg,rgba(26,13,52,0.96),rgba(17,9,38,0.98))', animation:'revealPop 0.3s cubic-bezier(0.34,1.56,0.64,1)'}}>
+          <div style={{fontFamily:"'Cinzel',serif",fontSize:'11px',letterSpacing:'4px',color:'rgba(202,178,255,0.78)',marginBottom:'16px',textAlign:'center'}}>{dateStr}</div>
+          {loading ? <Spinner/> : mems.length === 0
+            ? <div style={{textAlign:'center',fontFamily:"'LXGW WenKai',serif",fontSize:'13px',color:'rgba(160,140,200,0.55)',padding:'24px 0'}}>这天还没有记忆 ✦</div>
+            : mems.map((m,i) => (
+              <div key={i} style={{
+                borderLeft:'2px solid rgba(178,118,255,0.35)',
+                paddingLeft:'12px', marginBottom:'14px'
+              }}>
+                <div style={{fontFamily:"'LXGW WenKai',serif",fontSize:'13px',color:'rgba(222,202,255,0.9)',marginBottom:'4px'}}>{m.mood_emoji||'✦'} {m.title}</div>
+                <div style={{fontFamily:"'LXGW WenKai',serif",fontSize:'12px',color:'rgba(195,175,240,0.72)',lineHeight:1.8}}>{m.content||''}</div>
+              </div>
+            ))
+          }
+          <button onClick={onClose} style={{
+            width:'100%', marginTop:'12px', padding:'9px',
+            borderRadius:'12px', background:'rgba(68,28,118,0.28)',
+            border:'1px solid rgba(118,68,178,0.24)',
+            color:'rgba(185,160,230,0.72)',
+            fontFamily:"'Quicksand',sans-serif", fontSize:'11px',
+            letterSpacing:'2px', cursor:'pointer'
+          }}>关闭</button>
+        </G>
+      </div>
+    </div>
+  );
+}
+
 /* ── Calendar ── */
-function Calendar() {
+function Calendar({ onDayClick }) {
   const now  = new Date();
   const y    = now.getFullYear();
   const mo   = now.getMonth();
@@ -335,8 +384,9 @@ function Calendar() {
   for (let i = 0; i < d1; i++) cells.push(<div key={`e${i}`}/>);
   for (let d = 1; d <= dN; d++) {
     const isT = d === tod;
+    const dateStr = `${y}-${String(mo+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     cells.push(
-      <div key={d} style={{
+      <div key={d} onClick={() => onDayClick && onDayClick(dateStr)} style={{
         textAlign:'center', padding:'6px 0', borderRadius:'10px',
         fontFamily:"'Noto Sans SC',sans-serif",
         fontSize:'11px', fontWeight: isT ? 500 : 300,
@@ -345,7 +395,7 @@ function Calendar() {
           ? 'linear-gradient(135deg,rgba(138,78,222,0.68),rgba(202,78,158,0.58))'
           : 'transparent',
         boxShadow: isT ? '0 0 18px rgba(138,78,222,0.38)' : 'none',
-        transition:'all 0.2s'
+        transition:'all 0.2s', cursor:'pointer'
       }}>{d}</div>
     );
   }
@@ -451,7 +501,8 @@ function MemoryDetail({ m, onClose }) {
 
 function MemoryCard({ m, i }) {
   const [open, setOpen] = useState(false);
-  const hi = (m.strength || 0) >= 0.8;
+  const strength = m.importance !== undefined ? Math.min(m.importance / 10.0, 1.0) : (m.strength || 0);
+  const hi = strength >= 0.8;
   const isNew = m.created_at && (Date.now() - new Date(m.created_at.replace(' ','T'))) < 48 * 3600000;
   return (
     <>
@@ -502,18 +553,20 @@ function MemoryCard({ m, i }) {
           fontFamily:"'LXGW WenKai','Noto Serif SC',serif",
           fontSize:'12px', color:'rgba(200,180,240,0.82)',
           lineHeight:1.75, fontWeight:400,
-          marginBottom: m.strength !== undefined ? '10px' : 0
+          marginBottom: m.importance !== undefined ? '10px' : 0
         }}>{m.content ? m.content.slice(0,80) + (m.content.length > 80 ? '…' : '') : ''}</div>
-        {m.strength !== undefined && (
+        {m.importance !== undefined && (
           <>
             <div style={{height:'4px',borderRadius:'2px',background:'rgba(48,24,88,0.52)',overflow:'hidden'}}>
               <div style={{
                 height:'100%', borderRadius:'2px',
-                width:`${Math.round(m.strength*100)}%`,
+                width:`${Math.round(strength*100)}%`,
                 transition:'width 1.4s ease-out',
                 background: hi
                   ? 'linear-gradient(90deg,rgba(138,78,222,0.88),rgba(222,98,178,0.75))'
-                  : 'linear-gradient(90deg,rgba(98,58,158,0.38),rgba(98,58,158,0.18))'
+                  : strength >= 0.5
+                    ? 'linear-gradient(90deg,rgba(118,68,192,0.72),rgba(158,88,192,0.55))'
+                    : 'linear-gradient(90deg,rgba(98,58,158,0.55),rgba(118,68,168,0.38))'
               }}/>
             </div>
             <div style={{display:'flex',justifyContent:'space-between',marginTop:'5px'}}>
@@ -522,8 +575,8 @@ function MemoryCard({ m, i }) {
               </span>
               <span style={{
                 fontFamily:"'Quicksand',sans-serif", fontSize:'10px', fontWeight:600,
-                color: hi ? 'rgba(202,172,255,0.88)' : 'rgba(138,118,178,0.48)'
-              }}>{Math.round(m.strength*100)}%</span>
+                color: hi ? 'rgba(202,172,255,0.88)' : 'rgba(168,148,208,0.72)'
+              }}>{Math.round(strength*100)}%</span>
             </div>
           </>
         )}
@@ -881,6 +934,7 @@ function HomeTab({ pulse, todayLocal, onEnvelope, setTab }) {
     { icon:QI.anchor,    label:'Anchor',    fn:() => setTab('diary')  },
     { icon:QI.tidal,     label:'Tidal',     fn:() => setTab('tidal')  },
   ];
+  const [calDate, setCalDate] = useState(null);
   const [clicked, setClicked] = useState(null);
   const tap = (item, idx) => {
     setClicked(idx);
@@ -927,7 +981,8 @@ function HomeTab({ pulse, todayLocal, onEnvelope, setTab }) {
       </div>
 
       {/* Calendar */}
-      <div style={{marginBottom:'14px'}}><Calendar/></div>
+      {calDate && <CalDayModal dateStr={calDate} onClose={() => setCalDate(null)}/>}
+      <div style={{marginBottom:'14px'}}><Calendar onDayClick={setCalDate}/></div>
 
       {/* Quick icons */}
       <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:'8px',marginBottom:'20px'}}>
