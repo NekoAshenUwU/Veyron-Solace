@@ -73,6 +73,16 @@ async function api(path) {
   catch { return null; }
 }
 
+async function apiPost(path, body) {
+  try {
+    const r = await fetch(API + path, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    return r.ok ? r.json() : null;
+  } catch { return null; }
+}
+
 /* ── StarField: 70% shimmer/pulse/drift + 30% meteors ── */
 function StarField() {
   const items = [];
@@ -499,6 +509,103 @@ function MemoryDetail({ m, onClose }) {
   );
 }
 
+/* ── Write Memory Modal ── */
+function WriteMemoryModal({ onClose, onSaved }) {
+  const [title,   setTitle]   = useState('');
+  const [content, setContent] = useState('');
+  const [tag,     setTag]     = useState('diary');
+  const [imp,     setImp]     = useState(5);
+  const [saving,  setSaving]  = useState(false);
+  const [saved,   setSaved]   = useState(false);
+  const [err,     setErr]     = useState('');
+
+  const TAG_OPTS = [
+    {key:'diary',    label:'📖 日记'},
+    {key:'treasure', label:'💫 珍藏'},
+    {key:'anchor',   label:'⚓ 锚点'},
+    {key:'message',  label:'💌 留言'},
+  ];
+
+  const save = async () => {
+    if (!title.trim()) { setErr('标题不能为空'); return; }
+    if (!content.trim()) { setErr('内容不能为空'); return; }
+    setErr(''); setSaving(true);
+    const d = await apiPost('/write_memory', {title:title.trim(), content:content.trim(), tag, importance:imp});
+    setSaving(false);
+    if (d?.ok) { setSaved(true); setTimeout(() => { onSaved?.(); onClose(); }, 1000); }
+    else setErr(d?.error || '保存失败，请稍后重试');
+  };
+
+  return (
+    <div onClick={onClose} style={{
+      position:'fixed', inset:0, zIndex:200,
+      background:'rgba(5,2,14,0.86)',
+      backdropFilter:'blur(28px)', WebkitBackdropFilter:'blur(28px)',
+      display:'flex', alignItems:'flex-start', justifyContent:'center',
+      overflowY:'auto', padding:'48px 18px 80px',
+      animation:'fadeIn 0.2s ease-out'
+    }}>
+      <div onClick={e=>e.stopPropagation()} style={{width:'min(400px,92vw)'}}>
+        <G glow style={{padding:'26px 22px', background:'linear-gradient(150deg,rgba(26,13,52,0.96),rgba(17,9,38,0.98))', animation:'revealPop 0.32s cubic-bezier(0.34,1.56,0.64,1)'}}>
+          <div style={{fontFamily:"'Cinzel',serif",fontSize:'11px',letterSpacing:'4px',color:'rgba(202,178,255,0.78)',marginBottom:'22px',textAlign:'center'}}>✦ Write a Memory ✦</div>
+
+          {saved ? (
+            <div style={{textAlign:'center',padding:'28px 0',fontFamily:"'LXGW WenKai',serif",fontSize:'17px',color:'rgba(202,222,255,0.92)',animation:'slideUp 0.3s ease-out'}}>
+              已存入记忆库 ✦
+            </div>
+          ) : (<>
+            <input value={title} onChange={e=>setTitle(e.target.value)} placeholder="标题…"
+              style={{width:'100%',padding:'12px 16px',borderRadius:'14px',marginBottom:'12px',
+                background:'rgba(22,12,42,0.68)',border:'1px solid rgba(98,68,158,0.3)',
+                color:'rgba(222,202,255,0.92)',fontFamily:"'LXGW WenKai',serif",fontSize:'14px',display:'block'}}/>
+            <textarea value={content} onChange={e=>setContent(e.target.value)} placeholder="内容…" rows={5}
+              style={{width:'100%',padding:'12px 16px',borderRadius:'14px',marginBottom:'14px',
+                background:'rgba(22,12,42,0.68)',border:'1px solid rgba(98,68,158,0.3)',
+                color:'rgba(222,202,255,0.92)',fontFamily:"'LXGW WenKai',serif",fontSize:'13px',
+                lineHeight:1.8,resize:'vertical',display:'block'}}/>
+            <div style={{display:'flex',gap:'8px',flexWrap:'wrap',marginBottom:'16px'}}>
+              {TAG_OPTS.map(t => (
+                <button key={t.key} onClick={()=>setTag(t.key)} style={{
+                  padding:'7px 14px',borderRadius:'16px',cursor:'pointer',
+                  border: tag===t.key ? '1px solid rgba(178,118,242,0.55)' : '1px solid rgba(98,68,158,0.2)',
+                  background: tag===t.key ? 'linear-gradient(135deg,rgba(118,68,202,0.44),rgba(178,68,148,0.34))' : 'rgba(16,9,30,0.48)',
+                  color: tag===t.key ? 'rgba(232,212,255,1)' : 'rgba(185,165,228,0.75)',
+                  fontFamily:"'LXGW WenKai',serif", fontSize:'12px'
+                }}>{t.label}</button>
+              ))}
+            </div>
+            <div style={{marginBottom:'20px'}}>
+              <div style={{display:'flex',justifyContent:'space-between',marginBottom:'7px'}}>
+                <span style={{fontFamily:"'Quicksand',sans-serif",fontSize:'10px',color:'rgba(185,165,228,0.65)',letterSpacing:'2px'}}>IMPORTANCE</span>
+                <span style={{fontFamily:"'Quicksand',sans-serif",fontSize:'10px',color:'rgba(202,182,255,0.92)',fontWeight:700}}>{imp}</span>
+              </div>
+              <input type="range" min={1} max={10} value={imp} onChange={e=>setImp(+e.target.value)}
+                style={{width:'100%',accentColor:'rgba(178,118,255,0.85)'}}/>
+            </div>
+            {err && <div style={{color:'rgba(255,138,138,0.82)',fontFamily:"'Quicksand',sans-serif",fontSize:'11px',marginBottom:'12px',textAlign:'center'}}>{err}</div>}
+            <button onClick={save} disabled={saving} style={{
+              width:'100%',padding:'12px',borderRadius:'14px',cursor:'pointer',
+              border:'1px solid rgba(178,118,242,0.45)',
+              background:'linear-gradient(135deg,rgba(118,72,188,0.5),rgba(178,72,142,0.4))',
+              color:'rgba(232,212,255,0.95)',fontFamily:"'Quicksand',sans-serif",
+              fontSize:'12px',letterSpacing:'3px',fontWeight:600,
+              opacity:saving?0.6:1,transition:'opacity 0.2s',
+              boxShadow:'0 4px 22px rgba(118,56,182,0.28)'
+            }}>{saving ? '存入中…' : '存入记忆库'}</button>
+          </>)}
+
+          <button onClick={onClose} style={{
+            width:'100%',marginTop:'10px',padding:'9px',borderRadius:'12px',
+            background:'rgba(38,18,68,0.28)',border:'1px solid rgba(98,58,148,0.2)',
+            color:'rgba(165,145,205,0.62)',fontFamily:"'Quicksand',sans-serif",
+            fontSize:'11px',letterSpacing:'2px',cursor:'pointer'
+          }}>关闭</button>
+        </G>
+      </div>
+    </div>
+  );
+}
+
 function MemoryCard({ m, i }) {
   const [open, setOpen] = useState(false);
   const strength = m.importance !== undefined ? Math.min(m.importance / 10.0, 1.0) : (m.strength || 0);
@@ -587,10 +694,11 @@ function MemoryCard({ m, i }) {
 
 /* ── Memory Tab ── */
 function MemoryTab() {
-  const [filter, setFilter] = useState('all');
-  const [query,  setQuery]  = useState('');
-  const [mems,   setMems]   = useState([]);
-  const [loading,setLoading]= useState(true);
+  const [filter,  setFilter]  = useState('all');
+  const [query,   setQuery]   = useState('');
+  const [mems,    setMems]    = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [writing, setWriting] = useState(false);
 
   const TAGS = [
     {key:'all',label:'All'},{key:'diary',label:'Diary'},
@@ -607,8 +715,29 @@ function MemoryTab() {
     });
   }, [filter, query]);
 
+  const reload = () => {
+    setLoading(true);
+    const t = filter === 'all' ? '' : filter;
+    api(`/memories?tag=${t}&q=${encodeURIComponent(query)}`).then(d => {
+      setMems(d?.memories || (Array.isArray(d) ? d : []));
+      setLoading(false);
+    });
+  };
+
   return (
     <div style={{padding:'0 18px'}}>
+      {writing && <WriteMemoryModal onClose={() => setWriting(false)} onSaved={reload}/>}
+      {/* Write button */}
+      <button onClick={() => setWriting(true)} style={{
+        width:'100%', marginBottom:'14px', padding:'12px',
+        borderRadius:'16px', cursor:'pointer',
+        border:'1px solid rgba(138,88,202,0.32)',
+        background:'linear-gradient(135deg,rgba(78,38,142,0.38),rgba(138,48,108,0.28))',
+        color:'rgba(212,192,255,0.92)',
+        fontFamily:"'Quicksand',sans-serif", fontSize:'11px',
+        letterSpacing:'3px', fontWeight:600, textTransform:'uppercase',
+        boxShadow:'0 2px 18px rgba(98,48,172,0.18)'
+      }}>✏️ 写记忆</button>
       {/* Filter pills */}
       <div style={{display:'flex',gap:'7px',marginBottom:'14px',flexWrap:'wrap'}}>
         {TAGS.map(t => {
@@ -726,13 +855,17 @@ function TidalTab() {
 
 /* ── Diary Tab ── */
 function DiaryTab() {
-  const [note,    setNote]    = useState('');
-  const [drawing, setDrawing] = useState(false);
-  const [anchors, setAnchors] = useState([]);
+  const [note,      setNote]      = useState('');
+  const [drawing,   setDrawing]   = useState(false);
+  const [anchors,   setAnchors]   = useState([]);
+  const [loveNotes, setLoveNotes] = useState([]);
 
   useEffect(() => {
     api('/memories?tag=anchor&q=').then(d => {
       setAnchors(d?.memories || (Array.isArray(d) ? d : []));
+    });
+    api('/memories?tag=message&q=').then(d => {
+      setLoveNotes(d?.memories || (Array.isArray(d) ? d : []));
     });
   }, []);
 
@@ -841,6 +974,43 @@ function DiaryTab() {
           </G>
         ))
       }
+
+      {/* Love Notes Collection */}
+      {loveNotes.length > 0 && (<>
+        <div style={{
+          fontFamily:"'Quicksand',sans-serif", fontSize:'11px',
+          color:'rgba(255,178,210,0.85)', letterSpacing:'4px',
+          textTransform:'uppercase', marginBottom:'12px',
+          fontWeight:600, marginTop:'20px'
+        }}>💌 情话收藏</div>
+        {loveNotes.map((n, i) => (
+          <G key={n.id||i} glow style={{
+            padding:'22px 20px', marginBottom:'10px',
+            background:'linear-gradient(150deg,rgba(40,16,60,0.62),rgba(22,10,40,0.72))',
+            borderLeft:'3px solid rgba(255,138,178,0.42)',
+            animation:`slideUp 0.38s ease-out ${i*0.07}s both`,
+            position:'relative', overflow:'hidden'
+          }}>
+            <div style={{
+              position:'absolute', inset:0, borderRadius:'22px',
+              background:'radial-gradient(ellipse at 50% 0%,rgba(255,98,168,0.07),transparent 60%)',
+              pointerEvents:'none'
+            }}/>
+            <div style={{
+              fontFamily:"'LXGW WenKai','Noto Serif SC',serif",
+              fontSize:'15px', lineHeight:2.2,
+              color:'rgba(232,212,255,0.97)', fontWeight:300,
+              letterSpacing:'0.5px', position:'relative'
+            }}>{n.content}</div>
+            <div style={{
+              fontFamily:"'Noto Sans SC',sans-serif",
+              fontSize:'10px', color:'rgba(255,178,210,0.45)',
+              marginTop:'10px', textAlign:'right',
+              letterSpacing:'1px', position:'relative'
+            }}>— {n.title} {n.created_at ? `· ${n.created_at.slice(0,10)}` : ''}</div>
+          </G>
+        ))}
+      </>)}
     </div>
   );
 }
@@ -907,6 +1077,86 @@ function LogTab() {
         })
       }
     </div>
+  );
+}
+
+/* ── Stats Section ── */
+function StatsSection() {
+  const [mems,    setMems]    = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api('/memories').then(d => { setMems(d?.memories || []); setLoading(false); });
+  }, []);
+
+  if (loading) return <Spinner/>;
+
+  const tagCounts = {diary:0, treasure:0, anchor:0, message:0};
+  mems.forEach(m => { if (tagCounts[m.tag] !== undefined) tagCounts[m.tag]++; });
+  const total = mems.length || 1;
+
+  const TAG_INFO = [
+    {key:'diary',    label:'日记', color:'rgba(178,118,255,0.72)', icon:'📖'},
+    {key:'treasure', label:'珍藏', color:'rgba(255,192,80,0.72)',  icon:'💫'},
+    {key:'anchor',   label:'锚点', color:'rgba(118,202,255,0.72)', icon:'⚓'},
+    {key:'message',  label:'留言', color:'rgba(255,138,178,0.72)', icon:'💌'},
+  ];
+
+  const now = new Date();
+  const months = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    months.push({key, label: d.toLocaleDateString('zh-CN',{month:'short'}), count:0});
+  }
+  mems.forEach(m => {
+    if (!m.created_at) return;
+    const mk = m.created_at.slice(0,7);
+    const mo = months.find(x => x.key === mk);
+    if (mo) mo.count++;
+  });
+  const maxM = Math.max(...months.map(m => m.count), 1);
+
+  return (
+    <G glow style={{padding:'20px 20px 16px', marginBottom:'14px'}}>
+      <div style={{fontFamily:"'Quicksand',sans-serif",fontSize:'10px',color:'rgba(195,175,238,0.75)',letterSpacing:'4px',textTransform:'uppercase',marginBottom:'16px',fontWeight:600}}>✦ Memory Stats</div>
+
+      {/* Tag distribution */}
+      <div style={{marginBottom:'18px'}}>
+        {TAG_INFO.map(t => {
+          const cnt = tagCounts[t.key] || 0;
+          const pct = Math.round(cnt / total * 100);
+          return (
+            <div key={t.key} style={{marginBottom:'9px'}}>
+              <div style={{display:'flex',justifyContent:'space-between',marginBottom:'4px'}}>
+                <span style={{fontFamily:"'LXGW WenKai',serif",fontSize:'11px',color:'rgba(205,185,242,0.82)'}}>{t.icon} {t.label}</span>
+                <span style={{fontFamily:"'Quicksand',sans-serif",fontSize:'10px',color:'rgba(165,145,210,0.65)',fontWeight:600}}>{cnt}</span>
+              </div>
+              <div style={{height:'4px',borderRadius:'2px',background:'rgba(38,18,78,0.52)',overflow:'hidden'}}>
+                <div style={{height:'100%',borderRadius:'2px',width:`${pct}%`,background:t.color,transition:'width 1.2s ease-out'}}/>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Monthly bar chart */}
+      <div style={{fontFamily:"'Quicksand',sans-serif",fontSize:'9px',color:'rgba(175,155,220,0.55)',letterSpacing:'2px',marginBottom:'8px'}}>MONTHLY</div>
+      <div style={{display:'flex',alignItems:'flex-end',gap:'5px',height:'56px'}}>
+        {months.map(m => (
+          <div key={m.key} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:'4px',height:'100%',justifyContent:'flex-end'}}>
+            <div style={{
+              width:'100%', borderRadius:'3px 3px 0 0',
+              minHeight:'3px',
+              height:`${Math.max(Math.round((m.count/maxM)*40),3)}px`,
+              background:'linear-gradient(180deg,rgba(178,118,255,0.68),rgba(108,48,172,0.35))',
+              transition:'height 1s ease-out'
+            }}/>
+            <div style={{fontFamily:"'Quicksand',sans-serif",fontSize:'8px',color:'rgba(158,138,205,0.55)',whiteSpace:'nowrap'}}>{m.label}</div>
+          </div>
+        ))}
+      </div>
+    </G>
   );
 }
 
@@ -1030,6 +1280,9 @@ function HomeTab({ pulse, todayLocal, onEnvelope, setTab }) {
           ))}
         </>
       )}
+
+      {/* Stats */}
+      <StatsSection/>
 
       <div style={{textAlign:'center',padding:'28px 0 22px'}}>
         {/* SVG butterfly flapping above slogan */}
