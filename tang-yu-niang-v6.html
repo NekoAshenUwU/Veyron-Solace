@@ -1015,66 +1015,115 @@ function DiaryTab() {
   );
 }
 
-/* ── Log Tab ── */
-const LOG_DOT = {
-  memory_breathe:'#7ec4e0', memory_hold:'#c4a0e0',
-  memory_pulse:'#e0c080',   memory_grow:'#80d0a0',
-  memory_trace:'#e0a0a0',   love_note_draw:'#f0b0c8',
-  memory_tidal:'#80b0e0',   timeline_add:'#a0e0c0'
-};
-
-function LogTab() {
-  const [logs,   setLogs]   = useState([]);
-  const [loading,setLoading]= useState(true);
+/* ── Recent Tab ── */
+function RecentTab() {
+  const [mems,    setMems]    = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [detail,  setDetail]  = useState(null);
 
   useEffect(() => {
-    api('/logs').then(d => {
-      setLogs(d?.logs || (Array.isArray(d) ? d : []));
+    api('/memories').then(d => {
+      const all = d?.memories || [];
+      all.sort((a, b) => {
+        const ta = a.created_at ? new Date(a.created_at.replace(' ','T')).getTime() : 0;
+        const tb = b.created_at ? new Date(b.created_at.replace(' ','T')).getTime() : 0;
+        return tb - ta;
+      });
+      setMems(all);
       setLoading(false);
     });
   }, []);
 
+  const now = new Date();
+  const todayStart     = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const yesterdayStart = todayStart - 86400000;
+  const weekStart      = todayStart - 6 * 86400000;
+
+  const groups = [
+    {key:'today',     label:'今天',  items:[]},
+    {key:'yesterday', label:'昨天',  items:[]},
+    {key:'week',      label:'本周',  items:[]},
+    {key:'earlier',   label:'更早',  items:[]},
+  ];
+  mems.forEach(m => {
+    if (!m.created_at) { groups[3].items.push(m); return; }
+    const t = new Date(m.created_at.replace(' ','T')).getTime();
+    if      (t >= todayStart)     groups[0].items.push(m);
+    else if (t >= yesterdayStart) groups[1].items.push(m);
+    else if (t >= weekStart)      groups[2].items.push(m);
+    else                          groups[3].items.push(m);
+  });
+
+  const TICON  = {diary:'📖', treasure:'💫', anchor:'⚓', message:'💌'};
+  const TCOLOR = {diary:'rgba(178,118,255,0.14)', treasure:'rgba(255,192,80,0.14)', anchor:'rgba(118,202,255,0.14)', message:'rgba(255,138,178,0.14)'};
+
   return (
     <div style={{padding:'0 18px'}}>
-      {loading ? <Spinner/> : logs.length === 0
-        ? <div style={{textAlign:'center',padding:'40px 0',fontFamily:"'Quicksand',sans-serif",fontSize:'12px',letterSpacing:'2px',color:'rgba(185,165,228,0.72)'}}>No logs yet ✧</div>
-        : logs.map((l,i) => {
-          const dot = LOG_DOT[l.tool_name] || '#c4a0e0';
-          const t   = l.created_at ? l.created_at.split('T')[1]?.slice(0,5) : '';
-          return (
-            <G key={i} style={{
-              padding:'14px 18px', marginBottom:'8px',
-              display:'flex', alignItems:'center', gap:'14px',
-              animation:`slideUp 0.28s ease-out ${i*0.04}s both`
-            }}>
-              <div style={{
-                width:'8px', height:'8px', borderRadius:'50%',
-                background:dot, flexShrink:0,
-                boxShadow:`0 0 12px ${dot}88`
-              }}/>
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{
-                  fontFamily:"'Quicksand',sans-serif",
-                  fontSize:'11px', color:'rgba(202,182,232,0.88)',
-                  fontWeight:500, letterSpacing:'0.5px'
-                }}>{l.tool_name}</div>
-                {l.result_summary && (
-                  <div style={{
-                    fontFamily:"'LXGW WenKai',serif",
-                    fontSize:'11px', color:'rgba(158,138,202,0.52)',
-                    fontWeight:300, marginTop:'2px',
-                    whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis'
-                  }}>{l.result_summary}</div>
-                )}
-              </div>
-              <div style={{
-                fontFamily:"'Noto Sans SC',sans-serif",
-                fontSize:'10px', color:'rgba(160,140,200,0.58)',
-                whiteSpace:'nowrap', fontWeight:300
-              }}>{t}</div>
-            </G>
-          );
-        })
+      {detail && <MemoryDetail m={detail} onClose={() => setDetail(null)}/>}
+      {loading ? <Spinner/> : mems.length === 0
+        ? <div style={{textAlign:'center',padding:'40px 0',fontFamily:"'Quicksand',sans-serif",fontSize:'12px',letterSpacing:'2px',color:'rgba(185,165,228,0.72)'}}>No records yet ✧</div>
+        : groups.filter(g => g.items.length > 0).map(g => (
+          <div key={g.key}>
+            <div style={{
+              fontFamily:"'Quicksand',sans-serif", fontSize:'10px',
+              color:'rgba(178,158,228,0.52)', letterSpacing:'3px',
+              textTransform:'uppercase', fontWeight:600,
+              padding:'14px 4px 8px'
+            }}>{g.label}</div>
+            {g.items.map((m, i) => {
+              const isNew  = m.created_at && (Date.now() - new Date(m.created_at.replace(' ','T'))) < 48*3600000;
+              const str    = m.importance !== undefined ? Math.min(m.importance/10.0, 1.0) : (m.strength||0);
+              const hi     = str >= 0.8;
+              const dt     = m.created_at ? new Date(m.created_at.replace(' ','T')) : null;
+              const timeStr = dt ? dt.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}) : '';
+              return (
+                <G key={m.id||i} glow={hi} onClick={() => setDetail(m)} style={{
+                  padding:'14px 16px', marginBottom:'8px', cursor:'pointer',
+                  borderLeft: hi ? '3px solid rgba(178,118,255,0.55)' : '3px solid rgba(98,62,152,0.18)',
+                  animation:`slideUp 0.32s ease-out ${i*0.05}s both`,
+                  position:'relative'
+                }}>
+                  {isNew && (
+                    <div style={{position:'absolute',top:'10px',right:'10px',display:'flex',alignItems:'center',gap:'4px'}}>
+                      <div style={{width:'5px',height:'5px',borderRadius:'50%',background:'rgba(222,138,255,1)',boxShadow:'0 0 6px rgba(202,118,255,0.9)',animation:'shimmer 1.4s ease-in-out infinite'}}/>
+                      <span style={{fontFamily:"'Quicksand',sans-serif",fontSize:'8px',color:'rgba(222,168,255,0.92)',fontWeight:700,letterSpacing:'1.5px'}}>NEW</span>
+                    </div>
+                  )}
+                  <div style={{display:'flex',alignItems:'center',gap:'8px',marginBottom:'5px'}}>
+                    <span style={{fontSize:'14px'}}>{m.mood_emoji || TICON[m.tag] || '✦'}</span>
+                    <span style={{
+                      flex:1, fontFamily:"'LXGW WenKai',serif",
+                      fontSize:'13px', color:'rgba(222,202,255,0.94)', fontWeight:400,
+                      paddingRight: isNew ? '48px' : '0'
+                    }}>{m.title}</span>
+                  </div>
+                  {m.content && (
+                    <div style={{
+                      fontFamily:"'LXGW WenKai',serif", fontSize:'11px',
+                      color:'rgba(190,170,230,0.68)', lineHeight:1.75,
+                      marginBottom:'8px',
+                      display:'-webkit-box', WebkitLineClamp:2,
+                      WebkitBoxOrient:'vertical', overflow:'hidden'
+                    }}>{m.content}</div>
+                  )}
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                    {m.tag ? (
+                      <span style={{
+                        fontFamily:"'Quicksand',sans-serif", fontSize:'9px',
+                        padding:'2px 9px', borderRadius:'10px',
+                        background: TCOLOR[m.tag] || 'rgba(118,68,202,0.12)',
+                        color:'rgba(168,148,210,0.72)',
+                        border:'1px solid rgba(98,68,158,0.14)',
+                        fontWeight:500, letterSpacing:'0.5px'
+                      }}>{TICON[m.tag]} {m.tag}</span>
+                    ) : <span/>}
+                    <span style={{fontFamily:"'Noto Sans SC',sans-serif",fontSize:'10px',color:'rgba(150,130,190,0.42)',fontWeight:300}}>{timeStr}</span>
+                  </div>
+                </G>
+              );
+            })}
+          </div>
+        ))
       }
     </div>
   );
@@ -1334,14 +1383,14 @@ const NAV_ICONS = {
   memory: <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg>,
   tidal:  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 12c.6.5 1.2 1 2.5 1C7 13 7 11 9.5 11c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 18c.6.5 1.2 1 2.5 1C7 19 7 17 9.5 17c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/></svg>,
   diary:  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>,
-  log:    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>,
+  recent: <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>,
 };
 const NAV = [
-  {id:'home',  icon:NAV_ICONS.home,  label:'Home'},
-  {id:'memory',icon:NAV_ICONS.memory,label:'Memory'},
-  {id:'tidal', icon:NAV_ICONS.tidal, label:'Tidal'},
-  {id:'diary', icon:NAV_ICONS.diary, label:'Diary'},
-  {id:'log',   icon:NAV_ICONS.log,   label:'Log'},
+  {id:'home',   icon:NAV_ICONS.home,   label:'Home'},
+  {id:'memory', icon:NAV_ICONS.memory, label:'Memory'},
+  {id:'tidal',  icon:NAV_ICONS.tidal,  label:'Tidal'},
+  {id:'diary',  icon:NAV_ICONS.diary,  label:'Diary'},
+  {id:'recent', icon:NAV_ICONS.recent, label:'Recent'},
 ];
 
 function NavBar({ tab, setTab }) {
@@ -1721,7 +1770,7 @@ function App() {
           {tab==='memory' && <><SH label="✦ Memory Archive"/><MemoryTab/></>}
           {tab==='tidal'  && <><SH label="🌊 Memory Tidal"/><TidalTab/></>}
           {tab==='diary'  && <><SH label="📖 予予的日记"/><DiaryTab/></>}
-          {tab==='log'    && <><SH label="📋 Call Log"/><LogTab/></>}
+          {tab==='recent' && <><SH label="🕐 最近记录"/><RecentTab/></>}
         </div>
       </div>
 
