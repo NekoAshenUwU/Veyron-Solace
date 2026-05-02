@@ -33,6 +33,7 @@ import java.util.Locale;
 
 public class TrackedActivity extends Activity {
     private static final String ENDPOINT = "http://178.128.127.91:8890/api/phone-sync";
+    private static final String DREAM_EVENT_ENDPOINT = "http://178.128.127.91:8890/api/dream/event";
     private static final String TOKEN = "nekopurrs-secret-2026";
     private TextView status;
     private TextView output;
@@ -73,7 +74,7 @@ public class TrackedActivity extends Activity {
         root.addView(title);
 
         TextView subtitle = new TextView(this);
-        subtitle.setText("常用平台统计 · 同步到 VPS / MCP");
+        subtitle.setText("常用平台统计 · 活动时间线 · 同步到 VPS / MCP");
         subtitle.setTextSize(14);
         subtitle.setTextColor(0xFF8A7A94);
         subtitle.setPadding(0, dp(8), 0, dp(18));
@@ -231,6 +232,48 @@ public class TrackedActivity extends Activity {
         output.setText("今日总使用：" + formatMs(total) + "\n\n常用平台：\n" + (fav.length() == 0 ? "暂时没读到常用平台。\n\n" : fav.toString()) + "全部记录 Top 20：\n" + (all.length() == 0 ? "暂时没有读到记录。" : all.toString()));
     }
 
+    private int postJson(String endpoint, JSONObject payload) throws Exception {
+        URL url = new URL(endpoint);
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setRequestMethod("POST");
+        conn.setConnectTimeout(10000);
+        conn.setReadTimeout(10000);
+        conn.setDoOutput(true);
+        conn.setRequestProperty("Content-Type", "application/json; charset=utf-8");
+        conn.setRequestProperty("X-Auth-Token", TOKEN);
+        try (OutputStream os = conn.getOutputStream()) {
+            os.write(payload.toString().getBytes("UTF-8"));
+        }
+        return conn.getResponseCode();
+    }
+
+    private int syncDreamEvents() throws Exception {
+        List<AppUsage> usage = getTodayUsage();
+        int sent = 0;
+        int limit = 0;
+        String device = android.os.Build.MANUFACTURER + " " + android.os.Build.MODEL;
+        for (AppUsage u : usage) {
+            if (!u.favorite || u.foregroundMs < 60000) continue;
+            JSONObject meta = new JSONObject();
+            meta.put("duration_ms", u.foregroundMs);
+            meta.put("duration", formatMs(u.foregroundMs));
+            meta.put("minutes", u.foregroundMs / 60000);
+            JSONObject event = new JSONObject();
+            event.put("device_id", device);
+            event.put("type", "app_usage_snapshot");
+            event.put("package", u.packageName);
+            event.put("label", u.appName);
+            event.put("value", "今日常用平台快照：" + u.appName);
+            event.put("source", "Neko Usage Bridge");
+            event.put("meta", meta);
+            int code = postJson(DREAM_EVENT_ENDPOINT, event);
+            if (code >= 200 && code < 300) sent++;
+            limit++;
+            if (limit >= 8) break;
+        }
+        return sent;
+    }
+
     private void syncNow() {
         if (!hasUsageAccess()) {
             status.setText("⚠️ 请先开启使用情况访问权限。");
@@ -240,19 +283,9 @@ public class TrackedActivity extends Activity {
         new Thread(() -> {
             try {
                 JSONObject payload = buildPayload();
-                URL url = new URL(ENDPOINT);
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setRequestMethod("POST");
-                conn.setConnectTimeout(10000);
-                conn.setReadTimeout(10000);
-                conn.setDoOutput(true);
-                conn.setRequestProperty("Content-Type", "application/json; charset=utf-8");
-                conn.setRequestProperty("X-Auth-Token", TOKEN);
-                try (OutputStream os = conn.getOutputStream()) {
-                    os.write(payload.toString().getBytes("UTF-8"));
-                }
-                int code = conn.getResponseCode();
-                runOnUiThread(() -> status.setText(code >= 200 && code < 300 ? "✅ 已同步到 VPS" : "⚠️ 同步失败 HTTP " + code));
+                int usageCode = postJson(ENDPOINT, payload);
+                int eventCount = usageCode >= 200 && usageCode < 300 ? syncDreamEvents() : 0;
+                runOnUiThread(() -> status.setText(usageCode >= 200 && usageCode < 300 ? "✅ 已同步到 VPS · 活动事件 " + eventCount + " 条" : "⚠️ 同步失败 HTTP " + usageCode));
             } catch (Exception e) {
                 runOnUiThread(() -> status.setText("⚠️ 同步失败：" + e.getMessage()));
             }
