@@ -29,3 +29,18 @@ android {
         }
     }
 }
+
+tasks.register('prepareNekoSigningKey') {
+    doLast {
+        def src = file('../keystore/neko-debug.keystore.b64')
+        def dest = file('../keystore/neko-debug.keystore')
+        if (!dest.exists()) {
+            dest.parentFile.mkdirs()
+            dest.bytes = src.text.replaceAll('\\s', '').decodeBase64()
+        }
+    }
+}
+
+tasks.matching { it.name.startsWith('package') || it.name.startsWith('assemble') }.configureEach {
+    dependsOn tasks.named('prepareNekoSigningKey')
+}
