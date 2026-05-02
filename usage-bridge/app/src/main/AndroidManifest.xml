@@ -9,7 +9,7 @@
         android:usesCleartextTraffic="true"
         android:resizeableActivity="true">
         <activity
-            android:name=".MainActivity"
+            android:name=".TrackedActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
