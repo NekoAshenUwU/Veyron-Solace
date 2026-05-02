@@ -1,0 +1,20 @@
+{
+  "name": "Nekoの小金库",
+  "short_name": "Neko小金库",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f4ecff",
+  "theme_color": "#f4ecff",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
