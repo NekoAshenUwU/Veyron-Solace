@@ -26,6 +26,27 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Apply one-hour reminder patch
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('app/src/main/java/uk/nekopurrs/usagebridge/TrackedActivity.java')
+          s = p.read_text()
+          s = s.replace(
+              'status.setText(allowed ? "✅ 使用情况权限已开启" : "⚠️ 还没开启使用情况权限。点上面的按钮，允许 Neko Usage Bridge。");',
+              'status.setText(allowed ? "✅ 使用情况权限已开启\\n" + SyncReminder.message(this) : "⚠️ 还没开启使用情况权限。点上面的按钮，允许 Neko Usage Bridge。");'
+          )
+          s = s.replace(
+              'output.setText("今日总使用：" + formatMs(total) + "\\n\\n常用平台：\\n" + (fav.length() == 0 ? "暂时没读到常用平台。\\n\\n" : fav.toString()) + "全部记录 Top 20：\\n" + (all.length() == 0 ? "暂时没有读到记录。" : all.toString()));',
+              'output.setText("今日总使用：" + formatMs(total) + "\\n\\n同步提醒：\\n" + SyncReminder.message(this) + "\\n\\n常用平台：\\n" + (fav.length() == 0 ? "暂时没读到常用平台。\\n\\n" : fav.toString()) + "全部记录 Top 20：\\n" + (all.length() == 0 ? "暂时没有读到记录。" : all.toString()));'
+          )
+          s = s.replace(
+              'int eventCount = usageCode >= 200 && usageCode < 300 ? syncDreamEvents() : 0;\n                runOnUiThread(() -> status.setText(usageCode >= 200 && usageCode < 300 ? "✅ 已同步到 VPS · 活动事件 " + eventCount + " 条" : "⚠️ 同步失败 HTTP " + usageCode));',
+              'int eventCount = usageCode >= 200 && usageCode < 300 ? syncDreamEvents() : 0;\n                if (usageCode >= 200 && usageCode < 300) { SyncReminder.markSynced(this); }\n                runOnUiThread(() -> status.setText(usageCode >= 200 && usageCode < 300 ? "✅ 已同步到 VPS · 活动事件 " + eventCount + " 条\\n" + SyncReminder.message(this) : "⚠️ 同步失败 HTTP " + usageCode));'
+          )
+          p.write_text(s)
+          PY
+
       - name: Build debug APK
         run: gradle assembleDebug --no-daemon
 
