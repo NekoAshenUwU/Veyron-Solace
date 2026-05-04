@@ -130,6 +130,9 @@ public class TrackedActivity extends Activity {
     }
 
     private long startOfToday() {
+        private String syncHint() {
+    return "\n" + SyncReminder.message(this);
+        }
         Calendar cal = Calendar.getInstance();
         cal.set(Calendar.HOUR_OF_DAY, 0);
         cal.set(Calendar.MINUTE, 0);
@@ -209,7 +212,7 @@ public class TrackedActivity extends Activity {
 
     private void refreshSummary() {
         boolean allowed = hasUsageAccess();
-        status.setText(allowed ? "✅ 使用情况权限已开启" : "⚠️ 还没开启使用情况权限。点上面的按钮，允许 Neko Usage Bridge。");
+        status.setText(allowed ? "✅ 使用情况权限已开启"+ syncHint() : "⚠️ 还没开启使用情况权限。点上面的按钮，允许 Neko Usage Bridge。");
         if (!allowed) {
             output.setText("授权后回到这里，点“刷新今日统计”。");
             return;
@@ -286,7 +289,7 @@ public class TrackedActivity extends Activity {
                 JSONObject payload = buildPayload();
                 int usageCode = postJson(ENDPOINT, payload);
                 int eventCount = usageCode >= 200 && usageCode < 300 ? syncDreamEvents() : 0;
-                runOnUiThread(() -> status.setText(usageCode >= 200 && usageCode < 300 ? "✅ 已同步到 VPS · 活动事件 " + eventCount + " 条（不影响主同步）" : "⚠️ 使用统计同步失败 HTTP " + usageCode));
+                runOnUiThread(() -> status.setText(usageCode >= 200 && usageCode < 300 ? "✅ 已同步到 VPS · 活动事件 " + eventCount + " 条（不影响主同步）" : "⚠️ 使用统计同步失败 HTTP " + usageCode + syncHint));
             } catch (Exception e) {
                 runOnUiThread(() -> status.setText("⚠️ 同步失败：" + e.getMessage()));
             }
