@@ -286,7 +286,7 @@ public class TrackedActivity extends Activity {
                 JSONObject payload = buildPayload();
                 int usageCode = postJson(ENDPOINT, payload);
                 int eventCount = usageCode >= 200 && usageCode < 300 ? syncDreamEvents() : 0;
-                runOnUiThread(() -> status.setText(usageCode >= 200 && usageCode < 300 ? "✅ 已同步到 VPS · 活动事件 " + eventCount + " 条" : "⚠️ 同步失败 HTTP " + usageCode));
+                runOnUiThread(() -> status.setText(usageCode >= 200 && usageCode < 300 ? "✅ 已同步到 VPS · 活动事件 " + eventCount + " 条（不影响主同步）" : "⚠️ 使用统计同步失败 HTTP " + usageCode));
             } catch (Exception e) {
                 runOnUiThread(() -> status.setText("⚠️ 同步失败：" + e.getMessage()));
             }
