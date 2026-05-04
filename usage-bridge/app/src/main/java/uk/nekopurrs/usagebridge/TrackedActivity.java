@@ -48,6 +48,7 @@ public class TrackedActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        UsageSyncWorker.schedule(this);
         buildUi();
         refreshSummary();
     }
