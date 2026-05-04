@@ -44,3 +44,6 @@ tasks.register('prepareNekoSigningKey') {
 tasks.matching { it.name.startsWith('package') || it.name.startsWith('assemble') }.configureEach {
     dependsOn tasks.named('prepareNekoSigningKey')
 }
+dependencies {
+    implementation "androidx.work:work-runtime:2.10.0"
+}
