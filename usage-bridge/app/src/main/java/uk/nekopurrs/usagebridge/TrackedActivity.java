@@ -130,9 +130,6 @@ public class TrackedActivity extends Activity {
     }
 
     private long startOfToday() {
-        private String syncHint() {
-    return "\n" + SyncReminder.message(this);
-        }
         Calendar cal = Calendar.getInstance();
         cal.set(Calendar.HOUR_OF_DAY, 0);
         cal.set(Calendar.MINUTE, 0);
@@ -142,7 +139,9 @@ public class TrackedActivity extends Activity {
     }
 
     private List<AppUsage> getTodayUsage() {
-        UsageStatsManager manager = (UsageStatsManager) getSystemService(Context.USAGE_STATS_SERVICE);
+        UsageStatsManager manager = (UsageStatsManager) getSystemService(Context.USAGE_STATS_SERVICE);private String syncHint() {
+    return "\n" + SyncReminder.message(this);
+        }
         List<UsageStats> stats = manager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, startOfToday(), System.currentTimeMillis());
         List<AppUsage> result = new ArrayList<>();
         if (stats == null) return result;
