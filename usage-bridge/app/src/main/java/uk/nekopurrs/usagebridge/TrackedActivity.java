@@ -182,7 +182,7 @@ public class TrackedActivity extends Activity {
     }
 
     private JSONObject buildPayload() throws Exception {
-        List<AppUsage> usage = getTodayUsage()}
+        List<AppUsage> usage = getTodayUsage();
                 long total = 0;
         JSONArray apps = new JSONArray();
         JSONArray favorites = new JSONArray();
