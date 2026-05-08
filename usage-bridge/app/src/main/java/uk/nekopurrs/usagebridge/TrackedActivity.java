@@ -138,6 +138,10 @@ public class TrackedActivity extends Activity {
         return cal.getTimeInMillis();
     }
 
+    private String syncHint() {
+        return "\n" + SyncReminder.message(this);
+    }
+
     private List<AppUsage> getTodayUsage() {
         UsageStatsManager manager = (UsageStatsManager) getSystemService(Context.USAGE_STATS_SERVICE);
         List<UsageStats> stats = manager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, startOfToday(), System.currentTimeMillis());
@@ -178,10 +182,8 @@ public class TrackedActivity extends Activity {
     }
 
     private JSONObject buildPayload() throws Exception {
-        List<AppUsage> usage = getTodayUsage()}private String syncHint() {
-        return "\n" + SyncReminder.message(this);
-    }
-        long total = 0;
+        List<AppUsage> usage = getTodayUsage()}
+                long total = 0;
         JSONArray apps = new JSONArray();
         JSONArray favorites = new JSONArray();
         for (AppUsage u : usage) {
