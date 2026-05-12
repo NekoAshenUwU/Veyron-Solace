@@ -31,8 +31,10 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class MainActivity extends Activity {
     private static final String ENDPOINT = "http://178.128.127.91:8890/api/phone-sync";
@@ -146,25 +148,24 @@ public class MainActivity extends Activity {
         return cal.getTimeInMillis();
     }
 
-    private List<AppUsage> getTodayUsage() {
-        UsageStatsManager manager = (UsageStatsManager) getSystemService(Context.USAGE_STATS_SERVICE);
-        long start = startOfToday();
-        long end = System.currentTimeMillis();
-        List<UsageStats> stats = manager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, start, end);
-        List<AppUsage> result = new ArrayList<>();
-        if (stats == null) return result;
-        for (UsageStats s : stats) {
-            long ms = s.getTotalTimeInForeground();
-            if (ms < 1000) continue;
-            AppUsage item = new AppUsage();
-            item.packageName = s.getPackageName();
-            item.appName = getAppName(item.packageName);
-            item.foregroundMs = ms;
-            result.add(item);
-        }
-        Collections.sort(result, (a, b) -> Long.compare(b.foregroundMs, a.foregroundMs));
-        return result;
+    private void addUsage(Map<String, Long> merged, UsageStats s) {
+    if (s == null || s.getPackageName() == null) return;
+
+    long ms = s.getTotalTimeInForeground();
+    if (ms < 1000) return;
+
+    String packageName = s.getPackageName();
+    long previous = merged.containsKey(packageName) ? merged.get(packageName) : 0L;
+    merged.put(packageName, Math.max(previous, ms));
+}
+
+private long totalUsageMs(List<AppUsage> usage) {
+    long total = 0;
+    for (AppUsage u : usage) {
+        total += u.foregroundMs;
     }
+    return total;
+}
 
     private String getAppName(String packageName) {
         try {
@@ -187,10 +188,9 @@ public class MainActivity extends Activity {
 
     private JSONObject buildPayload() throws Exception {
         List<AppUsage> usage = getTodayUsage();
-        long total = 0;
-        JSONArray apps = new JSONArray();
-        for (AppUsage u : usage) {
-            total += u.foregroundMs;
+long total = totalUsageMs(usage);
+JSONArray apps = new JSONArray();
+for (AppUsage u : usage) {
             JSONObject app = new JSONObject();
             app.put("package", u.packageName);
             app.put("name", u.appName);
@@ -219,12 +219,11 @@ public class MainActivity extends Activity {
             return;
         }
         List<AppUsage> usage = getTodayUsage();
-        long total = 0;
+        long total = totalUsageMs(usage);
         StringBuilder sb = new StringBuilder();
         int limit = Math.min(20, usage.size());
         for (int i = 0; i < limit; i++) {
             AppUsage u = usage.get(i);
-            total += u.foregroundMs;
             sb.append(i + 1).append(". ").append(u.appName)
                     .append("\n   ").append(formatMs(u.foregroundMs))
                     .append(" · ").append(u.packageName).append("\n\n");
