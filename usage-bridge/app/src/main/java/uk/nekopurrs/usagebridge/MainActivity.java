@@ -147,7 +147,49 @@ public class MainActivity extends Activity {
         cal.set(Calendar.MILLISECOND, 0);
         return cal.getTimeInMillis();
     }
+private List<AppUsage> getTodayUsage() {
+    UsageStatsManager manager = (UsageStatsManager) getSystemService(Context.USAGE_STATS_SERVICE);
+    long start = startOfToday();
+    long end = System.currentTimeMillis();
 
+    Map<String, Long> merged = new HashMap<>();
+
+    Map<String, UsageStats> aggregated = manager.queryAndAggregateUsageStats(start, end);
+    if (aggregated != null) {
+        for (UsageStats s : aggregated.values()) {
+            addUsage(merged, s);
+        }
+    }
+
+    if (merged.isEmpty()) {
+        List<UsageStats> stats = manager.queryUsageStats(
+                UsageStatsManager.INTERVAL_DAILY,
+                start,
+                end
+        );
+
+        if (stats != null) {
+            for (UsageStats s : stats) {
+                addUsage(merged, s);
+            }
+        }
+    }
+
+    List<AppUsage> result = new ArrayList<>();
+    for (Map.Entry<String, Long> entry : merged.entrySet()) {
+        long ms = entry.getValue();
+        if (ms < 1000) continue;
+
+        AppUsage item = new AppUsage();
+        item.packageName = entry.getKey();
+        item.appName = getAppName(item.packageName);
+        item.foregroundMs = ms;
+        result.add(item);
+    }
+
+    Collections.sort(result, (a, b) -> Long.compare(b.foregroundMs, a.foregroundMs));
+    return result;
+}
     private void addUsage(Map<String, Long> merged, UsageStats s) {
     if (s == null || s.getPackageName() == null) return;
 
