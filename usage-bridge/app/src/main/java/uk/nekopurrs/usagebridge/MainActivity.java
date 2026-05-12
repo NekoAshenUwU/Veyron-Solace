@@ -154,26 +154,17 @@ private List<AppUsage> getTodayUsage() {
 
     Map<String, Long> merged = new HashMap<>();
 
-    Map<String, UsageStats> aggregated = manager.queryAndAggregateUsageStats(start, end);
-    if (aggregated != null) {
-        for (UsageStats s : aggregated.values()) {
-            addUsage(merged, s);
-        }
-    }
+    List<UsageStats> stats = manager.queryUsageStats(
+        UsageStatsManager.INTERVAL_DAILY,
+        start,
+        end
+);
 
-    if (merged.isEmpty()) {
-        List<UsageStats> stats = manager.queryUsageStats(
-                UsageStatsManager.INTERVAL_DAILY,
-                start,
-                end
-        );
-
-        if (stats != null) {
-            for (UsageStats s : stats) {
-                addUsage(merged, s);
-            }
-        }
+if (stats != null) {
+    for (UsageStats s : stats) {
+        addUsage(merged, s);
     }
+}
 
     List<AppUsage> result = new ArrayList<>();
     for (Map.Entry<String, Long> entry : merged.entrySet()) {
@@ -198,7 +189,7 @@ private List<AppUsage> getTodayUsage() {
 
     String packageName = s.getPackageName();
     long previous = merged.containsKey(packageName) ? merged.get(packageName) : 0L;
-    merged.put(packageName, Math.max(previous, ms));
+    merged.put(packageName, previous + ms);
 }
 
 private long totalUsageMs(List<AppUsage> usage) {
