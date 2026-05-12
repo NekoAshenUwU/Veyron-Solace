@@ -6,6 +6,7 @@ public class PlatformNames {
     public static String friendlyName(String packageName, String fallback) {
         if (packageName == null) return fallback;
         switch (packageName) {
+            case "com.openai.chatgpt": return "ChatGPT"; 
             case "org.mozilla.firefox": return "Firefox（GPT 网页版）";
             case "com.xingin.xhs": return "小红书";
             case "com.ss.android.ugc.aweme": return "抖音";
