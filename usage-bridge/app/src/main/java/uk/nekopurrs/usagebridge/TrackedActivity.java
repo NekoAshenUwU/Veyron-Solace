@@ -27,6 +27,8 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -143,22 +145,40 @@ public class TrackedActivity extends Activity {
     }
 
     private List<AppUsage> getTodayUsage() {
-        UsageStatsManager manager = (UsageStatsManager) getSystemService(Context.USAGE_STATS_SERVICE);
-        List<UsageStats> stats = manager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, startOfToday(), System.currentTimeMillis());
-        List<AppUsage> result = new ArrayList<>();
-        if (stats == null) return result;
+    UsageStatsManager manager = (UsageStatsManager) getSystemService(Context.USAGE_STATS_SERVICE);
+    List<UsageStats> stats = manager.queryUsageStats(
+            UsageStatsManager.INTERVAL_DAILY,
+            startOfToday(),
+            System.currentTimeMillis()
+    );
+
+    Map<String, AppUsage> merged = new HashMap<>();
+
+    if (stats != null) {
         for (UsageStats s : stats) {
             long ms = s.getTotalTimeInForeground();
             if (ms < 1000) continue;
-            AppUsage item = new AppUsage();
-            item.packageName = s.getPackageName();
-            item.appName = getAppName(item.packageName);
-            item.foregroundMs = ms;
-            item.favorite = PlatformNames.isTracked(item.packageName);
-            result.add(item);
+
+            String packageName = s.getPackageName();
+            if (packageName == null) continue;
+
+            AppUsage item = merged.get(packageName);
+            if (item == null) {
+                item = new AppUsage();
+                item.packageName = packageName;
+                item.appName = getAppName(packageName);
+                item.foregroundMs = 0;
+                item.favorite = PlatformNames.isTracked(packageName);
+                merged.put(packageName, item);
+            }
+
+            item.foregroundMs += ms;
         }
-        Collections.sort(result, (a, b) -> Long.compare(b.foregroundMs, a.foregroundMs));
-        return result;
+    }
+
+    List<AppUsage> result = new ArrayList<>(merged.values());
+    Collections.sort(result, (a, b) -> Long.compare(b.foregroundMs, a.foregroundMs));
+    return result;
     }
 
     private String getAppName(String packageName) {
