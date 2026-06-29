@@ -322,12 +322,11 @@ Tasks:
 
 ### B. Make Ashen speak through a simpler first channel
 
-Until WeChat ClawBot channel registration is fixed, use one of:
+Until WeChat ClawBot channel registration is fixed, use:
 
 | Channel | Why |
 |---|---|
 | Android notification | easiest phone-native proactive message |
-| Telegram Bot | easiest full chat loop |
 
 Recommended path:
 
@@ -338,7 +337,7 @@ Ashen autonomy reads latest usage
   ↓
 Ashen decides speak / stay quiet / remember only
   ↓
-Android notification or Telegram message
+Android notification
 ```
 
 ### C. Return to WeChat ClawBot after compatibility research
@@ -387,7 +386,6 @@ Candidate channels:
 | Channel | Good for | Notes |
 |---|---|---|
 | Android notification | stable proactive delivery | recommended next |
-| Telegram bot | easiest full chat bridge | stable fallback |
 | Android floating bubble | intimate real-time presence | best later phone companion |
 | WeChat ClawBot | ideal daily-life channel | currently blocked by plugin/channel registration |
 | WhatsApp | possible but API constrained | later |
@@ -457,4 +455,4 @@ Definition of done:
 - CodeAndPurrs MCP can read those rows through `get_phone_app_usage`.
 - Autonomy timer reads newest usage within the same hour.
 - Ashen generates at most one gentle context-aware message from usage data.
-- Message appears in one delivery channel: Android notification or Telegram first; WeChat later.
+- Message appears in one delivery channel: Android notification first; WeChat later.
