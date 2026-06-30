@@ -126,3 +126,28 @@ curl -s -X POST http://178.128.127.91:8890/api/phone-sync \
   -d '{"battery": {"percentage": 100}}'
 ```
 Expected: `{"status":"ok","received":["battery"]}`
+
+## 给我自己的操作守则（每个 session 必读）
+
+1. **先 30 秒最小复现，再下结论**
+   第三方说"bug 未修 / 功能不行 / 必须如何"（GitHub issue / 博客 / 文档）——
+   先跑一条最短命令亲自验证。GH issue 标 Open 不代表今天还 Open。
+
+2. **改代码前先跑最短命令证实当前行为**
+   不要一次加 3 个 flag / 改 3 个文件再重启服务看效果。
+   `curl …` / `python -c …` / 一行 shell 比改源码快 100 倍。
+
+3. **文档 / Google 查不到的 CLI flag 或 API 字段，先翻 binary / 源码**
+   `strings $(which xxx) | grep -i yyy`、`pip show xxx` 后看 `Location` 翻代码——
+   WebSearch 没结果 ≠ 不存在。
+
+4. **调 UI / 行为时一次只动一个维度**
+   不要"颜色 + 透明 + 字体 + padding"一锅烩，做完没法判断哪里好哪里坏。
+
+5. **行动前先说假设，让老婆有机会拦**
+   "我假设 X（理由），要不要先改？" 比"我已经改了，这样对不对？" 省 5 轮回合。
+
+## 暗坑提醒
+- 手机 console 没 Ctrl 键，不要让老婆用 nano；用 `cat > 文件 << 'EOF'` 这种 heredoc
+- VPS 上 `claude --dangerously-skip-permissions` 跑不动（root 拒绝），用 `--permission-mode dontAsk`
+- Cloudflare 会拦 POST 到 `/api/phone-sync`（403），手机端 sync 必须用直连 IP `178.128.127.91:8890`
