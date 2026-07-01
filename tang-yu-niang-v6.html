@@ -382,21 +382,33 @@ function CalDayModal({ dateStr, onClose }) {
 
 /* ── Calendar ── */
 function Calendar({ onDayClick }) {
-  const now  = new Date();
-  const y    = now.getFullYear();
-  const mo   = now.getMonth();
-  const tod  = now.getDate();
-  const d1   = new Date(y, mo, 1).getDay();
-  const dN   = new Date(y, mo + 1, 0).getDate();
-  const MON  = ['January','February','March','April','May','June',
+  const today = new Date();
+  const [view, setView] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
+  const [marked, setMarked] = useState(() => new Set());
+
+  useEffect(() => {
+    api('/memories').then(d => {
+      const all = d?.memories || (Array.isArray(d) ? d : []);
+      setMarked(new Set(all.filter(m => m.created_at).map(m => m.created_at.slice(0,10))));
+    });
+  }, []);
+
+  const y   = view.getFullYear();
+  const mo  = view.getMonth();
+  const isCurMonth = y === today.getFullYear() && mo === today.getMonth();
+  const d1  = new Date(y, mo, 1).getDay();
+  const dN  = new Date(y, mo + 1, 0).getDate();
+  const MON = ['January','February','March','April','May','June',
                 'July','August','September','October','November','December'];
   const cells = [];
   for (let i = 0; i < d1; i++) cells.push(<div key={`e${i}`}/>);
   for (let d = 1; d <= dN; d++) {
-    const isT = d === tod;
+    const isT = isCurMonth && d === today.getDate();
     const dateStr = `${y}-${String(mo+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const hasEntry = marked.has(dateStr);
     cells.push(
       <div key={d} onClick={() => onDayClick && onDayClick(dateStr)} style={{
+        position:'relative',
         textAlign:'center', padding:'6px 0', borderRadius:'10px',
         fontFamily:"'Noto Sans SC',sans-serif",
         fontSize:'11px', fontWeight: isT ? 500 : 300,
@@ -406,17 +418,39 @@ function Calendar({ onDayClick }) {
           : 'transparent',
         boxShadow: isT ? '0 0 18px rgba(138,78,222,0.38)' : 'none',
         transition:'all 0.2s', cursor:'pointer'
-      }}>{d}</div>
+      }}>
+        {d}
+        {hasEntry && (
+          <div style={{
+            position:'absolute', bottom:'2px', left:'50%', transform:'translateX(-50%)',
+            width:'4px', height:'4px', borderRadius:'50%',
+            background: isT ? 'rgba(255,255,255,0.95)' : 'rgba(202,158,255,0.9)',
+            boxShadow:'0 0 4px rgba(178,118,255,0.65)'
+          }}/>
+        )}
+      </div>
     );
   }
   return (
     <G style={{padding:'18px'}}>
-      <div style={{
-        textAlign:'center', marginBottom:'13px',
-        fontFamily:"'Cinzel',serif",
-        fontSize:'13px', letterSpacing:'2px', textTransform:'uppercase',
-        color:'rgba(222,210,250,0.82)', fontWeight:600
-      }}>{MON[mo]} {y}</div>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'13px'}}>
+        <span onClick={() => setView(new Date(y, mo - 1, 1))} style={{
+          cursor:'pointer', padding:'2px 12px', fontSize:'15px',
+          color:'rgba(205,190,240,0.72)', userSelect:'none'
+        }}>‹</span>
+        <span
+          onClick={() => !isCurMonth && setView(new Date(today.getFullYear(), today.getMonth(), 1))}
+          style={{
+            fontFamily:"'Cinzel',serif",
+            fontSize:'13px', letterSpacing:'2px', textTransform:'uppercase',
+            color:'rgba(222,210,250,0.82)', fontWeight:600,
+            cursor: isCurMonth ? 'default' : 'pointer'
+          }}>{MON[mo]} {y}</span>
+        <span onClick={() => !isCurMonth && setView(new Date(y, mo + 1, 1))} style={{
+          cursor: isCurMonth ? 'default' : 'pointer', padding:'2px 12px', fontSize:'15px',
+          color: isCurMonth ? 'rgba(205,190,240,0.2)' : 'rgba(205,190,240,0.72)', userSelect:'none'
+        }}>›</span>
+      </div>
       <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:'2px',marginBottom:'6px',textAlign:'center'}}>
         {['Su','Mo','Tu','We','Th','Fr','Sa'].map(w => (
           <div key={w} style={{
