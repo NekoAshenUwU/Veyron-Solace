@@ -861,6 +861,7 @@ function DiaryTab() {
   const [drawing,   setDrawing]   = useState(false);
   const [anchors,   setAnchors]   = useState([]);
   const [loveNotes, setLoveNotes] = useState([]);
+  const [detail,    setDetail]    = useState(null);
 
   useEffect(() => {
     api('/memories?tag=anchor&q=').then(d => {
@@ -935,10 +936,11 @@ function DiaryTab() {
         marginBottom:'12px', fontWeight:600
       }}>⚓ Anchors</div>
 
+      {detail && <MemoryDetail m={detail} onClose={() => setDetail(null)}/>}
       {anchors.length > 0
         ? anchors.map((a,i) => (
-          <G key={a.id||i} glow style={{
-            padding:'20px', marginBottom:'10px',
+          <G key={a.id||i} glow onClick={() => setDetail(a)} style={{
+            padding:'20px', marginBottom:'10px', cursor:'pointer',
             borderLeft:'3px solid rgba(178,118,255,0.52)',
             animation:`slideUp 0.38s ease-out ${i*0.08}s both`
           }}>
