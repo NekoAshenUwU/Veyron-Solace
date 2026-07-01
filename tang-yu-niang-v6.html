@@ -788,6 +788,7 @@ function MemoryTab() {
 function TidalTab() {
   const [tidal,  setTidal]  = useState([]);
   const [loading,setLoading]= useState(true);
+  const [detail, setDetail] = useState(null);
 
   useEffect(() => {
     api('/tidal').then(d => {
@@ -798,6 +799,7 @@ function TidalTab() {
 
   return (
     <div style={{padding:'0 18px'}}>
+      {detail && <MemoryDetail m={detail} onClose={() => setDetail(null)}/>}
       <G style={{padding:'15px 18px',marginBottom:'15px',background:'rgba(48,24,88,0.28)'}}>
         <div style={{
           fontFamily:"'LXGW WenKai','Noto Serif SC',serif",
@@ -810,8 +812,8 @@ function TidalTab() {
         const hi     = (m.strength||0) >= 0.8;
         const rising = m.rising !== undefined ? m.rising : hi;
         return (
-          <G key={m.id||i} glow={hi} style={{
-            padding:'18px', marginBottom:'10px',
+          <G key={m.id||i} glow={hi} onClick={() => setDetail(m)} style={{
+            padding:'18px', marginBottom:'10px', cursor:'pointer',
             borderLeft: hi ? '3px solid rgba(178,118,255,0.65)' : '3px solid rgba(98,68,148,0.18)',
             animation:`slideUp 0.38s ease-out ${i*0.06}s both`
           }}>
@@ -1235,6 +1237,7 @@ function HomeTab({ pulse, todayLocal, onEnvelope, setTab }) {
   ];
   const [calDate, setCalDate] = useState(null);
   const [clicked, setClicked] = useState(null);
+  const [detail,  setDetail]  = useState(null);
   const tap = (item, idx) => {
     setClicked(idx);
     setTimeout(() => setClicked(null), 320);
@@ -1315,11 +1318,12 @@ function HomeTab({ pulse, todayLocal, onEnvelope, setTab }) {
       </div>
 
       {/* Recently surfaced */}
+      {detail && <MemoryDetail m={detail} onClose={() => setDetail(null)}/>}
       {recent.length > 0 && (
         <>
           <div style={{fontFamily:"'Quicksand',sans-serif",fontSize:'11px',color:'rgba(192,172,235,0.82)',letterSpacing:'3px',marginBottom:'12px',fontWeight:600,textTransform:'uppercase'}}>✦ Recently Surfaced</div>
           {recent.slice(0,3).map((m,i) => (
-            <G key={i} style={{padding:'15px 18px',marginBottom:'10px',animation:`slideUp 0.42s ease-out ${i*0.09}s both`}}>
+            <G key={i} onClick={() => setDetail(m)} style={{padding:'15px 18px',marginBottom:'10px',cursor:'pointer',animation:`slideUp 0.42s ease-out ${i*0.09}s both`}}>
               <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
                 <span style={{fontSize:'14px'}}>{m.mood_emoji||'✨'}</span>
                 <span style={{fontFamily:"'LXGW WenKai',serif",fontSize:'13px',color:'rgba(222,202,255,0.9)',fontWeight:400,flex:1}}>{m.title}</span>
