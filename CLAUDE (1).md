@@ -443,30 +443,49 @@ tang_yu_niang:
 
 ---
 
-## 第二阶段：网页前端（棠予酿 App）
+## 第二阶段：网页前端（棠予酿 App）—— 已上线
 
-MCP 后端完成后，第二步是做一个 PWA 网页前端，部署在 VPS 上，棠棠用手机浏览器访问。
+**已经做完并且在跑，不是规划中的东西了。** 访问地址、真实部署路径、踩过的坑都写在下面，改东西之前先看这一节，别重新一个个服务猜。
 
-### 设计规范
+### 已上线状态（2026-07 verified）
 
-- **配色**: 马卡龙渐变（浅紫 #f3e8ff → 浅粉 #fce8f4），不要暗色/黑色主题
-- **风格**: 玻璃态磨砂卡片、花瓣飘落动画、呼吸光晕、超细字重
-- **字体**: Noto Serif SC
-- **emoji 对照**: 记忆库=🎞, 珍藏=💫, 锚点=⚓, 潮汐=🌊, 信封=💌, 日记=📖, 日志=📋
+- **访问地址**: `https://tang.nekopurrs.uk`（独立域名，不是 `mcp.nekopurrs.uk`）
+- **风格已改版**: 早期设计是马卡龙浅色，**现在实际是深紫色玻璃拟态星空风**（流星粒子、SVG 蝴蝶、发光卡片），配色规范已经不适用，别照着浅色方案去改
+- **导航是 5 个 Tab**: Home / Memory / Tidal / Diary / Recent（原来的"日志 Log"已被替换成"Recent"，按时间线展示全部新记录）
+- **仓库里的源码文件**: `tang-yu-niang-v6.html`（单文件 React + 内联 Babel，浏览器直接编译，不需要构建步骤）
+- **真正在维护这份代码的分支**: `claude/add-endpoints-fix-tag-kQl5d`（从未合并进 `main`，`main` 上根本没有这个文件！改动前记得先把这个分支合进你的工作分支，否则会拿一个几个月前的旧版本瞎改）
 
-### 页面结构
+### 部署路径（实测确认，不是文档臆测）
 
-1. **首页**: 在一起天数（大字）、今日回甘、予予的信封（每日一句）、统计卡片、日历（带情绪emoji）、快捷图标入口
-2. **🎞 记忆库**: 标签筛选、情绪筛选、关键词搜索、记忆卡片列表
-3. **🌊 记忆潮汐**: 按 strength 排序的记忆列表，带涨退潮方向和进度条
-4. **📖 日记**: 情话罐（随手抽一句）+ 按日期排列的日记条目 + 锚点列表
-5. **📋 调用日志**: MCP 工具调用记录
+```
+浏览器 → tang.nekopurrs.uk (443)
+       → nginx (/etc/nginx/sites-available/tang)
+           location /     → 直接当静态文件 serve: root /var/www/tang; index index.html;
+           location /api/ → proxy_pass http://127.0.0.1:8890   (即 mcp.service / server.py)
+```
 
-### 前端技术栈
+- **真正生效的前端文件只有一个**: `/var/www/tang/index.html`。改完 `tang-yu-niang-v6.html` 之后要这样部署（静态文件，nginx 直接读盘，不用重启任何服务，浏览器强刷新就生效）：
+  ```bash
+  cp /var/www/tang/index.html /var/www/tang/index.html.bak.$(date +%s)
+  curl -sL "https://raw.githubusercontent.com/NekoAshenUwU/Veyron-Solace/<你的分支>/tang-yu-niang-v6.html" -o /var/www/tang/index.html
+  ```
+- **后端 `/api/tang/*` 路由**在 `/root/server.py` 里注册（`mcp.service` 管理，跑在 8890 端口），实际的记忆/日记/潮汐逻辑在 `/root/tang_yu_niang/tools.py`（同一份代码 `mcp-server/tang_yu_niang/` 下也有一份，两边可能不同步，以 `/root/tang_yu_niang/` 为准）。改完这边要 `systemctl restart mcp`
+- **`/api/tang/*` 路由自己做了 token 校验**（`_tang_api_token_ok`），直接 `curl 127.0.0.1:8890/api/tang/xxx` 会返回 `{"error":"unauthorized"}`，这不代表接口坏了，只是校验没过（大概率是 Host/Origin 检查），调试时直接看代码，别被这个哄骗
 
-- 简单的静态 HTML/JS/CSS（或 React SPA）
-- 通过 API 从同一 VPS 的 SQLite 读取数据
-- PWA manifest 支持添加到手机桌面
+### 已知的坑（真的踩过，别再踩）
+
+1. **`tang-web.service`（端口 8891，`uvicorn app:app`，跑在 `/root/tang-web/`）跟这个网站毫无关系**，是完全独立、没被引用的服务，nginx 配置里根本没转发到它。别把它当成排查目标。
+2. **`/root/tang-yu-niang-v6.html`（没有 `/var/www/` 前缀）是一份没人用的旧拷贝**，不是真正 serve 出去的文件，改这个文件手机上不会有任何变化。
+3. 判断"这段文字/功能是不是真的在这个文件里"时，**别只用精确大小写去 grep**——很多英文标签是 `textTransform:'uppercase'` 靠 CSS 转大写的，源码里字符串本身可能是大小写混合，`grep -io` 更保险。
+4. `memory_pulse()`（首页"Recently Surfaced"数据来源）里的 SQL 只 `SELECT id, title, mood_emoji, strength`，**不带 `content`**——如果首页点开记忆详情是空的，先看这条 SQL 有没有漏字段，不是前端 bug。
+
+### 页面结构（现状，非规划）
+
+1. **Home**: 在一起天数、今日回甘、予予的信封、统计卡片（Memories/Anchors/Today）、日历（支持翻月 + 有记忆的日期打点）、Recently Surfaced
+2. **Memory**: 标签筛选（全部/日记/珍藏/锚点/留言）、关键词搜索、写记忆入口，点卡片弹全文
+3. **Tidal**: 按 strength 排序，涨/退潮方向，点卡片弹全文
+4. **Diary**: 情话罐（Love Note Jar）+ 锚点列表（点开弹全文）+ 情话收藏
+5. **Recent**: 全部记忆按 created_at 倒序，分today/昨天/本周/更早分组，48小时内有 NEW 闪光点，点开弹全文
 
 ---
 
