@@ -102,8 +102,8 @@ def memory_hold(title, content, tag="diary", importance=5, mood=None, mood_emoji
                       ensure_ascii=False, indent=2)
 
 
-def memory_pulse():
-    """系统状态：在一起天数、今日回甘、记忆统计"""
+def memory_pulse(mode="lite"):
+    """系统状态：在一起天数、今日回甘、记忆统计。mode="lite"(默认，最近记忆不含content全文) / "full"(含content，向后兼容)"""
     conn = get_conn()
     c = conn.cursor()
     total = c.execute("SELECT COUNT(*) FROM memories").fetchone()[0]
@@ -111,7 +111,15 @@ def memory_pulse():
     pinned = c.execute("SELECT COUNT(*) FROM memories WHERE is_pinned=1").fetchone()[0]
     today = date.today().isoformat()
     today_new = c.execute("SELECT COUNT(*) FROM memories WHERE created_at LIKE ?", (f"{today}%",)).fetchone()[0]
-    recent = c.execute("SELECT id, title, mood_emoji, strength FROM memories ORDER BY created_at DESC LIMIT 5").fetchall()
+
+    if mode == "full":
+        recent = c.execute(
+            "SELECT id, title, mood_emoji, created_at, tag, content FROM memories ORDER BY created_at DESC LIMIT 5"
+        ).fetchall()
+    else:
+        recent = c.execute(
+            "SELECT id, title, mood_emoji, created_at, tag FROM memories ORDER BY created_at DESC LIMIT 5"
+        ).fetchall()
     conn.close()
 
     result = {
@@ -123,5 +131,5 @@ def memory_pulse():
         "今日新增": today_new,
         "最近记忆": [dict(r) for r in recent],
     }
-    _log("memory_pulse", {}, f"总计{total}条")
+    _log("memory_pulse", {"mode": mode}, f"总计{total}条")
     return json.dumps(result, ensure_ascii=False, indent=2)
