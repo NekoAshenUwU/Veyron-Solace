@@ -7,6 +7,9 @@
   2) receive_phone_data: apps 为空时返回 422,不再假装成功
   3) memory_hold/timeline_add/timeline_query/memory_grow/memory_trace
      的 `x: str = None` 类型注解改成 `x: str | None = None`(dict 同理)
+  4) 删除 Telegram 时代遗留、现已不用的 5 个工具及其专用 helper:
+     get_autonomy_runs / get_autonomy_messages / get_autonomy_status /
+     get_ashen_state / get_ashen_state_history
 不改数据库、不改其他任何逻辑。
 """
 import shutil
@@ -143,6 +146,10 @@ def get_phone_usage_summary() -> str:
 # __main__ 之后的一切都是从未执行过的死代码,截断即可
 MAIN_MARKER = 'if __name__ == "__main__":\n    app.run(transport="streamable-http", host="0.0.0.0", port=8890)\n'
 
+# Telegram 时代遗留、现已废弃的 5 个工具,整段(含专用 helper)一起删除
+DEAD_TOOLS_SPAN_START = "# ===== Neko Autonomy MCP Tools v1 ====="
+DEAD_TOOLS_SPAN_END = "# ===== End Ashen State MCP Tools v1 ====="
+
 
 def patch():
     with open(SERVER_PATH, "r", encoding="utf-8") as f:
@@ -163,6 +170,20 @@ def patch():
             sys.exit(1)
         src = src.replace(old, new)
         print(f"✅ 第 {i} 处补丁匹配成功并替换")
+
+    start_count = src.count(DEAD_TOOLS_SPAN_START)
+    end_count = src.count(DEAD_TOOLS_SPAN_END)
+    if start_count != 1 or end_count != 1:
+        print(f"❌ 废弃工具区块标记没精确匹配到(start={start_count}, end={end_count}),中止。")
+        sys.exit(1)
+    start_idx = src.index(DEAD_TOOLS_SPAN_START)
+    end_idx = src.index(DEAD_TOOLS_SPAN_END) + len(DEAD_TOOLS_SPAN_END)
+    if end_idx <= start_idx:
+        print("❌ 废弃工具区块的起止顺序不对,中止。")
+        sys.exit(1)
+    removed_len = end_idx - start_idx
+    src = src[:start_idx] + src[end_idx:]
+    print(f"✅ 已删除 get_autonomy_* / get_ashen_state* 共 5 个废弃工具及其专用 helper(移除了 {removed_len} 字节)")
 
     marker_count = src.count(MAIN_MARKER)
     if marker_count != 1:
