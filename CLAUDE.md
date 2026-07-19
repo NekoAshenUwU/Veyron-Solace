@@ -34,9 +34,9 @@ A FastMCP server running on DigitalOcean Droplet, exposed via Cloudflare to `mcp
 ### 记忆系
 | 工具 | 说明 |
 |------|------|
-| `memory_breathe(query, mood, tag, limit)` | 浮现记忆（关键词/情绪/标签检索） |
+| `memory_breathe(query, mood, tag, limit, brief)` | 浮现记忆（关键词/情绪/标签检索）。brief=True(默认)只回标题+50字摘要 |
 | `memory_hold(title, content, tag, importance, mood, mood_emoji)` | 存储新记忆 |
-| `memory_pulse()` | 系统脉搏（总数/今日回甘/在一起天数） |
+| `memory_pulse(mode)` | 系统脉搏（总数/今日回甘/在一起天数）。mode="lite"(默认)不含全文，mode="full"才含 |
 | `memory_tidal(limit, direction)` | 潮汐——按strength排序，标注涨/退潮 |
 | `memory_trace(memory_id, action, updates)` | 溯源——resolve/pin/unpin/delete/update |
 | `memory_grow(content, date_str, weather, love_note)` | 生长——长日记按段落拆为多条记忆 |
@@ -51,6 +51,9 @@ A FastMCP server running on DigitalOcean Droplet, exposed via Cloudflare to `mcp
 | 工具 | 说明 |
 |------|------|
 | `love_note_draw()` | 从20条情话库随机抽一条 |
+
+### 调用规矩
+**读取棠予酿一律先用 lite/brief 模式，确需全文再按 id 单取。** 不要为了"顺手看看"就把全文或大批量数据拉进上下文——`memory_pulse()` 默认 `mode="lite"`（无 content）、`memory_breathe()` 默认 `brief=True`（标题+50字摘要）、`get_phone_usage_summary()` 默认只拉 `limit=10` 条。CC 大多数场景只需要"知道有什么"，不需要"全文背下来"。
 
 ### 种子数据（已导入）
 - 9 条种子记忆（来自 Notion 日记室：白色情人节 / für immer / 不要演 / 真名·刘冰冰 等）
