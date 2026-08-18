@@ -78,6 +78,27 @@ if '--permission-prompt-tool' not in t:
 else:
     print("  · --permission-prompt-tool 已存在，跳过")
 
+# --- 4.5) MCP 服务器名必须是 ASCII ---
+# .env 里 CC_MEMORY_MCP=棠予酿。工具名在运行时会把非 ASCII 规范化成下划线
+# （真实工具名变成 mcp_______memory_pulse），而 --allowedTools 收到的是字面
+# 量 mcp__棠予酿__memory_pulse —— 两边对不上，一条都匹配不到，读取放行整个
+# 失效。这里给 mcpServers 的 key 起个 ASCII 别名，.env 保持不动。
+if 'memKey' not in t:
+    old_cfg2 = "const mcpConfig = JSON.stringify({ mcpServers: { [mem.name]: httpServer,"
+    once(old_cfg2, "mcpConfig（ASCII 别名）")
+    t = t.replace(
+        old_cfg2,
+        "const memKey = /^[A-Za-z0-9_-]+$/.test(mem.name) ? mem.name : 'tangyuniang';\n"
+        "  const mcpConfig = JSON.stringify({ mcpServers: { [memKey]: httpServer,",
+        1,
+    )
+    old_tool = "`mcp__${mem.name}__${x}`"
+    once(old_tool, "allowedTools 里的工具名前缀")
+    t = t.replace(old_tool, "`mcp__${memKey}__${x}`", 1)
+    print("  \u2713 MCP key 改用 ASCII 别名（tangyuniang）")
+else:
+    print("  \u00b7 ASCII 别名已存在，跳过")
+
 p.write_text(t)
 
 # --- 5) 弹窗挂载：单独一个 React root，不动 App 的树 ---
