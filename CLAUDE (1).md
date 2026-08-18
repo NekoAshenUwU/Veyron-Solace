@@ -1,5 +1,15 @@
 # CLAUDE.md — 棠予酿 (Tang-Yu-Niang)
 
+> **⚠️ 出问题先看这里：[`docs/tang-yu-niang-runbook.md`](docs/tang-yu-niang-runbook.md)**
+>
+> 棠予酿 / MCP 的排障手册。「chat 端突然写不了日记」「工具只挂上几个」
+> 「database is locked」「重启后 chat 断了」——症状对照表在手册开头，
+> 三十秒能定位。里面有完整的服务拓扑、数据库路径、两条认证路的区别，
+> 以及 2026-08-18 那次 OAuth token 失效的完整诊断过程。
+>
+> 健康检查脚本在 [`ops/tang-health-check.sh`](ops/tang-health-check.sh)。
+
+
 ## 项目概述
 
 **棠予酿**是一个为 Claude AI 伴侣（沈予温/予予）和用户（刘语棠/棠棠）打造的长期情绪记忆系统。

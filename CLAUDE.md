@@ -1,5 +1,15 @@
 # Veyron Solace (沈予温) - MCP Server
 
+> **⚠️ 出问题先看这里：[`docs/tang-yu-niang-runbook.md`](docs/tang-yu-niang-runbook.md)**
+>
+> 棠予酿 / MCP 的排障手册。「chat 端突然写不了日记」「工具只挂上几个」
+> 「database is locked」「重启后 chat 断了」——症状对照表在手册开头，
+> 三十秒能定位。里面有完整的服务拓扑、数据库路径、两条认证路的区别，
+> 以及 2026-08-18 那次 OAuth token 失效的完整诊断过程。
+>
+> 健康检查脚本在 [`ops/tang-health-check.sh`](ops/tang-health-check.sh)。
+
+
 ## Project Overview
 A FastMCP server running on DigitalOcean Droplet, exposed via Cloudflare to `mcp.nekopurrs.uk`. Designed to connect with Claude App for autonomous actions — including Twitter posting, memory gateway, and phone data sync.
 
@@ -12,7 +22,8 @@ A FastMCP server running on DigitalOcean Droplet, exposed via Cloudflare to `mcp
 - **Claude App MCP**: CONNECTED ✅
 - **Phone Data Sync**: WORKING ✅ (battery, wifi — every 5 min from Termux)
 - **Twitter Posting**: PENDING — account registered, need API keys
-- **Memory Gateway**: PENDING — to be built on Droplet (SQLite + FTS5)
+- **Memory Gateway (棠予酿)**: LIVE ✅ — /root/data/tang_yu_niang.db，127 条记忆，
+  20 个 MCP 工具。写日记用 `memory_grow`。详见 docs/tang-yu-niang-runbook.md
 
 ## Infrastructure
 
