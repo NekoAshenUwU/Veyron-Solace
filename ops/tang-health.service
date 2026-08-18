@@ -1,0 +1,9 @@
+[Unit]
+Description=棠予酿 / MCP 双路健康检查
+After=network-online.target mcp.service
+
+[Service]
+Type=oneshot
+ExecStart=/root/ops/tang-health-check.sh
+# 想接推送时，把下面这行的注释去掉并填上你的命令
+# Environment=ALERT_CMD=curl -s -X POST https://example/notify -d "tang health failed"

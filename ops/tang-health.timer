@@ -1,0 +1,10 @@
+[Unit]
+Description=每 15 分钟跑一次棠予酿健康检查
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=15min
+Unit=tang-health.service
+
+[Install]
+WantedBy=timers.target
