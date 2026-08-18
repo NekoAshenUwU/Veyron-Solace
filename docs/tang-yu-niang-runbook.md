@@ -15,6 +15,7 @@
 | 刚 `systemctl restart mcp` 完，chat 就断了 | 预期行为，见 §4 | 重连一次 |
 | 前端好好的但 chat 坏了（或反过来）| 两条认证路互相独立 | 见 §4 的对照表 |
 | 偶发 `database is locked` | 并发写 | 已上 WAL；还缺 `busy_timeout`，见 §6 |
+| `Bad Request: Missing session ID` | 手搓 curl 少了 MCP 握手 | 不是故障，见 §5 里列工具那条命令 |
 
 **排查时的第一条铁律：`curl` 一律带 `-i`，一律不要 pipe 进 `grep`。**
 2026-08-18 那天有两次因为管道吞掉了错误响应体，白白多绕了几十分钟——服务端明明在 `WWW-Authenticate` 头里把答案写得清清楚楚。
@@ -164,12 +165,25 @@ curl -s -i -X POST https://mcp.nekopurrs.uk/mcp \
   -d '{"jsonrpc":"2.0","method":"tools/list","params":{},"id":2}' | head -30
 
 # 用静态 token 列工具（绕开整条 GitHub 链路，用来切分故障范围）
+#
+# ⚠️ MCP Streamable HTTP 必须先 initialize 握手拿 Mcp-Session-Id，直接发
+#    tools/list 会被拒：Bad Request: Missing session ID。这跟认证无关——
+#    2026-08-18 因为这个误判过一次，以为是静态 token 坏了。
 set -a; . /root/mcp-oauth.env; set +a
-curl -s -X POST https://mcp.nekopurrs.uk/mcp \
+SID=$(curl -sS -D- -o/dev/null -X POST https://mcp.nekopurrs.uk/mcp \
   -H "Authorization: Bearer $TANG_WEB_TOKEN" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
-  -d '{"jsonrpc":"2.0","method":"tools/list","params":{},"id":2}' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{
+       "protocolVersion":"2024-11-05","capabilities":{},
+       "clientInfo":{"name":"cli","version":"1.0"}}}' \
+  | grep -i '^mcp-session-id:' | tr -d '\r' | cut -d' ' -f2-)
+
+curl -sS -X POST https://mcp.nekopurrs.uk/mcp \
+  -H "Authorization: Bearer $TANG_WEB_TOKEN" -H "Mcp-Session-Id: $SID" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' \
   | grep -o '"name":"[^"]*"' | sort
 
 # 查所有在用的库和它们的 journal 模式（排除备份目录）

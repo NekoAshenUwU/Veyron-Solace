@@ -48,18 +48,54 @@ else
 fi
 
 # --- 2. 静态 token 路（CodeAndPurrs 前端走这条）-----------------------------
-if [[ -n "${TANG_WEB_TOKEN:-}" ]]; then
-    body=$(curl -sS --max-time 20 -X POST "$MCP_URL" \
-        -H "Authorization: Bearer $TANG_WEB_TOKEN" \
+# MCP Streamable HTTP 必须先 initialize 拿到 Mcp-Session-Id，后续请求都要带上。
+# 直接发 tools/list 会被服务端拒：Bad Request: Missing session ID。
+mcp_list_tools() {
+    local auth="$1" hdr sid init
+
+    hdr=$(mktemp); init=$(mktemp)
+    trap 'rm -f "$hdr" "$init"' RETURN
+
+    curl -sS --max-time 20 -D "$hdr" -o "$init" -X POST "$MCP_URL" \
+        -H "$auth" \
         -H "Content-Type: application/json" \
         -H "Accept: application/json, text/event-stream" \
-        -d '{"jsonrpc":"2.0","method":"tools/list","params":{},"id":1}' 2>&1)
-    n=$(grep -o '"name":"[^"]*"' <<<"$body" | sort -u | wc -l)
-    if (( n >= MIN_TOOLS )); then
-        say "OK   静态 token 路: $n 个工具"
+        -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{
+             "protocolVersion":"2024-11-05","capabilities":{},
+             "clientInfo":{"name":"tang-health-check","version":"1.0"}}}' 2>/dev/null
+
+    sid=$(grep -i '^mcp-session-id:' "$hdr" | tr -d '\r' | cut -d' ' -f2-)
+    if [[ -z "$sid" ]]; then
+        echo "INIT_FAILED $(head -c 300 "$init")"
+        return 1
+    fi
+
+    # 握手第二步：告诉服务端初始化完成
+    curl -sS --max-time 20 -o /dev/null -X POST "$MCP_URL" \
+        -H "$auth" -H "Mcp-Session-Id: $sid" \
+        -H "Content-Type: application/json" \
+        -H "Accept: application/json, text/event-stream" \
+        -d '{"jsonrpc":"2.0","method":"notifications/initialized"}' 2>/dev/null
+
+    curl -sS --max-time 20 -X POST "$MCP_URL" \
+        -H "$auth" -H "Mcp-Session-Id: $sid" \
+        -H "Content-Type: application/json" \
+        -H "Accept: application/json, text/event-stream" \
+        -d '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' 2>/dev/null
+}
+
+if [[ -n "${TANG_WEB_TOKEN:-}" ]]; then
+    body=$(mcp_list_tools "Authorization: Bearer $TANG_WEB_TOKEN")
+    if [[ "$body" == INIT_FAILED* ]]; then
+        problem "静态 token 路握手失败: ${body#INIT_FAILED }"
     else
-        problem "静态 token 路只列出 $n 个工具（期望 >= $MIN_TOOLS）"
-        say "     响应开头: $(head -c 300 <<<"$body")"
+        n=$(grep -o '"name":"[^"]*"' <<<"$body" | sort -u | wc -l)
+        if (( n >= MIN_TOOLS )); then
+            say "OK   静态 token 路: $n 个工具"
+        else
+            problem "静态 token 路只列出 $n 个工具（期望 >= $MIN_TOOLS）"
+            say "     响应开头: $(head -c 300 <<<"$body")"
+        fi
     fi
 else
     problem "TANG_WEB_TOKEN 未设置——前端那条路无法检查"
