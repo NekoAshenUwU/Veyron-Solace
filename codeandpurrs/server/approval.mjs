@@ -138,8 +138,15 @@ export async function handleApprovalMcp(req, res, readJSON) {
         at:    new Date().toISOString(),
       });
       console.log(`[approval] 结果 → ${decision.allow ? '允许' : '拒绝'}（${decision.reason}）`);
-      // Claude Code 要求返回 {"allow": true|false, "reason": "..."}
-      return reply({ content: [{ type: 'text', text: JSON.stringify(decision) }] });
+      // Claude Code 实际校验的是 PermissionResult：
+      //   允许 → { behavior: 'allow', updatedInput: <原样回传参数> }
+      //   拒绝 → { behavior: 'deny',  message: '...' }
+      // 注意：文档里写的 {"allow": true} 是错的，运行时会被 zod 拒掉
+      //（2026-08-18 实测，报 invalid_union · path: behavior）。
+      const payload = decision.allow
+        ? { behavior: 'allow', updatedInput: a.input ?? a.tool_input ?? {} }
+        : { behavior: 'deny', message: decision.reason };
+      return reply({ content: [{ type: 'text', text: JSON.stringify(payload) }] });
     }
 
     default:

@@ -23,9 +23,16 @@ const TOOL_LABEL: Record<string, string> = {
   add_dream_event: '记一条梦境',
 };
 
+// mcp__<服务器名>__<工具名> → 取最后一段。服务器名本身可能含下划线，
+// 所以不要用正则去猜，直接按 __ 切开取末尾最稳。
+function bareName(tool: string) {
+  const parts = tool.split('__').filter(Boolean);
+  return parts[parts.length - 1] || tool;
+}
+
 function labelOf(tool: string) {
-  const bare = tool.replace(/^mcp__[^_]*(?:_[^_]+)*?__/, '');
-  return TOOL_LABEL[bare] || bare || tool;
+  const bare = bareName(tool);
+  return TOOL_LABEL[bare] || bare;
 }
 
 // 参数里挑出值得给人看的字段，按重要性排
@@ -84,6 +91,7 @@ export default function ApprovalGate() {
       <div style={S.card}>
         <div style={S.eyebrow}>予予想要</div>
         <div style={S.title}>{labelOf(ask.tool)}</div>
+        <div style={S.rawname}>{ask.tool}</div>
 
         <div style={S.body}>
           {fields(ask.input).map(([k, v]) => (
@@ -141,6 +149,10 @@ const S: Record<string, React.CSSProperties> = {
     fontFamily: '"Noto Sans SC", system-ui, sans-serif',
   },
   eyebrow: { fontSize: 11, letterSpacing: 2, opacity: 0.55, marginBottom: 4 },
+  rawname: {
+    fontSize: 10, opacity: 0.32, marginTop: -12, marginBottom: 16,
+    fontFamily: 'ui-monospace, monospace', wordBreak: 'break-all',
+  },
   title: {
     fontSize: 21, fontWeight: 300, marginBottom: 16,
     background: 'linear-gradient(90deg,#b080e0,#e080b0,#80b0e0)',
