@@ -243,6 +243,34 @@ journalctl -u tang-health.service -n 30 # 之后看定时结果
 
 ---
 
+## 6.5 缓存保活心跳（CodeAndPurrs）
+
+`server/heartbeat.mjs` 用 `cache_control: { type: 'ephemeral', ttl: '1h' }`
+把 prompt cache 续着，省得隔一阵回来重读整段上下文。写法很讲究：`max_tokens=1`
+只让模型吐一个句号、砍掉每次都变的末条消息、图片块降级成 `[图]` 保持文字前缀
+字节一致、跑完解析 `cache_read_input_tokens` 写日志。claudecode 和 anthropic
+两条 provider 各有各的实现。
+
+**但 2026-08-20 查出来：它从来没被叫过一次。** package.json、pm2 配置、
+crontab、systemd 里都没有任何引用，`grep -c "heartbeat 完成"` 日志里是 0。
+脚本本身是一次性的（`main()` 跑完就退），不自带循环。所以 1 小时 TTL 名存实亡
+——没人续，隔一两小时回来缓存早凉了。
+
+接法见 `codeandpurrs/ops/install-heartbeat.sh`：systemd timer，每 50 分钟一次
+（卡在 1 小时 TTL 之内）。
+
+**成本上必须留意闲置保护。** 1 小时 TTL 的缓存写入是 **2×**、读取 0.1×。
+一个 3 万 token 的上下文，每次心跳读缓存约合 3000 token；一天 29 次就是
+8.7 万 token 当量，Opus 4.7 输入 $5/M 算下来约 **$13/月**——比这台 droplet
+本身还贵。heartbeat.mjs 里的 `MAX_SNAPSHOT_AGE_HOURS` 就是这个闸门（默认
+24 小时，service 里收到了 4 小时：够覆盖「吃完饭回来接着聊」，不覆盖
+「睡一觉」）。
+
+验证命中率：`journalctl -u codeandpurrs-heartbeat.service`，看
+`cache_read=` 那个数字。它不为 0 就是真命中了。
+
+---
+
 ## 7. 待办
 
 - [ ] **`busy_timeout`**：WAL 让读写不互斥，但两个**写**操作同时来仍会排队，默认耐心值为 0 —— 撞上就直接 `database is locked`。需要在 `server.py` 建立连接处加 `PRAGMA busy_timeout=5000`（per-connection，没法从外面用 PRAGMA 一次性写进文件）。

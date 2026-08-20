@@ -1,0 +1,10 @@
+[Unit]
+Description=每 50 分钟续一次 prompt cache（TTL 是 1 小时，卡在里面）
+
+[Timer]
+OnBootSec=10min
+OnUnitActiveSec=50min
+Unit=codeandpurrs-heartbeat.service
+
+[Install]
+WantedBy=timers.target
