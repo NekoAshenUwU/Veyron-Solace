@@ -18,26 +18,35 @@ fi
 
 echo "════ 2/3  重启 mcp.service"
 systemctl restart mcp
-sleep 3
+# FastMCP 起来 + 连上游 MCP 要时间，3 秒不够
+sleep 10
 systemctl is-active mcp && echo "  服务在跑"
 journalctl -u mcp -n 15 --no-pager | grep -iE "error|traceback|reflex" || echo "  启动日志没有报错"
 echo
 
 echo "════ 3/3  工具是否全部加载（走静态 token，绕开 OAuth）"
 set -a; . /root/mcp-oauth.env; set +a
-SID=$(curl -sS -D- -o/dev/null --max-time 20 -X POST https://mcp.nekopurrs.uk/mcp \
+INIT=$(mktemp)
+curl -sS -i --max-time 20 -X POST https://mcp.nekopurrs.uk/mcp \
   -H "Authorization: Bearer $TANG_WEB_TOKEN" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{
        "protocolVersion":"2024-11-05","capabilities":{},
-       "clientInfo":{"name":"acceptance","version":"1.0"}}}' \
-  | grep -i '^mcp-session-id:' | tr -d '\r' | cut -d' ' -f2-)
+       "clientInfo":{"name":"acceptance","version":"1.0"}}}' > "$INIT" 2>&1
+
+SID=$(grep -i '^mcp-session-id:' "$INIT" | tr -d '\r' | cut -d' ' -f2-)
 
 if [[ -z "$SID" ]]; then
-    echo "  握手失败，拿不到 session id。服务可能还没起来，等 10 秒再跑一次这一段。"
+    echo "  握手失败，拿不到 session id。原始响应："
+    sed 's/^/    /' "$INIT" | head -25
+    echo
+    echo "  注意：这一段验的是「静态 token 能不能打 /mcp」，跟 memory_reflex 无关。"
+    echo "  服务本身是否健康看上面 2/3 段；工具是否注册可以直接看代码或用 chat 端确认。"
+    rm -f "$INIT"
     exit 1
 fi
+rm -f "$INIT"
 
 curl -sS --max-time 20 -X POST https://mcp.nekopurrs.uk/mcp \
   -H "Authorization: Bearer $TANG_WEB_TOKEN" -H "Mcp-Session-Id: $SID" \
