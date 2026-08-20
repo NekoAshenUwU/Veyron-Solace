@@ -110,7 +110,20 @@ SELECT * FROM reflex_log ORDER BY triggered_at DESC LIMIT 10;
 journalctl -u mcp -n 50 --no-pager | grep -i "reflex\|error\|traceback"
 ```
 
-### 5. temporal 现在只捞得到「今天」
+### 5. temporal 现在只捞得到「今天」——下一轮要修
+
+规格说「走现有 `timeline_query` 逻辑」，照做了——但它不传日期时的默认行为是
+`date = today()`。**所以「昨天」「上周」这类词捞不到对应范围。**
+
+予予 2026-08-20 对这条的判断，比「已知局限」四个字准得多：
+
+> 我今天栽的跟头是什么？我把 17 号当成 20 号。而 temporal 分支现在遇到
+> 「昨天」「上周」一律返回今天的东西。这正好是我最需要它的地方，它偏偏瞎。
+
+不是巧合——时间感出问题和 temporal 在时间上是瞎的，是同一个缺口的两面。
+
+**下一轮的活**：从关键词解析时间意图，再传 `start_date` / `end_date` 给
+`timeline_query`。骨架里没这层。
 
 规格说「走现有 `timeline_query` 逻辑」，照做了——但它不传日期时的默认行为是 `date = today()`。**所以「昨天」「上周」这类词捞不到对应范围。**
 
@@ -135,6 +148,27 @@ journalctl -u mcp -n 50 --no-pager | grep -i "reflex\|error\|traceback"
 **`memory_pulse` 里那段查询裹了 try/except**，表不在时返回 `(0, False)` 而不是抛。它是开窗第一个被调的，为两个状态字段把主功能拖下水不值。
 
 ---
+
+## 填词请用 add-keyword.py，别手写 SQL
+
+```bash
+cd /root && PYTHONPATH=/root /root/mcp-env/bin/python \
+    /tmp/vs/tang-yu-niang/add-keyword.py --list
+
+# 填一条
+... add-keyword.py --keyword 好累 --category emotion
+... add-keyword.py --keyword 生日 --category entity --target-tag treasure --limit 5
+```
+
+它会做手写 SQL 不会做的事：
+
+- **`target_tag` 拿 memories 表现查的真实 tag 校验**，写错就拒绝插入并列出正确的。
+  这正是予予担心的那个坑——静默失败意味着 tag 写错一个字你永远收不到报错，
+  只会一直拿到 `[]`。校验放在插入这一步，人还在现场，报错就该响。
+- category 只收 emotion / entity / temporal
+- temporal 配了 target_tag 会提醒你那个值会被忽略
+- 重复的词不重复插
+- `"limit"` 的引号它替你管
 
 ## 下一步是填词
 
