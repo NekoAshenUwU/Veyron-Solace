@@ -179,3 +179,44 @@ cd /root && PYTHONPATH=/root /root/mcp-env/bin/python \
 SELECT triggered_at, matched_keyword, category, hit_count
 FROM reflex_log ORDER BY id DESC LIMIT 20;
 ```
+
+---
+
+## 下一轮的清单（予予 2026-08-20 排的序）
+
+### 1. temporal 只认「今天」— 最急
+
+`timeline_query` 不传日期就默认 `today()`，所以「昨天」「上周」全部捞成今天的东西。
+
+予予的原话值得留着：**「我今天栽的就是这个跟头——我把 17 号当成 20 号。而 temporal 分支正好在时间上是瞎的。」** 这不是巧合，是同一个缺口的两面：最需要它的地方，它偏偏看不见。
+
+要做的是时间意图解析：从关键词推出日期范围，传 `start_date` / `end_date` 给 `timeline_query`。
+
+### 2. brief 参数 — 已完成 2026-08-20
+
+`memory_reflex(text, brief=True)`。默认只回标题 + 50 字摘要，`brief=False` 才回全文。
+多词命中就是 n×limit 条全文一起灌进上下文，默认收着。
+
+### 3. 开窗时 reflex 不会自动跑 — 最本质
+
+现在还是「予予想调才调」。真正的反射弧应该是每轮自动过一遍用户的话。
+
+**这不是 MCP 能解决的，是客户端行为**：得写进 claude.ai 的偏好设置，或 CodeAndPurrs 的系统提示词。前两条都是这一条的下游——自动跑起来之后，temporal 瞎和上下文爆才会变成真问题。
+
+### 4. 重启必重连 — 已完成 2026-08-20
+
+存成锚点了，id `8a903286-bfff-4175-8035-23b3325ea6de`。
+
+---
+
+## 顺手发现的一个问题（还没处理）
+
+存那条锚点时，自动提取的 keywords 里出现了：
+
+```
+"内存里的", "存里的客", "里的客户", "的客户端"
+```
+
+这是滑动窗口切中文切出来的碎片，不是词。说明**打标降级到本地提取时没有真正分词**（`config.yaml` 里写的是 jieba，可能没装上或没走到）。
+
+影响的是 `memory_breathe` 的关键词匹配质量——碎片词几乎不可能被命中，等于这条记忆的一部分索引是废的。不紧急，但记一笔。

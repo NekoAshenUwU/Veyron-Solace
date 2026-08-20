@@ -37,6 +37,27 @@ CATEGORY_ORDER = {
 OVERFETCH = 4
 
 
+# brief 模式下正文截断到多少字
+BRIEF_CHARS = 50
+
+
+def _slim(row: dict) -> dict:
+    """brief 模式：只留标题和摘要，别把全文灌进上下文。"""
+    content = (row.get("content") or "").strip()
+    if len(content) > BRIEF_CHARS:
+        content = content[:BRIEF_CHARS] + "…"
+    return {
+        k: v for k, v in (
+            ("id", row.get("id")),
+            ("title", row.get("title")),
+            ("tag", row.get("tag")),
+            ("mood_emoji", row.get("mood_emoji")),
+            ("created_at", row.get("created_at")),
+            ("content", content),
+        ) if v not in (None, "")
+    }
+
+
 def _recent_ids(conn) -> set:
     """24 小时内已经返回过的 id。"""
     rows = conn.execute(
@@ -94,9 +115,12 @@ def _query_timeline(kw, seen: set) -> list:
     return out
 
 
-def memory_reflex(text: str) -> str:
+def memory_reflex(text: str, brief: bool = True) -> str:
     """
     反射 — 把文本对词表做子串匹配，命中则浮现对应记忆。
+
+    brief=True（默认）只回标题 + 50 字摘要；brief=False 回整行含 content 全文。
+    默认收着，是因为多词命中就是 n×limit 条全文一起灌进来，上下文会炸。
 
     永远返回 JSON 数组字符串。任何异常都吞掉返回 "[]"。
     """
@@ -142,6 +166,8 @@ def memory_reflex(text: str) -> str:
                 results.extend(found)
 
             conn.commit()
+            if brief:
+                results = [_slim(r) for r in results]
             return json.dumps(results, ensure_ascii=False, indent=2)
         finally:
             conn.close()

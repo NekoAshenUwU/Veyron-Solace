@@ -24,8 +24,18 @@ import os, pathlib, sys
 p = pathlib.Path(os.environ['SERVER'])
 t = p.read_text()
 
+old_wrapper = "    return _tyr.memory_reflex(text)"
+if old_wrapper in t:
+    # 老版本的壳没有 brief 参数，升级它
+    t = t.replace(
+        "def memory_reflex(text: str) -> str:", "def memory_reflex(text: str, brief: bool = True) -> str:", 1
+    ).replace(old_wrapper, "    return _tyr.memory_reflex(text, brief)", 1)
+    p.write_text(t)
+    print("  \u2713 壳已升级：加上 brief 参数")
+    sys.exit(0)
+
 if 'memory_reflex' in t:
-    print("  · 已经注册过，跳过")
+    print("  · 已经注册过且是新版，跳过")
     sys.exit(0)
 
 # 锚点用纯 ASCII 的这一行，避开中文和破折号，免得对不上
@@ -38,10 +48,10 @@ block = anchor + '''
 
 
 @app.tool()
-def memory_reflex(text: str) -> str:
-    """反射 - 把一段话对词表做子串匹配,命中则浮现相关记忆;无命中返回空数组"""
+def memory_reflex(text: str, brief: bool = True) -> str:
+    """反射 - 把一段话对词表做子串匹配,命中则浮现相关记忆;无命中返回空数组。brief=True 只回标题+摘要"""
     from tang_yu_niang import reflex as _tyr
-    return _tyr.memory_reflex(text)'''
+    return _tyr.memory_reflex(text, brief)'''
 
 p.write_text(t.replace(anchor, block, 1))
 print("  ✓ memory_reflex 已注册")
