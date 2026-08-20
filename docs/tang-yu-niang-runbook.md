@@ -262,8 +262,9 @@ crontab、systemd 里都没有任何引用，`grep -c "heartbeat 完成"` 日志
 **成本上必须留意闲置保护。** 1 小时 TTL 的缓存写入是 **2×**、读取 0.1×。
 一个 3 万 token 的上下文，每次心跳读缓存约合 3000 token；一天 29 次就是
 8.7 万 token 当量，Opus 4.7 输入 $5/M 算下来约 **$13/月**——比这台 droplet
-本身还贵。heartbeat.mjs 里的 `MAX_SNAPSHOT_AGE_HOURS` 就是这个闸门（默认
-24 小时，service 里收到了 4 小时：够覆盖「吃完饭回来接着聊」，不覆盖
+本身还贵。heartbeat.mjs 里的 `MAX_SNAPSHOT_AGE_HOURS` 就是这个闸门，它读的环境变量叫
+**`HEARTBEAT_MAX_AGE_HOURS`**（名字和常量名不一样，别设错——设错了不报错，
+静默沿用默认值 24 小时）。service 里收到了 4 小时：够覆盖「吃完饭回来接着聊」，不覆盖
 「睡一觉」）。
 
 验证命中率：`journalctl -u codeandpurrs-heartbeat.service`，看

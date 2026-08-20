@@ -11,8 +11,8 @@ SRC="$(cd "$(dirname "$0")" && pwd)"
 
 echo "== 先看 MAX_SNAPSHOT_AGE_HOURS 是怎么取值的"
 grep -n "MAX_SNAPSHOT_AGE_HOURS" "$APP/server/heartbeat.mjs" | head -5
-echo "   ↑ 如果这里是 process.env.MAX_SNAPSHOT_AGE_HOURS，service 里设的 4 小时就会生效；"
-echo "     如果是写死的常数，那还是 24 小时，需要另外改代码。"
+echo "   ↑ 它读的环境变量叫 HEARTBEAT_MAX_AGE_HOURS（不是 MAX_SNAPSHOT_AGE_HOURS，"
+echo "     后者只是代码里的常量名）。service 里设的就是前者。"
 echo
 
 echo "== 装 systemd unit"
