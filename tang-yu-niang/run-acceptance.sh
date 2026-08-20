@@ -5,7 +5,10 @@ set -uo pipefail
 SRC="$(cd "$(dirname "$0")" && pwd)"
 
 echo "════ 1/3  行为验收（重启前，直接调 Python 函数）"
-cd /root && /root/mcp-env/bin/python "$SRC/verify-reflex.py"
+# PYTHONPATH 是必须的：python 跑脚本文件时放进 sys.path 的是「脚本所在目录」
+# （这里是 /tmp/vs/...），不是 cwd。光 cd /root 找不到 tang_yu_niang 包。
+cd /root && PYTHONPATH="/root${PYTHONPATH:+:$PYTHONPATH}" \
+    /root/mcp-env/bin/python "$SRC/verify-reflex.py"
 rc=$?
 echo
 if [[ $rc -ne 0 ]]; then

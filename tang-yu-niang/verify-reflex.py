@@ -10,7 +10,9 @@
 
 跑完自动清理测试数据（测试词 + 它产生的 log 行），真库不留痕。
 在 /root 下用 server 的解释器跑：
-    cd /root && /root/mcp-env/bin/python verify-reflex.py
+    cd /root && PYTHONPATH=/root /root/mcp-env/bin/python /path/to/verify-reflex.py
+
+PYTHONPATH 不能省：python 跑脚本文件时进 sys.path 的是脚本所在目录，不是 cwd。
 """
 
 import json
