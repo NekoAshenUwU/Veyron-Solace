@@ -74,10 +74,16 @@ public class UsageSyncWorker extends Worker {
         }
 
         try {
-            JSONObject payload = buildPayload(context);
+            // 事件式会话：增量拉自上次同步以来的原始事件，配对成会话 + 屏幕事件
+            UsageEventCollector.Result events = UsageEventCollector.collect(context);
+
+            JSONObject payload = buildPayload(context, events);
             int code = postJson(ENDPOINT, payload);
 
             if (code >= 200 && code < 300) {
+                // 游标只在上报成功后才推进。失败就留在原地，下次重来——
+                // 宁可重复上报（服务端 UPSERT 幂等），也不能丢：系统事件过期就永远没了。
+                UsageEventCollector.commitCursor(context, events.windowEnd);
                 SyncReminder.markSynced(context);
                 return Result.success();
             }
@@ -107,7 +113,7 @@ public class UsageSyncWorker extends Worker {
         return cal.getTimeInMillis();
     }
 
-    private JSONObject buildPayload(Context context) throws Exception {
+    private JSONObject buildPayload(Context context, UsageEventCollector.Result events) throws Exception {
         UsageStatsManager manager =
                 (UsageStatsManager) context.getSystemService(Context.USAGE_STATS_SERVICE);
 
@@ -154,7 +160,10 @@ public class UsageSyncWorker extends Worker {
         usageObj.put("favorite_apps", favorites);
 
         JSONObject root = new JSONObject();
+        // 旧的快照式累计照旧上报，新旧并存。等会话数据稳跑一周再考虑退役它。
         root.put("app_usage", usageObj);
+        root.put("usage_sessions", events.sessions);
+        root.put("screen_events", events.screenEvents);
         root.put("device", android.os.Build.MANUFACTURER + " " + android.os.Build.MODEL);
         root.put("source", "Neko Usage Bridge AutoSync");
         root.put("synced_at", new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.getDefault()).format(new Date()));

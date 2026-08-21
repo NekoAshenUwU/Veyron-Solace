@@ -53,6 +53,9 @@ public class TrackedActivity extends Activity {
         UsageSyncWorker.schedule(this);
         buildUi();
         refreshSummary();
+        // HyperOS 会把后台 Worker 杀掉。冷启动时主动补一次，
+        // 至少每次打开 App 都能把攒下的事件捞回来。
+        syncEventsInBackground();
     }
 
     @Override
@@ -100,7 +103,11 @@ public class TrackedActivity extends Activity {
 
         Button sync = button("立即同步到 VPS");
         sync.setOnClickListener(v -> syncNow());
+
+        Button battery = button("加入电池优化白名单（HyperOS 必做）");
+        battery.setOnClickListener(v -> requestIgnoreBatteryOptimizations());
         root.addView(sync);
+        root.addView(battery);
 
         output = new TextView(this);
         output.setTextSize(13);
@@ -297,6 +304,66 @@ public class TrackedActivity extends Activity {
             if (limit >= 8) break;
         }
         return sent;
+    }
+
+    /**
+     * HyperOS / MIUI 默认会限制后台，WorkManager 的周期任务经常跑不满。
+     * 引导用户把 App 加进电池优化白名单。
+     */
+    private void requestIgnoreBatteryOptimizations() {
+        try {
+            android.os.PowerManager pm =
+                    (android.os.PowerManager) getSystemService(Context.POWER_SERVICE);
+            if (pm != null && pm.isIgnoringBatteryOptimizations(getPackageName())) {
+                status.setText("✅ 已经在电池优化白名单里了");
+                return;
+            }
+            Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+            intent.setData(android.net.Uri.parse("package:" + getPackageName()));
+            startActivity(intent);
+        } catch (Exception e) {
+            // 有些机型不认这个 Intent，退回到电池设置页让用户自己找
+            try {
+                startActivity(new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS));
+            } catch (Exception ignored) {
+                status.setText("这台机型打不开电池优化设置，请手动去系统设置里放行");
+            }
+        }
+    }
+
+    /** 冷启动补同步。放后台线程，别卡住 UI。 */
+    private void syncEventsInBackground() {
+        new Thread(() -> {
+            try {
+                UsageEventCollector.Result events = UsageEventCollector.collect(this);
+                if (events.isEmpty()) return;
+
+                JSONObject root = new JSONObject();
+                root.put("usage_sessions", events.sessions);
+                root.put("screen_events", events.screenEvents);
+                root.put("source", "Neko Usage Bridge ColdStart");
+                root.put("synced_at", new SimpleDateFormat(
+                        "yyyy-MM-dd'T'HH:mm:ssXXX", Locale.getDefault()).format(new Date()));
+
+                URL url = new URL(ENDPOINT);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("POST");
+                conn.setConnectTimeout(10000);
+                conn.setReadTimeout(10000);
+                conn.setDoOutput(true);
+                conn.setRequestProperty("Content-Type", "application/json; charset=utf-8");
+                conn.setRequestProperty("X-Auth-Token", TOKEN);
+                try (OutputStream os = conn.getOutputStream()) {
+                    os.write(root.toString().getBytes("UTF-8"));
+                }
+                int code = conn.getResponseCode();
+                if (code >= 200 && code < 300) {
+                    UsageEventCollector.commitCursor(this, events.windowEnd);
+                }
+            } catch (Exception ignored) {
+                // 冷启动补同步失败不打扰用户，下次 Worker 会再来
+            }
+        }).start();
     }
 
     private void syncNow() {
