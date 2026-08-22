@@ -10,6 +10,11 @@
 > 健康检查脚本在 [`ops/tang-health-check.sh`](ops/tang-health-check.sh)。
 
 
+> **⛔ `usage-bridge/` 目录已停用** —— 那是旧手机（华为）时代的 Java 版。
+> 红米现在跑的是独立仓库 [neko-usage-bridge](https://github.com/NekoAshenUwU/neko-usage-bridge)（Kotlin）。
+> 认错过一次，见 [`usage-bridge/DEPRECATED.md`](usage-bridge/DEPRECATED.md)。
+
+
 ## Project Overview
 A FastMCP server running on DigitalOcean Droplet, exposed via Cloudflare to `mcp.nekopurrs.uk`. Designed to connect with Claude App for autonomous actions — including Twitter posting, memory gateway, and phone data sync.
 

@@ -1,3 +1,5 @@
+> ⛔ **这个目录已停用（旧手机·华为）。红米现役的在 [neko-usage-bridge](https://github.com/NekoAshenUwU/neko-usage-bridge)，详见 [DEPRECATED.md](DEPRECATED.md)。**
+
 # Neko Usage Bridge - Tracked Apps
 
 Neko 常用平台映射表，用来把 Android package name 显示成更好懂的名字，并在后续统计里优先展示。
