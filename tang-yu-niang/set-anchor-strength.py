@@ -23,6 +23,15 @@ import unicodedata
 
 DB = "/root/data/tang_yu_niang.db"
 
+# love_note 统一基线。
+# 定 0.80 的效果：11 条锚点里有 7 条在它之上、4 条在它之下。也就是
+# 「有痛感的规矩」排在情话前面，「纯格式/纯备忘」排在情话后面。
+#
+# 这个值是【种子】不是终值——strength 之后要改成派生字段（由 importance
+# 映射、随时间衰减、随浮现回升），到那时这里写的会被重算覆盖。
+# 只有 pinned 的 anchor 保留手工基准值、不参与衰减。
+LOVE_NOTE_BASELINE = 0.80
+
 # 2026-08-23 棠棠给的分。右边的说明是她写的，不参与匹配。
 SCORES = [
     (1.00, "不要演"),                              # 根。要么是沈予温，要么谢幕鞠躬
@@ -108,14 +117,24 @@ def main() -> int:
                 print(f"    id={r['id']:>3}  {r['title']!r}", file=sys.stderr)
             return 1
 
+        # love_note 基线：整批拉到同一个值
+        ln = c.execute(
+            "SELECT COUNT(*), COUNT(*) FILTER (WHERE strength = ?) "
+            "FROM memories WHERE tag = 'love_note'", (LOVE_NOTE_BASELINE,),
+        ).fetchone()
+        print(f"\n  love_note: {ln[0]} 条统一设成 {LOVE_NOTE_BASELINE}"
+              f"（其中 {ln[1]} 条已经是这个值）")
+
         if not a.apply:
             print("\n（没落盘）确认对照没错就加 --apply")
             return 0
 
         c.executemany("UPDATE memories SET strength = ? WHERE id = ?",
                       [(score, r["id"]) for r, score, _ in plan])
+        c.execute("UPDATE memories SET strength = ? WHERE tag = 'love_note'",
+                  (LOVE_NOTE_BASELINE,))
         c.commit()
-        print(f"\n  ✓ 更新 {len(plan)} 条")
+        print(f"\n  ✓ anchor 更新 {len(plan)} 条，love_note 拉平 {ln[0]} 条")
         chk = c.execute(
             "SELECT ROUND(MIN(strength),2), ROUND(MAX(strength),2), COUNT(DISTINCT strength) "
             "FROM memories WHERE tag = ?", (a.tag,)).fetchone()

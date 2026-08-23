@@ -44,8 +44,14 @@ CATEGORY_ORDER = {
     "entity": "created_at DESC, id DESC",
 }
 
-# 去重会吃掉一部分结果，所以先多捞几倍再裁到 limit
+# 去重会吃掉一部分结果，所以先多捞几倍再裁到 limit。
+#
+# 光乘 limit 不够：配额把 limit 压到 2 之后窗口只有 8 条，24 小时去重
+# 吃掉前 7 条强锚点就只剩 1 条能返回，名额白给了。配额越小越容易饿死。
+# 池子本来就小（anchor 11 / love_note 29 / diary 71），给个下限一次多捞点，
+# 代价可以忽略。
 OVERFETCH = 4
+MIN_FETCH = 80
 
 # 一次调用【总共】最多回几条，不管命中了几个词。
 # 没有这个上限的话是每个词各拿 limit 条然后累加：
@@ -62,6 +68,21 @@ MAX_TOTAL_RESULTS = 5
 #             不是「写过累字的记忆」，而是最强的那几条锚点。按情绪给安慰，
 #             不是按字面检索。改这条之前先想清楚要的是哪种。
 CATEGORY_MATCH_CONTENT = {"emotion": False, "entity": True}
+
+# 按 tag 分配名额，而不是把几个 tag 混在一起取 top-N。
+#
+# 混着取的问题不在第一次，在【去重之后】。
+# love_note 基线 0.80，锚点里有 7 条在 0.80 以上，所以头几次撞出来的
+# 确实是锚点。但 24 小时去重把这 7 条吃掉之后，29 条并列 0.80 的情话
+# 就全部排在剩下 4 条锚点（0.75/0.70/0.65/0.30）前面——那 4 条一整天
+# 都不可能浮上来，而后半天说「累」拿到的会是清一色情话。
+# 配额把这条路堵死：anchor 永远有 2 个名额。
+#
+# 配额是【硬的】：anchor 那 2 个名额没取满也不给 love_note 补。
+# 补了就等于又回到数量说了算。
+CATEGORY_QUOTA = {
+    "emotion": (("anchor", 2), ("love_note", 1)),
+}
 
 
 # brief 模式下正文截断到多少字
@@ -102,7 +123,25 @@ def _recent_ids(conn) -> set:
 
 
 def _query_memories(conn, kw, seen: set) -> list:
-    """emotion / entity 分支：查 memories。"""
+    """
+    emotion / entity 分支：查 memories。
+
+    这个 category 配了名额、而且这个词没有自己指定 target_tag 的话，
+    按 tag 一个个取，各取各的名额。
+    """
+    quota = CATEGORY_QUOTA.get(kw["category"])
+    if quota and not kw["target_tag"]:
+        out = []
+        for tag, n in quota:
+            sub = dict(kw)
+            sub["target_tag"] = tag
+            sub["limit"] = n
+            out.extend(_query_one_tag(conn, sub, seen))
+        return out
+    return _query_one_tag(conn, kw, seen)
+
+
+def _query_one_tag(conn, kw, seen: set) -> list:
     tags = (kw["target_tag"],) if kw["target_tag"] else CATEGORY_TAGS[kw["category"]]
     order = CATEGORY_ORDER[kw["category"]]
     limit = kw["limit"] or 3
@@ -121,7 +160,7 @@ def _query_memories(conn, kw, seen: set) -> list:
         params += [f"%{needle}%", f"%{needle}%"]
 
     sql += f" ORDER BY {order} LIMIT ?"
-    params.append(limit * OVERFETCH)
+    params.append(max(limit * OVERFETCH, MIN_FETCH))
     rows = conn.execute(sql, params).fetchall()
 
     out = []
