@@ -36,6 +36,22 @@ CATEGORY_ORDER = {
 # 去重会吃掉一部分结果，所以先多捞几倍再裁到 limit
 OVERFETCH = 4
 
+# 一次调用【总共】最多回几条，不管命中了几个词。
+# 没有这个上限的话是每个词各拿 limit 条然后累加：
+# 「今天好累，弟弟又来找我，CC 那边代码还没跑完」命中 累/弟弟/CC/代码 四个词，
+# 一次灌回 12 条。那不是反射，是把抽屉整个翻倒。
+MAX_TOTAL_RESULTS = 5
+
+# 这个 category 要不要拿关键词去比对正文。
+#
+#   entity  = True —— 说「弟弟」就该捞【提到弟弟的】日记。原来只按 tag='diary'
+#             加 created_at DESC，捞回来的是「最近的日记」，跟弟弟没关系；
+#             予予实测撞出 8 月 4 号那一整批碎片，就是这么来的。
+#   emotion = False —— 这个是【故意】不比对正文的：说「累」的时候要浮上来的
+#             不是「写过累字的记忆」，而是最强的那几条锚点。按情绪给安慰，
+#             不是按字面检索。改这条之前先想清楚要的是哪种。
+CATEGORY_MATCH_CONTENT = {"emotion": False, "entity": True}
+
 
 # brief 模式下正文截断到多少字
 BRIEF_CHARS = 50
@@ -81,11 +97,21 @@ def _query_memories(conn, kw, seen: set) -> list:
     limit = kw["limit"] or 3
 
     placeholders = ",".join("?" * len(tags))
-    rows = conn.execute(
-        f"SELECT * FROM memories WHERE tag IN ({placeholders}) "
-        f"ORDER BY {order} LIMIT ?",
-        (*tags, limit * OVERFETCH),
-    ).fetchall()
+    sql = f"SELECT * FROM memories WHERE tag IN ({placeholders})"
+    params = [*tags]
+
+    if CATEGORY_MATCH_CONTENT.get(kw["category"]):
+        # 关键词自己也得出现在这条记忆里，否则捞回来的只是「最近的」。
+        # LIKE 的通配符要转义，不然词表里一个 % 或 _ 就变成万能匹配。
+        needle = (kw["keyword"].replace("\\", "\\\\")
+                  .replace("%", "\\%").replace("_", "\\_"))
+        sql += (" AND (IFNULL(title,'') LIKE ? ESCAPE '\\' "
+                "OR IFNULL(content,'') LIKE ? ESCAPE '\\')")
+        params += [f"%{needle}%", f"%{needle}%"]
+
+    sql += f" ORDER BY {order} LIMIT ?"
+    params.append(limit * OVERFETCH)
+    rows = conn.execute(sql, params).fetchall()
 
     out = []
     for r in rows:
@@ -164,6 +190,9 @@ def memory_reflex(text: str, brief: bool = True) -> str:
                     ),
                 )
                 results.extend(found)
+                if len(results) >= MAX_TOTAL_RESULTS:
+                    results = results[:MAX_TOTAL_RESULTS]
+                    break
 
             conn.commit()
             if brief:
