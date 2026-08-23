@@ -28,9 +28,20 @@ CATEGORY_TAGS = {
 }
 
 # category 决定排序方式
+# 排序必须带一个唯一的 tiebreak，否则同输入不同输出。
+#
+# 2026-08-23 查库发现：memories.strength 全库都是 1.0（anchor 11 条、
+# love_note 29、diary 71，min=avg=max 全是 1.0）。也就是说
+# "ORDER BY strength DESC" 所有行并列，SQLite 按内部顺序随便给——
+# 予予实测同一句话两次撞出完全不重叠的结果，一半是这个原因
+# （另一半是 24 小时去重）。
+#
+# created_at 同理：日记常常一整批同一天写的，8 月 4 号那批就是。
+#
+# 加 id DESC 兜底：id 唯一，排序就唯一了。
 CATEGORY_ORDER = {
-    "emotion": "strength DESC",
-    "entity": "created_at DESC",
+    "emotion": "strength DESC, id DESC",
+    "entity": "created_at DESC, id DESC",
 }
 
 # 去重会吃掉一部分结果，所以先多捞几倍再裁到 limit
