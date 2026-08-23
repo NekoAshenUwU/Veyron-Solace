@@ -220,15 +220,25 @@ def get_sleep_gap(date_str: str | None = None, db_path: str = DEFAULT_DB) -> dic
     wakes: list = []
     cur = dict(gaps[0])
     for nxt in gaps[1:]:
-        wake_block = blocks[nxt["i"]]
-        wake_min = (wake_block[1] - wake_block[0]).total_seconds() / 60
-        brief = wake_min < SPLIT_MIN and _in_night(wake_block[0])
+        # 醒着的那段 = 上一段睡眠结束 → 下一段睡眠开始。
+        #
+        # 原来取的是 blocks[nxt["i"]]，也就是「下一段空白之前的最后一块活动」。
+        # 两段睡眠之间只要有不止一块活动，前面那些就会整块消失。
+        # 2026-08-23 实测：02:39 有 Claude 0.1 分 + 应用宝 0.2 分，隔 7 分钟
+        # 才是 02:46 那一大段。睡眠段正确地停在 02:39，夜醒却从 02:46 起算，
+        # 02:39-02:46 既不算睡也不算醒，掉进裂缝里，夜醒时长少报 7 分钟。
+        #
+        # 改成用两段睡眠之间的整个跨度，裂缝就不可能存在了——
+        # 睡眠段和清醒段按定义首尾相接，加起来正好是整个窗口。
+        wake_start, wake_end = cur["end"], nxt["start"]
+        wake_min = (wake_end - wake_start).total_seconds() / 60
+        brief = wake_min < SPLIT_MIN and _in_night(wake_start)
         wakes.append({
-            "at": _fmt(wake_block[0]),
-            "until": _fmt(wake_block[1]),
+            "at": _fmt(wake_start),
+            "until": _fmt(wake_end),
             "minutes": round(wake_min, 1),
             "brief": brief,
-            "in_night_window": _in_night(wake_block[0]),
+            "in_night_window": _in_night(wake_start),
         })
         if brief:
             cur["end"] = nxt["end"]        # 并过去，当作没醒
@@ -303,8 +313,10 @@ def _self_test() -> int:
 
     # —— 21 号晚上，睡前刷手机 ——
     S("com.tencent.mm", "2026-08-21T20:30:00", "2026-08-21T21:12:00", "微信")
-    # —— 01:49 醒来摸手机 36 分钟（会切断睡眠）——
-    S("com.zhiliaoapp.musically", "2026-08-22T01:49:00", "2026-08-22T02:25:00", "TikTok")
+    # —— 01:49 醒来。照 8/23 真实形状：先有一小撮（Claude 30 秒），隔 7 分钟
+    #    才是主要那段。旧代码只报后面那段，01:49-01:56 会凭空消失。——
+    S("com.anthropic.claude", "2026-08-22T01:49:00", "2026-08-22T01:49:30", "Claude")
+    S("com.zhiliaoapp.musically", "2026-08-22T01:56:00", "2026-08-22T02:25:00", "TikTok")
     # —— 04:00 只亮了 3 分钟（不该切断睡眠）——
     S("com.android.systemui", "2026-08-22T04:00:00", "2026-08-22T04:03:00")
     # —— 早上起床 ——
@@ -335,16 +347,18 @@ def _self_test() -> int:
           (r["segments"][1]["from"], r["segments"][1]["to"]), ("02:25", "06:35"))
     check("总睡眠小时", r["total_sleep_hours"], round((277 + 250) / 60, 2))
     check("夜醒次数", len(r["night_wakes"]), 2)
-    check("夜醒 1 时间", r["night_wakes"][0]["at"], "01:49")
+    # 这一条就是回归点：夜醒必须从 01:49 起算，不是 01:56
+    check("夜醒 1 从睡眠结束那刻起算，不是从最后一块活动", 
+          r["night_wakes"][0]["at"], "01:49")
     check("夜醒 1 时长", r["night_wakes"][0]["minutes"], 36.0)
     check("夜醒 1 不算 brief", r["night_wakes"][0]["brief"], False)
     check("夜醒 2 算 brief（没切断睡眠）", r["night_wakes"][1]["brief"], True)
 
     print("\nget_phone_sessions")
     r = get_phone_sessions("2026-08-22", db_path=tmp)
-    check("22 号当天会话数（21 号那条不算）", r["count"], 4)
+    check("22 号当天会话数（21 号那条不算）", r["count"], 5)
     check("按时间排序", [s["start"] for s in r["sessions"]],
-          ["01:49", "04:00", "06:35", "14:00"])
+          ["01:49", "01:56", "04:00", "06:35", "14:00"])
     r = get_phone_sessions("2026-08-22", package="tencent", db_path=tmp)
     check("按 package 模糊过滤", [s["label"] for s in r["sessions"]], ["微信", "微信"])
     check("过滤后总时长（分钟）", r["total_minutes"], 95.0)
