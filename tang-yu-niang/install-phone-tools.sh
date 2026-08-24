@@ -24,13 +24,49 @@ cp "$SRC/package/phone_sessions.py" "$PKG/phone_sessions.py"
 
 echo "== 在 server.py 注册两个工具"
 SERVER="$SERVER" python3 - <<'PY'
-import ast, os, pathlib, sys
+import ast, os, pathlib, re, sys
 
 p = pathlib.Path(os.environ['SERVER'])
 t = p.read_text()
 
+NEW_DOC = '"""睡眠推断(不是测量) - 由手机长时间没有活动【推断】出来的入睡/起床/夜醒。它看到的只是「有没有碰手机」:放下手机看书、起床后去洗澡上班,都会被算成睡着。讲给棠棠听的时候当趋势说,别当读数报。date_str 是醒来那天,空=今天"""'
+
 if 'get_phone_sessions' in t:
-    print("  · 已经注册过，跳过")
+    # 已经注册过：壳不用重插，但描述可能改了。
+    # 描述是予予每次调用都会看到的那行,值不值得更新?值——
+    # 08-24 那个 9.9 小时就是会被讲成「你睡了快十小时」的数字。
+    #
+    # 用 ast 精确定位 docstring 节点再按行列替换,不用字符串匹配:
+    # 描述里有中文标点和括号,写死一份匹配串迟早对不上。
+    tree = ast.parse(t)
+    fn = next((n for n in tree.body
+               if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))
+               and n.name == 'get_sleep_gap'), None)
+    if fn is None:
+        sys.exit("× 找不到 def get_sleep_gap，已中止，文件未改动")
+    doc = fn.body[0] if fn.body else None
+    if not (isinstance(doc, ast.Expr) and isinstance(doc.value, ast.Constant)
+            and isinstance(doc.value.value, str)):
+        sys.exit("× get_sleep_gap 没有 docstring，已中止，文件未改动")
+
+    # 不要用 col_offset 切片！ast 的列偏移数的是 UTF-8 【字节】，不是字符。
+    # 这行有中文，end_col_offset=37 而字符长度只有 22，切过头会把行尾的换行
+    # 一起吃掉，下一行被粘上来，报 invalid syntax。
+    # docstring 本来就独占整行，按行替换、缩进用正则取，压根不碰列偏移。
+    lines = t.splitlines(keepends=True)
+    a, b = doc.lineno - 1, doc.end_lineno - 1
+    indent = re.match(r"[ \t]*", lines[a]).group(0)
+    new_t = "".join(lines[:a]) + indent + NEW_DOC + "\n" + "".join(lines[b + 1:])
+
+    if new_t == t:
+        print("  · 已经注册过，描述也是最新的，跳过")
+        sys.exit(0)
+    try:
+        ast.parse(new_t)
+    except SyntaxError as err:
+        sys.exit(f"× 改完语法不对（{err}），已中止，文件未改动")
+    p.write_text(new_t)
+    print("  ✓ 已注册过，更新了 get_sleep_gap 的工具描述")
     sys.exit(0)
 
 # 不用字面锚点：server.py 已经被改过两轮，锚点这种东西一改就对不上。
@@ -64,7 +100,7 @@ def get_phone_sessions(date_str: str = "", package: str = "", limit: int = 50) -
 
 @app.tool()
 def get_sleep_gap(date_str: str = "") -> str:
-    """睡眠推断 - 由手机长时间无活动推断的入睡/起床/夜醒。不是体征测量,放下手机做别的事也会算进去。date_str 是醒来那天,空=今天"""
+    """睡眠推断(不是测量) - 由手机长时间没有活动【推断】出来的入睡/起床/夜醒。它看到的只是「有没有碰手机」:放下手机看书、起床后去洗澡上班,都会被算成睡着。讲给棠棠听的时候当趋势说,别当读数报。date_str 是醒来那天,空=今天"""
     from tang_yu_niang import phone_sessions as _ps
     import json
     return json.dumps(_ps.get_sleep_gap(date_str or None), ensure_ascii=False)
