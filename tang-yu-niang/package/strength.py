@@ -45,14 +45,16 @@ def importance_to_base(imp) -> float:
     return max(0.0, min(1.0, imp / 10.0))
 
 
-# 某个 tag 想脱离 importance 单独定 base，写这里。
+# base 不是一把尺子量到底。予予的话：importance 量的是「事件有多大」，
+# strength 量的是「该不该在情绪里浮上来」。情话在前者低、在后者高——
+# 库里 29 条情话有 27 条 importance=3，按 importance 映射就是 0.30，
+# 而说「累」的时候最该浮上来的恰恰是它们。两把尺子不能共用一个映射。
 #
-# love_note 是个真实的两难：29 条里 27 条 importance=3，按默认映射就是 0.30，
-# 而 2 条 8/9 会一直霸占 emotion 那 1 个 love_note 名额，27 条基本轮不到。
-# 空着 = 照 importance 走。填 0.80 = 29 条一律 0.80，情话内部纯靠衰减和
-# 浮现次数拉开差距（谁最近被想起过，谁排前面）。
+#   anchor     → 手工基准值（那 11 条 SCORES），不衰减；见 is_manual
+#   love_note  → 固定基线 0.80，不看 importance
+#   其余       → base = importance / 10
 TAG_BASE = {
-    # "love_note": 0.80,
+    "love_note": 0.80,
 }
 
 
