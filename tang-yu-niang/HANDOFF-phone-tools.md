@@ -66,3 +66,27 @@ systemctl restart mcp && sleep 10 && journalctl -u mcp -n 20 --no-pager
 
 返回 `status: "数据不足"` 加一句说明，**不猜**。跟 memory_reflex 一样的
 原则：宁可空手，也不能给出会诱导模型编造的字符串。
+
+
+## strength 的两半（别只装一半）
+
+回升和衰减是分开的两条路径，缺一条就会跑偏：
+
+| | 谁触发 | 在哪 |
+|---|---|---|
+| **回升** | 每次记忆被 `memory_reflex` 浮现 | `reflex.py` 就地重算，自动 |
+| **衰减** | 每天定时跑一次 | `ops/tang-strength.timer` |
+
+只装回升不装衰减的话，被想起过的一路往上爬、没被想起的原地不动，
+时间一长排序固化，跟「会忘记」的本意相反。
+
+```bash
+cp ops/tang-strength.{service,timer} /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable --now tang-strength.timer
+systemctl list-timers tang-strength.timer      # 看下次什么时候跑
+systemctl start tang-strength.service          # 想立刻跑一次
+journalctl -u tang-strength.service -n 20 --no-pager
+```
+
+pinned 的 anchor 那 11 条两条路径都不碰，永远是手工基准值。

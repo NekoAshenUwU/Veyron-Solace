@@ -1,0 +1,14 @@
+[Unit]
+Description=每天重算一次 strength
+
+[Timer]
+# 03:30 跑：夜里的活动基本停了，也在棠棠 05:15 的闹钟之前。
+# 回升是浮现时就地发生的（reflex.py），这个定时器只补衰减那一半——
+# 不跑的话被想起过的一路往上爬、没被想起的原地不动，排序会固化。
+OnCalendar=*-*-* 03:30:00
+# 机器关过一段时间，开机后补跑一次，别让衰减出现空档
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target
