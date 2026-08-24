@@ -44,7 +44,15 @@ SPLIT_MIN = 15
 # 不加的话，两段都不够 60 分钟的空白会被一次短交互连成一段「睡眠」，
 # 凭空造出没发生过的睡眠。要是你觉得多余，删掉这一条即可。
 ALARM_MAX_MIN = 2
-ALARM_MIN_BLANK_MIN = 20
+# 回笼觉的门槛跟「多久算睡着」绑死，不单独设一个更松的数。
+#
+# 规格原本写 20 分钟，2026-08-25 的真实数据否掉了：05:15 关掉闹钟之后有
+# 31.8 分钟没碰手机，算法当成回笼觉、把起床推到 05:47，但棠棠说关了闹铃
+# 就没再睡——那半小时是醒着躺着。
+#
+# 而且 20 分钟跟系统里另一条规则打架：别处一律「空白 ≥60 分钟才算睡着」，
+# 唯独这里 20 分钟就能算。同一个东西两个标准，迟早出岔子。
+ALARM_MIN_BLANK_MIN = MIN_SLEEP_MIN
 
 # 夜间窗口
 NIGHT_START_H = 23
@@ -361,9 +369,16 @@ def _self_test() -> int:
     S("com.zhiliaoapp.musically", "2026-08-22T01:56:00", "2026-08-22T02:25:00", "TikTok")
     # —— 04:00 只亮了 3 分钟（不该切断睡眠）——
     S("com.android.systemui", "2026-08-22T04:00:00", "2026-08-22T04:03:00")
-    # —— 06:35 把闹钟按掉，40 秒；然后回笼觉 34 分钟；07:10 才真起床 ——
+    # —— 06:35 把闹钟按掉 40 秒，回笼觉 74 分钟，07:50 才真起床 ——
     S("com.android.systemui", "2026-08-22T06:35:00", "2026-08-22T06:35:40")
-    S("com.tencent.mm", "2026-08-22T07:10:00", "2026-08-22T07:45:00", "微信")
+    S("com.tencent.mm", "2026-08-22T07:50:00", "2026-08-22T08:25:00", "微信")
+
+    # —— 另一夜：同样是关闹钟，但之后只空了 31 分钟就起来了。
+    #    这是 2026-08-25 的真实情况——棠棠说关了闹铃就没再睡。
+    #    不该被当成回笼觉，起床时间就是关闹钟那一刻。——
+    S("com.tencent.mm", "2026-08-19T22:00:00", "2026-08-19T22:30:00", "微信")
+    S("com.android.systemui", "2026-08-20T05:15:00", "2026-08-20T05:15:48")
+    S("com.tencent.mm", "2026-08-20T05:47:00", "2026-08-20T06:30:00", "微信")
     # —— 白天，在窗口外，不该影响判断 ——
     S("com.tencent.mm", "2026-08-22T14:00:00", "2026-08-22T15:00:00", "微信")
     E("keyguard_hidden", "2026-08-22T01:49:00")
@@ -383,18 +398,18 @@ def _self_test() -> int:
     r = get_sleep_gap("2026-08-22", db_path=tmp)
     check("状态", r["status"], "ok")
     check("入睡", r["fell_asleep"], "21:12")
-    check("起床是回笼觉之后，不是关闹钟那一刻", r["woke_up"], "07:10")
+    check("起床是回笼觉之后，不是关闹钟那一刻", r["woke_up"], "07:50")
     check("关闹钟单独列出，不算夜醒", len(r["alarm_dismissals"]), 1)
     # 取值前先兜住：空列表直接下标会让自检崩在这里，后面的断言一条都跑不到。
     # 自检崩掉比自检失败更糟——失败还能看见全貌。
     _ad = (r["alarm_dismissals"] or [{}])[0]
     check("关闹钟时间", _ad.get("at"), "06:35")
-    check("回笼觉时长", _ad.get("back_to_sleep_minutes"), 34.3)
+    check("回笼觉时长", _ad.get("back_to_sleep_minutes"), 74.3)
     check("睡眠段数（36 分钟那次切开了）", len(r["segments"]), 2)
     check("第一段", (r["segments"][0]["from"], r["segments"][0]["to"]), ("21:12", "01:49"))
     check("第二段（4:00 那 3 分钟被并掉了）",
-          (r["segments"][1]["from"], r["segments"][1]["to"]), ("02:25", "07:10"))
-    check("总睡眠小时", r["total_sleep_hours"], round((277 + 285) / 60, 2))
+          (r["segments"][1]["from"], r["segments"][1]["to"]), ("02:25", "07:50"))
+    check("总睡眠小时", r["total_sleep_hours"], round((277 + 325) / 60, 2))
     check("夜醒次数", len(r["night_wakes"]), 2)
     # 这一条就是回归点：夜醒必须从 01:49 起算，不是 01:56
     check("夜醒 1 从睡眠结束那刻起算，不是从最后一块活动", 
@@ -403,11 +418,17 @@ def _self_test() -> int:
     check("夜醒 1 不算 brief", r["night_wakes"][0]["brief"], False)
     check("夜醒 2 算 brief（没切断睡眠）", r["night_wakes"][1]["brief"], True)
 
+    print("\n关了闹钟就没再睡（2026-08-25 的真实形状）")
+    r2 = get_sleep_gap("2026-08-20", db_path=tmp)
+    check("起床就是关闹钟那一刻", r2["woke_up"], "05:15")
+    check("31 分钟不算回笼觉，不吸收", len(r2["alarm_dismissals"]), 0)
+    check("也没有凭空多出夜醒", len(r2["night_wakes"]), 0)
+
     print("\nget_phone_sessions")
     r = get_phone_sessions("2026-08-22", db_path=tmp)
     check("22 号当天会话数（21 号那条不算）", r["count"], 6)
     check("按时间排序", [s["start"] for s in r["sessions"]],
-          ["01:49", "01:56", "04:00", "06:35", "07:10", "14:00"])
+          ["01:49", "01:56", "04:00", "06:35", "07:50", "14:00"])
     r = get_phone_sessions("2026-08-22", package="tencent", db_path=tmp)
     check("按 package 模糊过滤", [s["label"] for s in r["sessions"]], ["微信", "微信"])
     check("过滤后总时长（分钟）", r["total_minutes"], 95.0)
