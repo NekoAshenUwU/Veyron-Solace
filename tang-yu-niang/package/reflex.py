@@ -17,7 +17,9 @@ memory_reflex — 反射式记忆浮现。
 """
 
 import json
+from datetime import datetime, timezone
 
+from . import strength
 from .db import get_conn
 from .timeline import timeline_query
 
@@ -191,6 +193,40 @@ def _query_timeline(kw, seen: set) -> list:
     return out
 
 
+def _bump_activation(conn, rows) -> None:
+    """
+    浮现即回升：这次真的返回给予予的记忆，activation_count +1、
+    last_activated_at 推到现在，并就地重算 strength。
+
+    只对【最终真的返回了】的那几条动手——截断掉的不算浮现过。
+    pinned 的 anchor 也记次数（那是真实发生过的事），但 strength 不碰。
+
+    跟 24 小时去重不冲突：去重挡的是「今天再浮现一次」，不是「永远不能」。
+    所以每条记忆最多每 24 小时回升一次——这反而是好的，否则一次对话里
+    同一条被反复浮现，强度就飙上天了。
+    """
+    if not rows:
+        return
+    now = datetime.now(timezone.utc).astimezone()
+    now_iso = now.replace(microsecond=0).isoformat()
+    for r in rows:
+        nxt = dict(r)
+        nxt["activation_count"] = (r.get("activation_count") or 0) + 1
+        nxt["last_activated_at"] = now_iso
+        if strength.is_manual(nxt):
+            conn.execute(
+                "UPDATE memories SET activation_count = ?, last_activated_at = ? "
+                "WHERE id = ?",
+                (nxt["activation_count"], now_iso, r["id"]),
+            )
+        else:
+            conn.execute(
+                "UPDATE memories SET activation_count = ?, last_activated_at = ?, "
+                "strength = ? WHERE id = ?",
+                (nxt["activation_count"], now_iso, strength.derived(nxt, now), r["id"]),
+            )
+
+
 def memory_reflex(text: str, brief: bool = True) -> str:
     """
     反射 — 把文本对词表做子串匹配，命中则浮现对应记忆。
@@ -217,6 +253,7 @@ def memory_reflex(text: str, brief: bool = True) -> str:
 
             seen = _recent_ids(conn)
             results = []
+            from_memories = set()      # timeline 那支不在 memories 表里，别去 UPDATE
 
             # 按 emotion → entity → temporal 的顺序处理，输出稳定
             order = {"emotion": 0, "entity": 1, "temporal": 2}
@@ -225,6 +262,7 @@ def memory_reflex(text: str, brief: bool = True) -> str:
                     found = _query_timeline(kw, seen)
                 elif kw["category"] in CATEGORY_TAGS:
                     found = _query_memories(conn, kw, seen)
+                    from_memories.update(r["id"] for r in found)
                 else:
                     continue
 
@@ -243,6 +281,9 @@ def memory_reflex(text: str, brief: bool = True) -> str:
                 if len(results) >= MAX_TOTAL_RESULTS:
                     results = results[:MAX_TOTAL_RESULTS]
                     break
+
+            # 截断之后才回升——被截掉的那几条没进予予的上下文，不算浮现过
+            _bump_activation(conn, [r for r in results if r.get("id") in from_memories])
 
             conn.commit()
             if brief:
