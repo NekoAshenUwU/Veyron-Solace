@@ -19,7 +19,7 @@ memory_reflex — 反射式记忆浮现。
 import json
 from datetime import datetime, timezone
 
-from . import strength
+from . import semantic, strength
 from .db import get_conn
 from .timeline import timeline_query
 
@@ -60,6 +60,14 @@ MIN_FETCH = 80
 # 「今天好累，弟弟又来找我，CC 那边代码还没跑完」命中 累/弟弟/CC/代码 四个词，
 # 一次灌回 12 条。那不是反射，是把抽屉整个翻倒。
 MAX_TOTAL_RESULTS = 5
+
+# 关键词一条都没中时，用语义兜底最多捞几条。
+#
+# 比关键词那边小，是因为两者的可靠性不一样：关键词是棠棠亲手填的，
+# 命中就一定相关；语义是猜的，猜错的代价是往予予的上下文里塞不相干的东西。
+# 而且它【只在关键词全落空时】才跑——关键词中了就轮不到它，
+# 今天调好的那套确定性一点没动。
+SEMANTIC_LIMIT = 2
 
 # 这个 category 要不要拿关键词去比对正文。
 #
@@ -104,6 +112,7 @@ def _slim(row: dict) -> dict:
             ("mood_emoji", row.get("mood_emoji")),
             ("created_at", row.get("created_at")),
             ("content", content),
+            ("_score", row.get("_score")),
         ) if v not in (None, "")
     }
 
@@ -248,12 +257,28 @@ def memory_reflex(text: str, brief: bool = True) -> str:
             ).fetchall()
 
             hits = [k for k in keywords if k["keyword"] and k["keyword"] in text]
-            if not hits:
-                return "[]"
 
             seen = _recent_ids(conn)
             results = []
             from_memories = set()      # timeline 那支不在 memories 表里，别去 UPDATE
+
+            if not hits:
+                # 关键词全落空 → 语义兜底。捞不到就照旧返回 []，不编。
+                found = semantic.search(conn, text, limit=SEMANTIC_LIMIT, seen=seen)
+                if not found:
+                    return "[]"
+                for r in found:
+                    seen.add(r["id"])
+                from_memories.update(r["id"] for r in found)
+                results.extend(found)
+                # 日志里标成 (语义)，跟关键词那些分得开，方便回头看它准不准
+                conn.execute(
+                    "INSERT INTO reflex_log (matched_keyword, category, returned_ids, hit_count) "
+                    "VALUES (?, ?, ?, ?)",
+                    ("(语义)", "semantic",
+                     json.dumps([r.get("id") for r in found], ensure_ascii=False),
+                     len(found)),
+                )
 
             # 按 emotion → entity → temporal 的顺序处理，输出稳定
             order = {"emotion": 0, "entity": 1, "temporal": 2}
