@@ -38,6 +38,38 @@ TIMEOUT = float(os.environ.get("TANG_EMBED_TIMEOUT", "20"))
 # 什么都会捞回三条风马牛不相及的记忆灌进予予的上下文。
 MIN_SCORE = float(os.environ.get("TANG_EMBED_MIN_SCORE", "0.35"))
 
+# key 兜底去这个文件里找。
+#
+# 为什么要这一层：mcp 是 systemd 起的，EnvironmentFile 指着这个文件，所以
+# 服务跑起来能看见 key；但你在终端里手跑 embed-memories.py 时 shell 里没有,
+# 就会「装好了却一条都算不出来」。要么每次手动 export，要么让代码自己去读——
+# 反正它已经知道该读哪个文件了。
+ENV_FILE = os.environ.get("TANG_ENV_FILE", "/root/mcp-oauth.env")
+
+
+def _api_key() -> str:
+    """先看环境变量，没有再去 env 文件里翻。翻不到返回空字符串。"""
+    key = os.environ.get(KEY_ENV, "").strip()
+    if key:
+        return key
+    try:
+        with open(ENV_FILE, encoding="utf-8") as fh:
+            for line in fh:
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                name, _, value = line.partition("=")
+                if name.strip() != KEY_ENV:
+                    continue
+                # systemd 的 EnvironmentFile 允许值带引号，去掉
+                value = value.strip()
+                if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+                    value = value[1:-1]
+                return value.strip()
+    except OSError:
+        pass
+    return ""
+
 
 def source_text(title: str | None, content: str | None) -> str:
     return f"{(title or '').strip()}\n{(content or '').strip()}".strip()
@@ -77,9 +109,10 @@ def embed(texts: list[str]) -> list[list[float]]:
     """
     if not texts:
         return []
-    key = os.environ.get(KEY_ENV, "").strip()
+    key = _api_key()
     if not key:
-        raise RuntimeError(f"环境变量 {KEY_ENV} 没设，拿不到 API key")
+        raise RuntimeError(
+            f"{KEY_ENV} 既不在环境变量里，也不在 {ENV_FILE} 里，拿不到 API key")
 
     body = json.dumps({"model": EMBED_MODEL, "input": texts}).encode("utf-8")
     req = urllib.request.Request(
