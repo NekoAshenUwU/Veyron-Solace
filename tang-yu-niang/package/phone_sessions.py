@@ -255,6 +255,73 @@ def get_since(
     }
 
 
+def get_notifications(
+    since: str | None = None,
+    hours: float = 3.0,
+    db_path: str = DEFAULT_DB,
+) -> dict:
+    """
+    这段时间她收到了哪些通知。
+
+    库里【只有】哪个 app、什么时候——标题和正文手机上就没采集。
+    所以这里能回答的是「她是不是在被打扰」，不是「谁跟她说了什么」。
+
+    since  ISO 时间，不给就按 hours 往回推
+    hours  默认 3
+    """
+    now = datetime.now().astimezone().replace(microsecond=0)
+    if since:
+        try:
+            start = datetime.fromisoformat(since.strip().replace("Z", "+00:00"))
+            if start.tzinfo is None:
+                start = start.replace(tzinfo=now.tzinfo)
+        except ValueError:
+            return {"error": f"时间格式不对: {since}（要 ISO）"}
+    else:
+        start = now - timedelta(hours=max(0.1, min(float(hours or 3), 72)))
+    if start >= now:
+        return {"error": "since 是未来的时间"}
+
+    c = _conn(db_path)
+    try:
+        rows = c.execute(
+            "SELECT package, label, ts FROM notifications "
+            "WHERE ts >= ? AND ts <= ? ORDER BY ts",
+            (start.isoformat(), now.isoformat()),
+        ).fetchall()
+    except sqlite3.OperationalError:
+        # 表还没建 = 手机还没装带通知采集的那版 APK，或者还没授权。
+        # 这不是错误，是「还没开始收」，说清楚比抛异常有用。
+        return {
+            "since": _fmt(start), "now": _fmt(now), "total": 0, "by_app": [],
+            "note": "还没有通知记录：手机上要装带通知采集的那版 App，并单独开「通知使用权」。",
+        }
+    finally:
+        c.close()
+
+    by_app: dict[str, dict] = {}
+    for r in rows:
+        name = r["label"] or r["package"]
+        d = by_app.setdefault(name, {"label": name, "count": 0, "last": None})
+        d["count"] += 1
+        d["last"] = r["ts"]
+
+    ranked = sorted(by_app.values(), key=lambda d: -d["count"])
+    for d in ranked:
+        try:
+            d["last"] = _fmt(datetime.fromisoformat(d["last"]))
+        except (ValueError, TypeError):
+            d["last"] = None
+
+    return {
+        "since": _fmt(start),
+        "now": _fmt(now),
+        "total": len(rows),
+        "by_app": ranked[:TOP_APPS],
+        "note": "只有 app 名和时间，没有通知内容——手机上就没采集。",
+    }
+
+
 def _load_activity(day: str, db_path: str) -> tuple[list, str, str]:
     """
     取「前一天 18:00 → 当天 12:00」这个窗口里的全部活动痕迹。

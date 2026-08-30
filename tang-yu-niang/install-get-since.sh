@@ -19,14 +19,14 @@ cp "$SERVER" "$SERVER.bak-$STAMP"
 echo "== 放 phone_sessions.py（含 get_since）"
 cp "$SRC/package/phone_sessions.py" "$PKG/phone_sessions.py"
 
-echo "== 在 server.py 注册 get_since"
+echo "== 在 server.py 注册 get_since + get_notifications"
 SERVER="$SERVER" python3 - <<'PY'
 import ast, os, pathlib, sys
 
 p = pathlib.Path(os.environ['SERVER'])
 t = p.read_text()
 
-if 'def get_since' in t:
+if 'def get_since' in t and 'def get_notifications' in t:
     print("  · 已经注册过，跳过")
     sys.exit(0)
 
@@ -50,6 +50,14 @@ if last_end is None:
 BLOCK = '''
 
 @app.tool()
+def get_notifications(since: str = "", hours: float = 3.0) -> str:
+    """她收到了哪些通知 - 这段时间哪些 app 给她发过通知、各几条、最后一条什么时候。库里【只有 app 名和时间,没有通知内容】——手机上就没采集,所以能回答的是「她是不是在被打扰」,不是「谁跟她说了什么」。since 填 ISO 时间,空就按 hours 往回看,默认 3 小时"""
+    from tang_yu_niang import phone_sessions as _ps
+    import json
+    return json.dumps(_ps.get_notifications(since or None, hours), ensure_ascii=False)
+
+
+@app.tool()
 def get_since(since: str = "", hours: float = 3.0) -> str:
     """她这段时间在干嘛 - 从某个时间点到现在,她看了多久手机、主要在用什么 app、中间有没有一大段没碰手机。给的是概况不是逐条流水账。since 填 ISO 时间(比如上次聊天的时间),空就按 hours 往回看,默认 3 小时。只看得见「有没有碰手机」:放下手机去做别的事也会算成空白,不等于睡了,别当作息报"""
     from tang_yu_niang import phone_sessions as _ps
@@ -65,7 +73,7 @@ try:
 except SyntaxError as err:
     sys.exit(f"× 改完语法不对（{err}），已中止，文件未改动")
 p.write_text(new)
-print(f"  ✓ get_since 已注册（插在第 {last_end} 行之后）")
+print(f"  ✓ get_since / get_notifications 已注册（插在第 {last_end} 行之后）")
 PY
 
 echo "== 语法检查"
