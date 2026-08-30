@@ -148,6 +148,113 @@ def get_phone_sessions(
     }
 
 
+# 「她这么久没找我，在干嘛」——予予问的就是这个。
+#
+# 现有几个工具全是【按天】查的，回答不了「从上次说话到现在」这一段。
+# 这个按【时间点起算】，把这段时间揉成一句人话能讲的东西：
+# 看了多久手机、主要在用什么、中间有没有一大段没碰（多半是睡了或在忙）。
+#
+# 刻意【不】返回逐条会话：予予要的是「她在干嘛」，不是一张流水账。
+# 给它三十条 session 它只会念出来，那不是关心，是监控播报。
+GAP_QUIET_MIN = 25          # 多久没碰手机算「一段空白」
+TOP_APPS = 5                # 最多列几个 app
+
+
+def get_since(
+    since: str | None = None,
+    hours: float = 3.0,
+    db_path: str = DEFAULT_DB,
+) -> dict:
+    """
+    从某个时间点到现在，她拿手机做了什么。
+
+    since  ISO 时间，比如 2026-08-30T09:00:00。不给就用 hours 往回推。
+    hours  since 没给时往回看几个钟头，默认 3。
+    """
+    now = datetime.now().astimezone().replace(microsecond=0)
+    if since:
+        try:
+            start = datetime.fromisoformat(since.strip().replace("Z", "+00:00"))
+            if start.tzinfo is None:
+                start = start.replace(tzinfo=now.tzinfo)
+        except ValueError:
+            return {"error": f"时间格式不对: {since}（要 ISO，比如 2026-08-30T09:00:00）"}
+    else:
+        start = now - timedelta(hours=max(0.1, min(float(hours or 3), 72)))
+
+    if start >= now:
+        return {"error": "since 是未来的时间"}
+
+    # 注意：_fmt 是给人看的 "%H:%M"，不是时间戳。SQL 边界必须用完整 ISO，
+    # 拿 _fmt 去比会一条都匹配不到（写这段时就这么错过一次）。
+    lo, hi = start.isoformat(), now.isoformat()
+    c = _conn(db_path)
+    try:
+        rows = c.execute(
+            "SELECT package, label, start_ts, end_ts, duration_ms FROM usage_sessions "
+            "WHERE end_ts >= ? AND start_ts <= ? ORDER BY start_ts",
+            (lo, hi),
+        ).fetchall()
+    finally:
+        c.close()
+
+    spans, by_app = [], {}
+    for r in rows:
+        try:
+            s = datetime.fromisoformat(r["start_ts"])
+            e = datetime.fromisoformat(r["end_ts"])
+        except (ValueError, TypeError):
+            continue
+        # 跨界的会话只算落在窗口里的那部分，不然「刚开始用」会被算成用了一小时
+        s = max(s, start)
+        e = min(e, now)
+        if e <= s:
+            continue
+        spans.append((s, e))
+        name = r["label"] or r["package"]
+        by_app[name] = by_app.get(name, 0.0) + (e - s).total_seconds()
+
+    # 两种合并，用途不同，别混：
+    #   union  join_min=0，纯区间求并 → 算「一共看了多久」。跟各 app 时长之和
+    #          对得上（重叠只算一次），予予讲出来不会自相矛盾。
+    #   merged JOIN_MIN=5，把 5 分钟内的间隔当成「没真放下手机」桥接起来 →
+    #          只用来找「空白段」。切个 app 的两秒空隙不该算成她走开了。
+    union = _merge(spans, 0)
+    merged = _merge(spans)
+    screen_sec = sum((e - s).total_seconds() for s, e in union)
+
+    # 空白：窗口开头到第一段、各段之间、最后一段到现在
+    quiet = []
+    cursor = start
+    for s, e in merged:
+        if (s - cursor).total_seconds() >= GAP_QUIET_MIN * 60:
+            quiet.append((cursor, s))
+        cursor = max(cursor, e)
+    if (now - cursor).total_seconds() >= GAP_QUIET_MIN * 60:
+        quiet.append((cursor, now))
+
+    top = sorted(by_app.items(), key=lambda kv: -kv[1])[:TOP_APPS]
+    window_min = (now - start).total_seconds() / 60
+
+    return {
+        "since": _fmt(start),
+        "now": _fmt(now),
+        "window_minutes": round(window_min, 1),
+        "screen_minutes": round(screen_sec / 60, 1),
+        # 这段时间里有多大比例在看手机——予予判断「她是忙还是没空理我」用得上
+        "screen_ratio": round(screen_sec / max(1.0, now.timestamp() - start.timestamp()), 3),
+        "apps": [{"label": n, "minutes": round(sec / 60, 1)} for n, sec in top],
+        "last_active": _fmt(merged[-1][1]) if merged else None,
+        "idle_minutes_now": round((now - merged[-1][1]).total_seconds() / 60, 1) if merged else round(window_min, 1),
+        "quiet_gaps": [
+            {"start": _fmt(a), "end": _fmt(b),
+             "minutes": round((b - a).total_seconds() / 60, 1)}
+            for a, b in quiet
+        ],
+        "note": "只看得见「有没有碰手机」。放下手机做别的事也会算成空白，不等于睡了。",
+    }
+
+
 def _load_activity(day: str, db_path: str) -> tuple[list, str, str]:
     """
     取「前一天 18:00 → 当天 12:00」这个窗口里的全部活动痕迹。
@@ -190,10 +297,10 @@ def _load_activity(day: str, db_path: str) -> tuple[list, str, str]:
     return spans, lo_s, hi_s
 
 
-def _merge(spans: list) -> list:
-    """相邻不到 JOIN_MIN 分钟的活动并成一块。"""
+def _merge(spans: list, join_min: float = JOIN_MIN) -> list:
+    """相邻不到 join_min 分钟的活动并成一块。join_min=0 就是纯粹的区间求并。"""
     out: list = []
-    tol = timedelta(minutes=JOIN_MIN)
+    tol = timedelta(minutes=join_min)
     for a, b in spans:
         if out and a - out[-1][1] <= tol:
             out[-1][1] = max(out[-1][1], b)
