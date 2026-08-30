@@ -17,7 +17,7 @@ DeepSeek 的 API 是 OpenAI 兼容的，所以【真有 embeddings 的话不用�
 
 全程不打印 key，只打印它的长度。
 """
-import argparse, importlib, json, os, sys, urllib.error
+import argparse, importlib, json, os, sys, urllib.error, urllib.request
 
 PRESETS = {
     "deepseek": dict(TANG_EMBED_API="openai",
@@ -36,6 +36,8 @@ def main() -> int:
     for name in PRESETS:
         ap.add_argument(f"--{name}", action="store_true")
     ap.add_argument("--model", help="覆盖模型名（供应商换了名字时用）")
+    ap.add_argument("--list-models", action="store_true",
+                    help="列出这个账号能用的模型，并顺带证明 key 和地址本身是通的")
     ap.add_argument("--url", help="覆盖完整 URL")
     a = ap.parse_args()
 
@@ -60,6 +62,40 @@ def main() -> int:
     if not key:
         print(f"\n× {S.KEY_ENV} 在环境变量和 {S.ENV_FILE} 里都没有（或者值是空的）。")
         return 1
+
+    if a.list_models:
+        # 为什么要这一步：/v1/embeddings 返回 404 的时候，光看那一个 404 分不清
+        # 是「这家没有这个接口」还是「key/地址有问题」。打一个【一定存在】的
+        # 接口(/v1/models)：它通了就说明 key 和 base 都对，那 embeddings 的 404
+        # 只可能是这条路由本身不存在——换任何模型名都到不了。
+        base = S.EMBED_URL.rsplit("/", 1)[0]          # .../v1/embeddings → .../v1
+        url = base + "/models"
+        print(f"\n先打一个一定存在的接口证明 key 和地址没问题: {url}")
+        req = urllib.request.Request(
+            url, headers={"Authorization": f"Bearer {key}"}, method="GET")
+        try:
+            with urllib.request.urlopen(req, timeout=20) as r:
+                data = json.loads(r.read().decode("utf-8"))
+        except urllib.error.HTTPError as e:
+            print(f"  × HTTP {e.code} —— 连 /models 都不通，那就是 key 或地址的问题，"
+                  f"不是接口有没有的问题")
+            print(f"    返回: {e.read().decode('utf-8','replace')[:300]}")
+            return 1
+        except Exception as e:
+            print(f"  × {type(e).__name__}: {e}")
+            return 1
+        names = [m.get("id") for m in data.get("data", [])]
+        print(f"  ✓ 通了。这个账号能用的模型（{len(names)} 个）:")
+        for n in names:
+            print(f"      {n}")
+        looks_embed = [n for n in names if n and "embed" in n.lower()]
+        print()
+        if looks_embed:
+            print(f"  里面带 embed 的: {', '.join(looks_embed)} —— 用 --model 试这个")
+        else:
+            print("  一个带 embed 的都没有。结合 /v1/embeddings 返回 404，")
+            print("  结论是这家【不提供】向量接口，换哪个模型名都没用。")
+        return 0
 
     print("\n发两条短文本试试…")
     try:
