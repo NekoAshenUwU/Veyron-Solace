@@ -8,7 +8,15 @@ DB="${DB:-/root/data/tang_yu_niang.db}"
 MCP_ENV="${MCP_ENV:-/root/mcp-oauth.env}"
 SRC="$(cd "$(dirname "$0")" && pwd)"
 STAMP=$(date +%Y%m%d-%H%M%S)
-KEY_ENV="${TANG_EMBED_KEY_ENV:-OPENAI_API_KEY}"
+# 用哪家、key 存哪个变量，跟 semantic.py 保持一致
+EMBED_API="${TANG_EMBED_API:-openai}"
+if [[ -n "${TANG_EMBED_KEY_ENV:-}" ]]; then
+    KEY_ENV="$TANG_EMBED_KEY_ENV"
+elif [[ "$EMBED_API" == "gemini" ]]; then
+    KEY_ENV="GEMINI_API_KEY"
+else
+    KEY_ENV="OPENAI_API_KEY"
+fi
 
 [[ -f "$PKG/db.py" ]]     || { echo "找不到 $PKG/db.py"; exit 1; }
 [[ -f "$PKG/reflex.py" ]] || { echo "找不到 $PKG/reflex.py —— 先跑 install-reflex.sh"; exit 1; }
@@ -18,8 +26,10 @@ KEY_ENV="${TANG_EMBED_KEY_ENV:-OPENAI_API_KEY}"
 # 变量，也不是 /opt/codeandpurrs/.env——key 只在别处的话，装完一调就是静默返回 []，
 # 而且 memory_reflex 是设计成不报错的，你不会看见任何提示。
 echo "== 查 mcp 能不能看见 $KEY_ENV"
-if grep -q "^${KEY_ENV}=" "$MCP_ENV" 2>/dev/null; then
-    echo "  ✓ $MCP_ENV 里有"
+# 光有这一行不算数——值是空的照样用不了（2026-08-30 就是这么卡住的：
+# 行在、值是空字符串，grep -c 数出 1，跑起来才发现拿不到 key）
+if [[ -n "$(sed -n "s/^${KEY_ENV}=//p" "$MCP_ENV" 2>/dev/null | head -1)" ]]; then
+    echo "  ✓ $MCP_ENV 里有 $KEY_ENV，且值不是空的"
 else
     echo "  × $MCP_ENV 里【没有】$KEY_ENV"
     echo

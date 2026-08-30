@@ -11,9 +11,16 @@ tang-web 被 OOM 杀掉。向量【存】起来才 800KB，吃内存的是跑模
 只用标准库（urllib），不新增依赖——mcp 那个 venv 不该为这个动。
 
 配置全走环境变量，换供应商不用改代码：
-    TANG_EMBED_URL      默认 https://api.openai.com/v1/embeddings
-    TANG_EMBED_MODEL    默认 text-embedding-3-small
-    TANG_EMBED_KEY_ENV  默认 OPENAI_API_KEY（指向哪个环境变量存着 key）
+    TANG_EMBED_API      openai | gemini（默认 openai）
+    TANG_EMBED_URL      不给就按 TANG_EMBED_API 取默认值
+    TANG_EMBED_MODEL    同上
+    TANG_EMBED_KEY_ENV  key 存在哪个环境变量里（默认 OPENAI_API_KEY）
+
+两家的请求/返回格式不一样，所以不是只换个 URL 就行：
+    openai  POST {"model":..,"input":[...]}      → {"data":[{"index":i,"embedding":[..]}]}
+            key 走 Authorization: Bearer
+    gemini  POST {"requests":[{"model":..,"content":{"parts":[{"text":..}]}}]}
+            → {"embeddings":[{"values":[..]}]}，key 走 URL 上的 ?key=
 """
 
 from __future__ import annotations
@@ -23,12 +30,23 @@ import json
 import math
 import os
 import urllib.error
+import urllib.parse
 import urllib.request
 from array import array
 
-EMBED_URL = os.environ.get("TANG_EMBED_URL", "https://api.openai.com/v1/embeddings")
-EMBED_MODEL = os.environ.get("TANG_EMBED_MODEL", "text-embedding-3-small")
-KEY_ENV = os.environ.get("TANG_EMBED_KEY_ENV", "OPENAI_API_KEY")
+API = os.environ.get("TANG_EMBED_API", "openai").strip().lower()
+
+_DEFAULTS = {
+    "openai": ("https://api.openai.com/v1/embeddings", "text-embedding-3-small",
+               "OPENAI_API_KEY"),
+    "gemini": ("https://generativelanguage.googleapis.com/v1beta/models/"
+               "{model}:batchEmbedContents", "gemini-embedding-001", "GEMINI_API_KEY"),
+}
+_URL, _MODEL, _KEY = _DEFAULTS.get(API, _DEFAULTS["openai"])
+
+EMBED_URL = os.environ.get("TANG_EMBED_URL", _URL)
+EMBED_MODEL = os.environ.get("TANG_EMBED_MODEL", _MODEL)
+KEY_ENV = os.environ.get("TANG_EMBED_KEY_ENV", _KEY)
 TIMEOUT = float(os.environ.get("TANG_EMBED_TIMEOUT", "20"))
 
 # 相似度低于这个就当没找到。
@@ -114,19 +132,32 @@ def embed(texts: list[str]) -> list[list[float]]:
         raise RuntimeError(
             f"{KEY_ENV} 既不在环境变量里，也不在 {ENV_FILE} 里，拿不到 API key")
 
-    body = json.dumps({"model": EMBED_MODEL, "input": texts}).encode("utf-8")
-    req = urllib.request.Request(
-        EMBED_URL,
-        data=body,
-        headers={"Content-Type": "application/json", "Authorization": f"Bearer {key}"},
-        method="POST",
-    )
+    if API == "gemini":
+        url = EMBED_URL.format(model=EMBED_MODEL) + f"?key={urllib.parse.quote(key)}"
+        body = json.dumps({
+            "requests": [
+                {"model": f"models/{EMBED_MODEL}", "content": {"parts": [{"text": t}]}}
+                for t in texts
+            ]
+        }).encode("utf-8")
+        headers = {"Content-Type": "application/json"}
+    else:
+        url = EMBED_URL
+        body = json.dumps({"model": EMBED_MODEL, "input": texts}).encode("utf-8")
+        # key 放 header 不放 URL：URL 会进 nginx / 代理的访问日志
+        headers = {"Content-Type": "application/json", "Authorization": f"Bearer {key}"}
+
+    req = urllib.request.Request(url, data=body, headers=headers, method="POST")
     with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
         payload = json.loads(resp.read().decode("utf-8"))
 
-    # 有的供应商不保证按输入顺序返回，按 index 排一遍
-    items = sorted(payload.get("data", []), key=lambda d: d.get("index", 0))
-    out = [d["embedding"] for d in items]
+    if API == "gemini":
+        # gemini 按请求顺序返回，没有 index 字段
+        out = [e["values"] for e in payload.get("embeddings", [])]
+    else:
+        # openai 不保证按输入顺序返回，按 index 排一遍
+        items = sorted(payload.get("data", []), key=lambda d: d.get("index", 0))
+        out = [d["embedding"] for d in items]
     if len(out) != len(texts):
         raise RuntimeError(f"返回了 {len(out)} 个向量，输入是 {len(texts)} 条")
     return out
