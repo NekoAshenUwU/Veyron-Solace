@@ -21,12 +21,32 @@ from tang_yu_niang import semantic as S
 DB = "/root/data/tang_yu_niang.db"
 BATCH = 64          # 一次请求塞多少条
 
+# 按 token 计费，只算【输入】，没有输出这一说。
+# text-embedding-3-small 官网价 $0.02 / 百万 token（2026-08 查的，价格会变，
+# 以 platform.openai.com/docs/pricing 为准）。--price 可以现场换个数。
+DEFAULT_PRICE_PER_M = 0.02
+
+
+def est_tokens(text: str) -> int:
+    """
+    粗估 token 数，往【多】了算，别让人以为比实际便宜。
+
+    中文一个字大约就是一个 token（有时两三个字合成一个，所以这是上界）；
+    ASCII 大约四个字符一个 token。真实值由 OpenAI 那边的分词器说了算，
+    这里只是给个数量级，用来回答「大概要花多少钱」。
+    """
+    cjk = sum(1 for ch in text if ord(ch) > 0x2E80)
+    rest = len(text) - cjk
+    return cjk + (rest + 3) // 4
+
 
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--db", default=DB)
     ap.add_argument("--apply", action="store_true")
     ap.add_argument("--limit", type=int, help="最多处理几条（试水用）")
+    ap.add_argument("--price", type=float, default=DEFAULT_PRICE_PER_M,
+                    help=f"每百万 token 多少美元（默认 {DEFAULT_PRICE_PER_M}）")
     a = ap.parse_args()
 
     c = sqlite3.connect(a.db, timeout=10)
@@ -58,6 +78,13 @@ def main() -> int:
         print(f"  模型: {S.EMBED_MODEL}")
         print(f"  memories {len(rows)} 条，已有本模型向量 {len(have)} 条")
         print(f"  要算 {len(todo)} 条" + (f"（另有 {stale} 条是旧模型的，会留着不动）" if stale else ""))
+
+        toks = sum(est_tokens(text) for _, text, _ in todo)
+        cost = toks / 1_000_000 * a.price
+        print(f"  粗估 {toks:,} token（往多了算）→ 约 ${cost:.4f} "
+              f"（按 ${a.price}/百万 token）")
+        if cost < 0.01:
+            print("  ——不到一美分。")
 
         if a.limit:
             todo = todo[: a.limit]
