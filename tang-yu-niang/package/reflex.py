@@ -117,6 +117,45 @@ def _slim(row: dict) -> dict:
     }
 
 
+# 否定词。命中的词前面紧挨着这些字的话，那次出现不算数。
+#
+# 起因（2026-08-30）：她说「今天不用上班」，命中 entity 的「上班」，
+# 于是去捞【提到上班的日记】——她说的是今天不用上班，系统却把上班的事
+# 翻出来给她看。子串匹配读不懂否定。
+# 同一个毛病也在情绪词上：说「不开心」会命中「开心」，说「不累」会命中「累」，
+# 拿到的安慰全是反的。
+NEGATIONS = ("不", "没", "别", "无", "非", "免", "甭", "未")
+
+# 往前看几个字。「不用上班」里「不」离「上班」隔了一个「用」，
+# 所以不能只看紧挨着的那一个字；看太远又会把「不是因为上班」这种误判成否定。
+NEG_WINDOW = 3
+
+
+def _negated(text: str, at: int) -> bool:
+    """text[at] 开始的这次命中，前面是不是有否定词。"""
+    head = text[max(0, at - NEG_WINDOW):at]
+    return any(n in head for n in NEGATIONS)
+
+
+def _hit(keyword, text: str) -> bool:
+    """
+    这个词算不算命中。
+
+    只要有【一次】出现不是被否定的就算命中——「昨天累死了，今天不累」
+    这种句子里，「累」确实出现过一次真的。
+    """
+    if not keyword:
+        return False
+    start = 0
+    while True:
+        i = text.find(keyword, start)
+        if i < 0:
+            return False
+        if not _negated(text, i):
+            return True
+        start = i + 1
+
+
 def _recent_ids(conn) -> set:
     """24 小时内已经返回过的 id。"""
     rows = conn.execute(
@@ -256,7 +295,7 @@ def memory_reflex(text: str, brief: bool = True) -> str:
                 "FROM reflex_keywords WHERE enabled = 1"
             ).fetchall()
 
-            hits = [k for k in keywords if k["keyword"] and k["keyword"] in text]
+            hits = [k for k in keywords if _hit(k["keyword"], text)]
 
             seen = _recent_ids(conn)
             results = []
