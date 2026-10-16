@@ -1,0 +1,3 @@
+# Local Android/Gradle build outputs
+usage-bridge/.gradle/
+usage-bridge/build/
