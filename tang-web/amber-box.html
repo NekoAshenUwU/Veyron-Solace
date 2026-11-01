@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>棠予酿 · 琥珀匣</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=ZCOOL+QingKe+HuangYou&family=Noto+Serif+SC:wght@500;600&family=Playfair+Display:ital,wght@1,500;1,700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+html,body{margin:0;height:100%;overflow:hidden;background:#2a1c46}
+body{display:flex;align-items:center;justify-content:center}
+.backdrop{position:fixed;inset:-30px;background:url(amber/bg.jpg) center/cover;filter:blur(18px) brightness(.7)}
+#stage{position:relative;width:390px;height:844px;flex-shrink:0;transform-origin:center center;overflow:hidden;background:url(amber/bg.jpg) center/cover;font-family:'Noto Sans SC',sans-serif;color:#fff}
+button{font:inherit}
+.hidden{display:none !important}
+.dr-blue{background-image:url(amber/d-blue.png)}.dr-lav{background-image:url(amber/d-lav.png)}.dr-pink{background-image:url(amber/d-pink.png)}.dr-orn{background-image:url(amber/d-orn.png)}.dr-orn2{background-image:url(amber/d-orn2.png)}
+.amber-drop{background-size:contain;background-repeat:no-repeat;background-position:center top}
+.cold{color:#fff;text-shadow:0 0 3px rgba(50,70,150,.7),0 0 10px rgba(120,185,255,.85),0 0 20px rgba(90,150,255,.5)}
+.glass{background:rgba(255,255,255,.13);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1.5px solid rgba(255,255,255,.55);box-shadow:0 10px 30px rgba(30,15,70,.3),inset 0 0 20px rgba(255,255,255,.12)}
+.branch{position:absolute;width:360px;height:116px;background:url(amber/branch.png) no-repeat center/contain;filter:drop-shadow(0 6px 14px rgba(20,10,50,.35))}
+.branch.flip{transform:scaleX(-1)}
+.branch.bare{filter:grayscale(.85) brightness(.75) sepia(.15) hue-rotate(190deg) drop-shadow(0 0 8px rgba(200,220,255,.35));opacity:.75}
+@keyframes sway{0%,100%{transform:rotate(-2.5deg)}50%{transform:rotate(2.5deg)}}
+.sw{transform-origin:50% 0;animation:sway 5s ease-in-out infinite}
+@keyframes frostTw{0%,100%{opacity:.25}50%{opacity:.9}}
+.frost{position:absolute;width:3px;height:3px;border-radius:50%;background:#EAF3FF;box-shadow:0 0 6px 2px rgba(190,215,255,.7);animation:frostTw 3.4s ease-in-out infinite}
+.scroller{scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.scroller::-webkit-scrollbar{display:none}
+.lantern{filter:drop-shadow(0 0 6px rgba(255,225,245,.9)) drop-shadow(0 0 14px rgba(190,170,255,.45))}
+.drop-btn:focus-visible,.chip:focus-visible{outline:2px solid #fff;outline-offset:2px;border-radius:12px}
+@keyframes rise{from{transform:translateY(30px);opacity:0}to{transform:none;opacity:1}}
+.sheet{animation:rise .45s cubic-bezier(.2,.8,.2,1)}
+.sprig{position:absolute;background:url(amber/sprig.png) no-repeat center/contain;pointer-events:none}
+@keyframes cardTw{0%,100%{opacity:.15;transform:scale(.6)}50%{opacity:1;transform:scale(1)}}
+.card-tw{position:absolute;width:4px;height:4px;border-radius:50%;background:#fff;box-shadow:0 0 6px 2px rgba(255,220,240,.9);animation:cardTw 2.8s ease-in-out infinite}
+.mem-body{position:relative;margin:12px 0 0;max-height:190px;overflow-y:auto;text-align:left;font-family:'Noto Serif SC',serif;font-size:14px;line-height:1.85;color:#4B2F6E;white-space:pre-wrap;word-break:break-word}
+.tap-layer{position:absolute;inset:0;z-index:20;pointer-events:none;overflow:hidden}
+.tp-fall{position:absolute;left:0;top:0;opacity:0;animation:tpFall var(--dur) linear var(--dl) forwards}
+@keyframes tpFall{0%{opacity:0;transform:translate3d(var(--ox),var(--oy),0)}12%{opacity:.95}78%{opacity:.85}100%{opacity:0;transform:translate3d(var(--ox),calc(var(--oy) + var(--fy)),0)}}
+.tp-sway{display:block;animation:tpSway var(--sd) ease-in-out infinite alternate}
+@keyframes tpSway{from{transform:translate3d(calc(var(--sx) * -1),0,0) rotate(-20deg)}to{transform:translate3d(var(--sx),0,0) rotate(20deg)}}
+.tp-petal{display:block;border-radius:70% 0 70% 0;background:linear-gradient(135deg,#FFF6FA,#F6AACB);box-shadow:0 0 6px 1px rgba(255,205,232,.9),0 0 16px 4px rgba(255,180,220,.4);animation:tpFlip var(--fd) linear infinite}
+@keyframes tpFlip{from{transform:rotate3d(1,.6,.2,0deg)}to{transform:rotate3d(1,.6,.2,360deg)}}
+</style>
+</head>
+<body>
+<div class="backdrop" aria-hidden="true"></div>
+<div id="stage">
+  <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(30,18,60,.8) 0%,rgba(42,24,76,.72) 50%,rgba(56,30,86,.8) 100%)"></div>
+  <div id="scroller" class="scroller" style="position:absolute;inset:0;overflow-y:auto">
+    <div id="river" style="position:relative;width:390px">
+      <p style="position:absolute;left:0;right:0;top:96px;margin:0;text-align:center;font-family:'Noto Serif SC',serif;font-size:14px;letter-spacing:.2em;color:#EDE6FF">沿着海棠枝，往回走</p>
+      <div id="chips" role="group" aria-label="按类别筛选" style="position:absolute;left:12px;right:12px;top:126px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center"></div>
+      <div id="blocks"></div>
+      <p id="status" style="position:absolute;left:24px;right:24px;top:220px;margin:0;text-align:center;font-size:14px;color:#EDE6FF">正在翻棠予酿……</p>
+    </div>
+  </div>
+
+  <header class="glass" style="position:absolute;z-index:3;left:16px;right:16px;top:18px;display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:26px">
+    <a href="amber.html" aria-label="回首页" style="width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;color:#4B2F6E">
+      <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"></path></svg>
+    </a>
+    <div style="display:flex;flex-direction:column">
+      <span class="cold" style="font-family:'ZCOOL QingKe HuangYou',sans-serif;font-size:24px;line-height:1.1">琥珀匣</span>
+      <span style="font-family:'Playfair Display',serif;font-style:italic;font-size:13px;color:#E6E0FF">The Amber Box</span>
+    </div>
+    <span style="margin-left:auto;padding-right:8px;display:flex;align-items:baseline;gap:4px">
+      <span id="total" class="cold" style="font-family:'Playfair Display',serif;font-style:italic;font-weight:700;font-size:28px;line-height:1">·</span>
+      <span style="font-size:12px;color:#E6E0FF">滴</span>
+    </span>
+  </header>
+
+  <div id="sheetWrap" class="hidden">
+    <div id="scrim" style="position:absolute;inset:0;z-index:4;background:rgba(18,8,38,.5);backdrop-filter:blur(2.5px);-webkit-backdrop-filter:blur(2.5px)"></div>
+    <section class="sheet" role="dialog" aria-label="这一滴" style="position:absolute;z-index:5;left:25px;top:calc(50% - 185px)">
+      <div style="position:relative;width:340px;padding-top:58px">
+        <button type="button" id="closeSheet" aria-label="合上" style="all:unset;cursor:pointer;position:absolute;z-index:2;right:-4px;top:6px;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.85);border:1px solid #fff;display:flex;align-items:center;justify-content:center;color:#6A4E92;box-shadow:0 6px 18px rgba(20,8,50,.3)">
+          <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+        </button>
+        <div style="position:relative;padding:1.5px;border-radius:34px;background:linear-gradient(135deg,#FFFFFF 0%,#F9C9E1 30%,#DCCBFF 62%,#C4E2FF 86%,#FFFFFF 100%);box-shadow:0 0 30px rgba(255,190,230,.4),0 22px 46px rgba(20,8,50,.5)">
+          <div style="position:relative;border-radius:32.5px;overflow:hidden;background:linear-gradient(165deg,#FFF8FC 0%,#FBF0FA 52%,#EEF0FF 100%);padding:58px 26px 74px;text-align:center">
+            <span aria-hidden="true" style="position:absolute;inset:8px;border-radius:26px;border:1px solid rgba(200,160,215,.38);pointer-events:none"></span>
+            <span class="sprig" aria-hidden="true" style="left:-26px;bottom:-14px;width:250px;height:88px;transform:rotate(-3deg)"></span>
+            <span class="sprig" aria-hidden="true" style="right:-40px;bottom:-22px;width:170px;height:60px;transform:scaleX(-1) rotate(-6deg);opacity:.7"></span>
+            <span id="sTag" style="position:relative;font-family:'Noto Serif SC',serif;font-size:12px;letter-spacing:.42em;color:#9A7BBE"></span>
+            <p id="sTitle" style="position:relative;margin:12px 0 0;font-family:'Noto Serif SC',serif;font-weight:600;font-size:16px;line-height:1.75;letter-spacing:.03em;color:#4B2F6E"></p>
+            <div id="sBody" class="mem-body hidden"></div>
+            <div aria-hidden="true" style="position:relative;margin:14px auto 0;display:flex;align-items:center;justify-content:center;gap:10px">
+              <span style="width:60px;height:1px;background:linear-gradient(90deg,rgba(200,160,215,0),rgba(200,160,215,.85))"></span>
+              <svg width="8" height="11" viewBox="0 0 10 13"><path d="M5 0C7 3.5 10 6 10 8.5A5 5 0 010 8.5C0 6 3 3.5 5 0z" fill="#F4B9D6"></path></svg>
+              <span style="width:60px;height:1px;background:linear-gradient(90deg,rgba(200,160,215,.85),rgba(200,160,215,0))"></span>
+            </div>
+            <div style="position:relative;margin-top:14px;display:flex;align-items:center;justify-content:space-between">
+              <span id="sDate" style="font-family:'Playfair Display',serif;font-style:italic;font-size:15px;letter-spacing:.06em;color:#7A5CA0"></span>
+              <button type="button" id="readBtn" style="all:unset;cursor:pointer;height:40px;padding:0 18px;border-radius:999px;display:flex;align-items:center;font-size:13px;font-weight:500;color:#3A2557;background:linear-gradient(100deg,#F8CFE2 0%,#DCCBF6 100%);border:1.5px solid #fff;box-shadow:0 4px 12px rgba(190,140,210,.35)">读这一滴 ›</button>
+            </div>
+          </div>
+        </div>
+        <div id="sDrop" class="amber-drop" style="position:absolute;left:50%;top:0;margin-left:-20px;width:40px;filter:drop-shadow(0 0 14px rgba(255,215,240,1)) drop-shadow(0 6px 12px rgba(60,30,100,.35))"></div>
+        <span class="card-tw" aria-hidden="true" style="left:120px;top:30px"></span>
+        <span class="card-tw" aria-hidden="true" style="left:214px;top:14px;animation-delay:1.2s"></span>
+        <span class="card-tw" aria-hidden="true" style="left:228px;top:64px;animation-delay:2.1s"></span>
+      </div>
+    </section>
+  </div>
+  <div class="tap-layer" aria-hidden="true"></div>
+</div>
+
+<script>
+(function () {
+  var API = '/api/tang';
+  var TAGS = { diary: '日记', anchor: '锚点', message: '留言', milestone: '里程碑', treasure: '珍藏', treasured: '珍藏', letter: '情书', note: '便签' };
+  var IMGS = [['dr-pink', 2.59], ['dr-lav', 2.38], ['dr-blue', 2.28], ['dr-orn', 3.14], ['dr-orn2', 3.29]];
+  var EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  var ZH = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '十二'];
+  // 枝条 360px 宽时细枝下沿的挂点（实测）
+  var HOOKS = [[112, 50], [137, 52], [162, 54], [188, 55], [212, 59], [236, 62], [260, 66], [284, 70], [308, 71], [330, 72]];
+  var STEMS = [6, 18, 10, 24, 4, 14, 20, 8, 16, 12];
+  var $ = function (id) { return document.getElementById(id); };
+  var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  var stage = $('stage');
+  function fit() { stage.style.transform = 'scale(' + Math.min(window.innerWidth / 390, window.innerHeight / 844) + ')'; }
+  window.addEventListener('resize', fit); fit();
+
+  var all = [], chip = 'all', byId = {};
+  function tagName(t) { return TAGS[t] || t || '记忆'; }
+  function titleOf(m) { return m.title || String(m.content || '').slice(0, 24) || '（没有标题）'; }
+  function hash(s) { var h = 5381; s = String(s); for (var i = 0; i < s.length; i++) h = ((h * 33) ^ s.charCodeAt(i)) >>> 0; return h; }
+  function ym(d) { return d.getFullYear() * 12 + d.getMonth(); }
+
+  function renderChips() {
+    var tags = {};
+    all.forEach(function (m) { tags[m.tag || ''] = (tags[m.tag || ''] || 0) + 1; });
+    var keys = Object.keys(tags).sort(function (a, b) { return tags[b] - tags[a]; });
+    var list = [['all', '全部']].concat(keys.map(function (k) { return [k, tagName(k)]; }));
+    $('chips').innerHTML = list.map(function (c) {
+      var on = chip === c[0];
+      return '<button type="button" class="chip" data-k="' + esc(c[0]) + '" aria-pressed="' + on + '" style="all:unset;cursor:pointer;box-sizing:border-box;height:34px;padding:0 14px;border-radius:999px;display:flex;align-items:center;font-size:13px;background:' + (on ? 'rgba(255,255,255,.9)' : 'rgba(255,255,255,.12)') + ';color:' + (on ? '#4B2F6E' : '#fff') + ';border:1.5px solid rgba(255,255,255,.6)">' + esc(c[1]) + '</button>';
+    }).join('');
+    $('chips').querySelectorAll('.chip').forEach(function (b) {
+      b.addEventListener('click', function (e) { e.stopPropagation(); chip = b.getAttribute('data-k'); renderChips(); renderBlocks(); });
+    });
+  }
+
+  function renderBlocks() {
+    var list = all.filter(function (m) { return chip === 'all' || (m.tag || '') === chip; });
+    var groups = {};
+    list.forEach(function (m) { var d = new Date(m.created_at); if (isNaN(d)) return; (groups[ym(d)] = groups[ym(d)] || []).push(m); });
+    var keys = Object.keys(groups).map(Number).sort(function (a, b) { return b - a; });
+    var y = 184 + Math.max(0, $('chips').offsetHeight - 34), html = '', bi = 0;
+    for (var gi = 0; gi < keys.length; gi++) {
+      var key = keys[gi], items = groups[key], yr = Math.floor(key / 12), mo = key % 12;
+      for (var start = 0; start < items.length; start += 10) {
+        var chunk = items.slice(start, start + 10), flip = bi % 2 === 1; bi++;
+        var place = function (hx) { return flip ? 30 + (360 - hx) : hx; };
+        var idx = chunk.map(function (_, k) { return chunk.length >= 10 ? k : (chunk.length === 1 ? 5 : Math.round(k * 9 / (chunk.length - 1))); });
+        var tallest = 0, drops = '';
+        chunk.forEach(function (m, k) {
+          var im = IMGS[hash(m.id) % 5], hk = HOOKS[idx[k]], w = m.importance >= 9 ? 26 : (k % 2 ? 19 : 22), stem = STEMS[k % 10], h = Math.round(w * im[1]);
+          tallest = Math.max(tallest, 34 + hk[1] + stem + h);
+          byId[m.id] = { m: m, im: im };
+          drops += '<div style="position:absolute;left:' + place(hk[0]) + 'px;top:' + (34 + hk[1]) + 'px;width:30px;margin-left:-15px;display:flex;flex-direction:column;align-items:center">' +
+            '<div class="sw" style="display:flex;flex-direction:column;align-items:center;animation-delay:' + (-((k * 0.9) % 5)).toFixed(1) + 's;animation-duration:' + (4.4 + (k % 4) * 0.5).toFixed(1) + 's">' +
+            '<div style="width:1px;height:' + stem + 'px;background:rgba(255,240,248,.85)"></div>' +
+            '<button type="button" class="drop-btn" data-id="' + esc(m.id) + '" aria-label="' + esc(titleOf(m)) + '" style="all:unset;cursor:pointer;display:flex;padding:0 4px 4px">' +
+            '<div class="amber-drop lantern ' + im[0] + '" style="width:' + w + 'px;height:' + h + 'px"></div></button></div></div>';
+        });
+        var label = start === 0
+          ? '<div style="position:absolute;' + (flip ? 'left' : 'right') + ':22px;top:0;display:flex;flex-direction:column;align-items:' + (flip ? 'flex-start' : 'flex-end') + '">' +
+            '<span class="cold" style="font-family:\'Playfair Display\',serif;font-style:italic;font-weight:500;font-size:24px;line-height:1.1">' + EN[mo] + '</span>' +
+            '<span style="font-family:\'Noto Serif SC\',serif;font-size:12px;color:#EDE6FF">' + ZH[mo] + '月 · ' + yr + ' · ' + items.length + ' 滴</span></div>'
+          : '';
+        var bh = tallest + 18;
+        html += '<section style="position:absolute;left:0;top:' + y + 'px;width:390px;height:' + bh + 'px">' +
+          '<div class="branch' + (flip ? ' flip' : '') + '" aria-hidden="true" style="left:' + (flip ? 30 : 0) + 'px;top:34px"></div>' + label + drops + '</section>';
+        y += bh + 22;
+      }
+      // 中间空掉的月份：一枝挂霜的枯枝
+      var next = keys[gi + 1];
+      if (next != null && key - next > 1) {
+        var flip2 = bi % 2 === 1; bi++;
+        var gap = key - next - 1;
+        html += '<section style="position:absolute;left:0;top:' + y + 'px;width:390px;height:190px">' +
+          '<div class="branch bare' + (flip2 ? ' flip' : '') + '" aria-hidden="true" style="left:' + (flip2 ? 30 : 0) + 'px;top:34px"></div>' +
+          '<span class="frost" style="left:150px;top:96px"></span><span class="frost" style="left:210px;top:104px;animation-delay:1.1s"></span><span class="frost" style="left:270px;top:98px;animation-delay:2.2s"></span>' +
+          '<p style="position:absolute;left:30px;right:30px;top:140px;margin:0;text-align:center;font-family:\'Noto Serif SC\',serif;font-size:13px;letter-spacing:.14em;line-height:1.8;color:#DCE8FF">有 ' + gap + ' 个月，琥珀没有凝结</p></section>';
+        y += 210;
+      }
+    }
+    if (keys.length) {
+      var first = keys[keys.length - 1];
+      html += '<p style="position:absolute;left:0;right:0;top:' + (y + 10) + 'px;margin:0;text-align:center;font-family:\'Playfair Display\',serif;font-style:italic;font-size:15px;color:#E6E0FF">— where it all began · ' + EN[first % 12].slice(0, 3) + ' ' + Math.floor(first / 12) + ' —</p>';
+    }
+    $('blocks').innerHTML = html;
+    $('river').style.height = (y + 90) + 'px';
+    $('status').classList.toggle('hidden', list.length > 0);
+    if (!list.length && all.length) $('status').textContent = '这一类还没有琥珀';
+    $('blocks').querySelectorAll('.drop-btn').forEach(function (b) {
+      b.addEventListener('click', function (e) { e.stopPropagation(); openSheet(byId[b.getAttribute('data-id')]); });
+    });
+  }
+
+  function openSheet(x) {
+    var m = x.m, d = new Date(m.created_at);
+    $('sTag').textContent = '棠予酿 · ' + tagName(m.tag);
+    $('sTitle').textContent = titleOf(m);
+    $('sBody').textContent = m.content || '';
+    $('sBody').classList.add('hidden');
+    $('readBtn').textContent = '读这一滴 ›';
+    $('sDate').textContent = isNaN(d) ? '' : d.getFullYear() + ' · ' + ('0' + (d.getMonth() + 1)).slice(-2) + ' · ' + ('0' + d.getDate()).slice(-2);
+    $('sDrop').className = 'amber-drop ' + x.im[0];
+    $('sDrop').style.height = Math.round(40 * x.im[1]) + 'px';
+    $('sheetWrap').classList.remove('hidden');
+  }
+  function closeSheet() { $('sheetWrap').classList.add('hidden'); }
+  $('scrim').addEventListener('click', closeSheet);
+  $('closeSheet').addEventListener('click', closeSheet);
+  $('readBtn').addEventListener('click', function (e) {
+    e.stopPropagation();
+    var open = $('sBody').classList.toggle('hidden') === false;
+    this.textContent = open ? '收起 ‹' : '读这一滴 ›';
+  });
+
+  fetch(API + '/memories?limit=1000', { credentials: 'include' })
+    .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function (body) {
+      all = (Array.isArray(body) ? body : (body.memories || [])).slice();
+      all.sort(function (a, b) { return String(b.created_at).localeCompare(String(a.created_at)); });
+      $('total').textContent = all.length;
+      renderChips(); renderBlocks();
+    })
+    .catch(function (err) { $('status').textContent = '现在翻不到棠予酿（' + err.message + '），稍后再试'; });
+
+  stage.addEventListener('click', function (e) {
+    var layer = stage.querySelector('.tap-layer'), r = stage.getBoundingClientRect();
+    var x = (e.clientX - r.left) * 390 / r.width, y = (e.clientY - r.top) * 844 / r.height;
+    var wrap = document.createElement('div');
+    wrap.style.cssText = 'position:absolute;left:' + x.toFixed(1) + 'px;top:' + y.toFixed(1) + 'px';
+    for (var k = 0; k < 11; k++) {
+      var a = Math.random() * Math.PI * 2, d = 4 + Math.random() * 26;
+      var fall = document.createElement('span'), sway = document.createElement('span'), petal = document.createElement('span');
+      fall.className = 'tp-fall'; sway.className = 'tp-sway'; petal.className = 'tp-petal';
+      fall.style.cssText = '--ox:' + (Math.cos(a) * d).toFixed(1) + 'px;--oy:' + (Math.sin(a) * d * 0.6).toFixed(1) + 'px;--fy:' + (140 + Math.random() * 90).toFixed(0) + 'px;--dur:' + (4.6 + Math.random() * 1.8).toFixed(2) + 's;--dl:' + (k * 0.11 + Math.random() * 0.1).toFixed(2) + 's';
+      sway.style.cssText = '--sx:' + (8 + Math.random() * 12).toFixed(1) + 'px;--sd:' + (1.3 + Math.random() * 0.9).toFixed(2) + 's;animation-delay:-' + (Math.random() * 2).toFixed(2) + 's';
+      var w = 8 + Math.random() * 5;
+      petal.style.cssText = 'width:' + w.toFixed(1) + 'px;height:' + (w * 0.65).toFixed(1) + 'px;--fd:' + (2.2 + Math.random() * 1.6).toFixed(2) + 's;animation-delay:-' + (Math.random() * 3).toFixed(2) + 's';
+      sway.appendChild(petal); fall.appendChild(sway); wrap.appendChild(fall);
+    }
+    layer.appendChild(wrap);
+    setTimeout(function () { if (wrap.parentNode) wrap.parentNode.removeChild(wrap); }, 9000);
+  });
+})();
+</script>
+</body>
+</html>
