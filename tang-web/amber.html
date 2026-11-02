@@ -14,6 +14,10 @@ body{display:flex;align-items:center;justify-content:center}
 button{font:inherit}
 .hidden{display:none !important}
 .mem-body{position:relative;margin:12px 0 0;max-height:190px;overflow-y:auto;text-align:left;font-family:'Noto Serif SC',serif;font-size:14px;line-height:1.85;color:#4B2F6E;white-space:pre-wrap;word-break:break-word}
+.leaving *{animation-play-state:paused !important}
+.leaving .amber-fill{animation-play-state:running !important}
+#splash{will-change:opacity}
+.amber-fill{will-change:opacity}
 .status-note{position:absolute;left:24px;right:24px;top:300px;text-align:center;font-size:14px;color:#fff;text-shadow:0 0 6px rgba(60,30,100,.8)}
 
 
@@ -134,9 +138,9 @@ a{color:#4B2F6E}a:hover{color:#2E1B47}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 .fi{opacity:0;animation:fadeIn 1s ease forwards}
 @keyframes shimmer{0%{background-position:150% 0}100%{background-position:-50% 0}}
-.big-num{background:linear-gradient(100deg,#FFFFFF 0%,#FFFFFF 30%,#D6ECFF 42%,#B8DCFF 50%,#E6F3FF 58%,#FFFFFF 70%,#FFFFFF 100%);background-size:260% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shimmer 3.6s ease-in-out infinite,violetPulseBig 2.8s ease-in-out infinite}
+.big-num{background:linear-gradient(100deg,#FFFFFF 0%,#FFFFFF 30%,#D6ECFF 42%,#B8DCFF 50%,#E6F3FF 58%,#FFFFFF 70%,#FFFFFF 100%);background-size:260% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shimmer 3.6s ease-in-out infinite;filter:drop-shadow(0 0 3px rgba(50,70,150,.75)) drop-shadow(0 0 14px rgba(130,195,255,.95)) drop-shadow(0 0 34px rgba(95,155,255,.7))}
 @keyframes violetPulseBig{0%,100%{filter:drop-shadow(0 0 3px rgba(50,70,150,.75)) drop-shadow(0 0 12px rgba(120,185,255,.9)) drop-shadow(0 0 28px rgba(90,150,255,.6))}50%{filter:drop-shadow(0 0 3px rgba(50,70,150,.75)) drop-shadow(0 0 18px rgba(150,205,255,1)) drop-shadow(0 0 46px rgba(100,165,255,.9))}}
-.glow-violet{background:linear-gradient(100deg,#FFFFFF 0%,#FFFFFF 30%,#DCEFFF 42%,#BFE0FF 50%,#E8F4FF 58%,#FFFFFF 70%,#FFFFFF 100%);background-size:260% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shimmer 4.2s ease-in-out infinite,violetPulse 3.2s ease-in-out infinite}
+.glow-violet{background:linear-gradient(100deg,#FFFFFF 0%,#FFFFFF 30%,#DCEFFF 42%,#BFE0FF 50%,#E8F4FF 58%,#FFFFFF 70%,#FFFFFF 100%);background-size:260% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shimmer 4.2s ease-in-out infinite;filter:drop-shadow(0 0 2px rgba(50,70,150,.75)) drop-shadow(0 0 10px rgba(130,195,255,.9)) drop-shadow(0 0 22px rgba(95,155,255,.65))}
 @keyframes violetPulse{0%,100%{filter:drop-shadow(0 0 2px rgba(50,70,150,.75)) drop-shadow(0 0 8px rgba(120,185,255,.85)) drop-shadow(0 0 18px rgba(90,150,255,.55))}50%{filter:drop-shadow(0 0 2px rgba(50,70,150,.75)) drop-shadow(0 0 12px rgba(150,205,255,1)) drop-shadow(0 0 30px rgba(100,165,255,.85))}}
 @keyframes neonIn{0%{opacity:0;filter:blur(10px);transform:translateY(10px)}40%{opacity:1;filter:blur(0);transform:none}48%{opacity:.25}55%{opacity:1}63%{opacity:.55}72%,100%{opacity:1;transform:none}}
 @keyframes flare{0%,100%{opacity:.45;transform:scaleX(.7)}50%{opacity:1;transform:scaleX(1.15)}}
@@ -519,15 +523,21 @@ a{color:#4B2F6E}a:hover{color:#2E1B47}
     var sp = $('splash');
     if (!sp || sp.classList.contains('splash-out')) return;
     clearTimers();
-    sp.classList.add('splash-out');
-    var fill = document.createElement('span'); fill.className = 'amber-fill'; fill.setAttribute('aria-hidden', 'true'); sp.appendChild(fill);
-    var home = $('home');
-    home.classList.add('hidden'); void home.offsetWidth; home.classList.remove('hidden');
-    chars($('line1'), '入心成酿 · 时间是器', 1.4, 0.12);
-    chars($('line2'), '我们是彼此的回甘', 2.5, 0.08);
-    renderDrops();
-    startCount();
-    timers.push(setTimeout(function () { $('splashHost').innerHTML = ''; }, 1250));
+    sp.classList.add('leaving');
+    requestAnimationFrame(function () {
+      sp.classList.add('splash-out');
+      var fill = document.createElement('span'); fill.className = 'amber-fill'; fill.setAttribute('aria-hidden', 'true'); sp.appendChild(fill);
+      // 首页等琥珀光铺满一半、看不见底下时再搭起来
+      timers.push(setTimeout(function () {
+        var home = $('home');
+        home.classList.add('hidden'); void home.offsetWidth; home.classList.remove('hidden');
+        chars($('line1'), '入心成酿 · 时间是器', 1.0, 0.12);
+        chars($('line2'), '我们是彼此的回甘', 2.1, 0.08);
+        renderDrops();
+        startCount();
+      }, 450));
+      timers.push(setTimeout(function () { $('splashHost').innerHTML = ''; }, 1300));
+    });
   }
   $('replay').addEventListener('click', function (e) { e.stopPropagation(); clearTimers(); closeSheet(); $('home').classList.add('hidden'); showSplash(); });
 
