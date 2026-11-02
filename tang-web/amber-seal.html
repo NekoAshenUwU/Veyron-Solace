@@ -89,6 +89,25 @@ button{font:inherit}
   var IMPS = [[5, '平常'], [8, '重要'], [10, '刻骨铭心']];
   var IMGS = [['dr-pink', 2.59], ['dr-lav', 2.38], ['dr-blue', 2.28], ['dr-orn', 3.14], ['dr-orn2', 3.29]];
   var $ = function (id) { return document.getElementById(id); };
+  // 接口一次最多给 100 条，也不认 offset/page；按类别各拿一次再合并，才拿得全
+  function fetchAllMemories() {
+    var get = function (q) {
+      return fetch(API + '/memories?limit=100' + q, { credentials: 'include' })
+        .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+        .then(function (b) { return Array.isArray(b) ? b : (b.memories || []); });
+    };
+    return get('').then(function (first) {
+      var tags = {};
+      first.forEach(function (m) { if (m.tag) tags[m.tag] = 1; });
+      ['diary', 'anchor', 'message', 'treasured', 'treasure', 'letter', 'milestone'].forEach(function (t) { tags[t] = 1; });
+      return Promise.all(Object.keys(tags).map(function (t) { return get('&tag=' + encodeURIComponent(t) + '&q=').catch(function () { return []; }); }))
+        .then(function (lists) {
+          var seen = {}, out = [];
+          [first].concat(lists).forEach(function (l) { l.forEach(function (m) { if (m && m.id != null && !seen[m.id]) { seen[m.id] = 1; out.push(m); } }); });
+          return { memories: out };
+        });
+    });
+  }
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var stage = $('stage');
   function fit() { stage.style.transform = 'scale(' + Math.min(window.innerWidth / 390, window.innerHeight / 844) + ')'; }
@@ -110,8 +129,7 @@ button{font:inherit}
   renderTags(); renderImps();
 
   // 类别照棠予酿里真的有的来，用得最多的排前面
-  fetch(API + '/memories?limit=1000', { credentials: 'include' })
-    .then(function (r) { return r.ok ? r.json() : null; })
+  fetchAllMemories()
     .then(function (body) {
       if (!body) return;
       var list = Array.isArray(body) ? body : (body.memories || []), n = {};
