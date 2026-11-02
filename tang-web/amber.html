@@ -174,7 +174,11 @@ a{color:#4B2F6E}a:hover{color:#2E1B47}
         <span style="font-family:'ZCOOL QingKe HuangYou',sans-serif;font-size:24px;line-height:1.1">棠予酿</span>
         <span style="font-family:'Playfair Display',serif;font-style:italic;font-weight:500;font-size:14px;color:#5A3F82">Amber Hours</span>
       </div>
-      <button type="button" id="replay" aria-label="重新播放开屏" style="all:unset;cursor:pointer;margin-left:auto;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.7);display:flex;align-items:center;justify-content:center;color:#4B2F6E">
+      <button type="button" id="letterBtn" aria-label="予予的信" style="all:unset;cursor:pointer;position:relative;margin-left:auto;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.7);display:flex;align-items:center;justify-content:center;color:#B5548F">
+        <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="5.5" width="18" height="13" rx="2.5"></rect><path d="M3.5 7l8.5 6.2L20.5 7"></path></svg>
+        <span id="letterDot" class="hidden" style="position:absolute;right:7px;top:7px;width:9px;height:9px;border-radius:50%;background:#F27BB5;box-shadow:0 0 0 2px #fff,0 0 8px rgba(242,123,181,.9)"></span>
+      </button>
+      <button type="button" id="replay" aria-label="重新播放开屏" style="all:unset;cursor:pointer;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.7);display:flex;align-items:center;justify-content:center;color:#4B2F6E">
         <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12a8 8 0 1 0 2.4-5.7"></path><path d="M4 4v4h4"></path></svg>
       </button>
     </header>
@@ -226,12 +230,13 @@ a{color:#4B2F6E}a:hover{color:#2E1B47}
               <span id="sTag" style="position:relative;font-family:'Noto Serif SC',serif;font-size:12px;letter-spacing:.42em;color:#9A7BBE"></span>
               <p id="sTitle" style="position:relative;margin:12px 0 0;font-family:'Noto Serif SC',serif;font-weight:600;font-size:16px;line-height:1.75;letter-spacing:.03em;color:#4B2F6E"></p>
               <div id="sBody" class="mem-body hidden"></div>
+              <p id="sLetter" class="hidden" style="position:relative;margin:14px 0 0;max-height:220px;overflow-y:auto;font-family:'Noto Serif SC',serif;font-size:16px;line-height:2;letter-spacing:.04em;color:#4B2F6E;white-space:pre-wrap"></p>
               <div aria-hidden="true" style="position:relative;margin:14px auto 0;display:flex;align-items:center;justify-content:center;gap:10px">
                 <span style="width:60px;height:1px;background:linear-gradient(90deg,rgba(200,160,215,0),rgba(200,160,215,.85))"></span>
                 <svg width="8" height="11" viewBox="0 0 10 13"><path d="M5 0C7 3.5 10 6 10 8.5A5 5 0 010 8.5C0 6 3 3.5 5 0z" fill="#F4B9D6"></path></svg>
                 <span style="width:60px;height:1px;background:linear-gradient(90deg,rgba(200,160,215,.85),rgba(200,160,215,0))"></span>
               </div>
-              <div style="position:relative;margin-top:14px;display:flex;align-items:center;justify-content:space-between">
+              <div id="sFoot" style="position:relative;margin-top:14px;display:flex;align-items:center;justify-content:space-between">
                 <span id="sDate" style="font-family:'Playfair Display',serif;font-style:italic;font-size:15px;letter-spacing:.06em;color:#7A5CA0"></span>
                 <button type="button" id="readBtn" style="all:unset;cursor:pointer;height:40px;padding:0 18px;border-radius:999px;display:flex;align-items:center;font-size:13px;font-weight:500;color:#3A2557;background:linear-gradient(100deg,#F8CFE2 0%,#DCCBF6 100%);border:1.5px solid #fff;box-shadow:0 4px 12px rgba(190,140,210,.35)">读这一滴 ›</button>
               </div>
@@ -432,6 +437,7 @@ a{color:#4B2F6E}a:hover{color:#2E1B47}
   }
 
   function openSheet(m, s) {
+    setLetterMode(false);
     var f = fmtDate(m.created_at);
     $('sTag').textContent = '棠予酿 · ' + (TAGS[m.tag] || m.tag || '记忆');
     $('sTitle').textContent = titleOf(m);
@@ -445,6 +451,28 @@ a{color:#4B2F6E}a:hover{color:#2E1B47}
     $('sheetWrap').classList.remove('hidden');
     $('bottom').classList.add('hidden');
   }
+  var letter = '';
+  function loadLetter() {
+    return fetch(API + '/love_note', { method: 'POST', credentials: 'include' })
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function (d) { letter = (d && d.content) || ''; $('letterDot').classList.toggle('hidden', !letter); })
+      .catch(function () { letter = ''; });
+  }
+  function setLetterMode(on) {
+    ['sTitle', 'sFoot'].forEach(function (id) { $(id).classList.toggle('hidden', on); });
+    $('sLetter').classList.toggle('hidden', !on);
+    $('sDrop').style.visibility = on ? 'hidden' : '';
+  }
+  function openLetter() {
+    setLetterMode(true);
+    $('sBody').classList.add('hidden');
+    $('sTag').textContent = '予予的信';
+    $('sLetter').textContent = letter || '信还在路上，过一会儿再来看看。';
+    $('letterDot').classList.add('hidden');
+    $('sheetWrap').classList.remove('hidden');
+    $('bottom').classList.add('hidden');
+  }
+  $('letterBtn').addEventListener('click', function (e) { e.stopPropagation(); openLetter(); });
   function closeSheet() { $('sheetWrap').classList.add('hidden'); $('bottom').classList.remove('hidden'); }
   $('scrim').addEventListener('click', closeSheet);
   $('closeSheet').addEventListener('click', closeSheet);
@@ -507,6 +535,7 @@ a{color:#4B2F6E}a:hover{color:#2E1B47}
   });
 
   loadMemories();
+  loadLetter();
   showSplash();
 })();
 </script>
