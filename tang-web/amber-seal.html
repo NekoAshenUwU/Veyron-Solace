@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>棠予酿 · 封存一滴</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=ZCOOL+QingKe+HuangYou&family=Noto+Serif+SC:wght@500;600&family=Playfair+Display:ital,wght@1,500;1,700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+html,body{margin:0;height:100%;overflow:hidden;background:#2a1c46}
+body{display:flex;align-items:center;justify-content:center}
+.backdrop{position:fixed;inset:-30px;background:url(amber/bg.jpg) center/cover;filter:blur(18px) brightness(.7)}
+#stage{position:relative;width:390px;height:844px;flex-shrink:0;transform-origin:center center;overflow:hidden;background:url(amber/bg.jpg) center/cover;font-family:'Noto Sans SC',sans-serif;color:#fff}
+button{font:inherit}
+.hidden{display:none !important}
+.dr-pink{background-image:url(amber/d-pink.png)}.dr-lav{background-image:url(amber/d-lav.png)}.dr-blue{background-image:url(amber/d-blue.png)}.dr-orn{background-image:url(amber/d-orn.png)}.dr-orn2{background-image:url(amber/d-orn2.png)}
+.amber-drop{background-size:contain;background-repeat:no-repeat;background-position:center top;filter:drop-shadow(0 0 8px rgba(255,220,240,.8))}
+.cold{color:#fff;text-shadow:0 0 3px rgba(50,70,150,.7),0 0 10px rgba(120,185,255,.85),0 0 20px rgba(90,150,255,.5)}
+.glass{background:rgba(255,255,255,.14);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1.5px solid rgba(255,255,255,.55);box-shadow:0 10px 30px rgba(30,15,70,.3),inset 0 0 20px rgba(255,255,255,.12)}
+.field{all:unset;box-sizing:border-box;width:100%;border-radius:18px;background:rgba(255,255,255,.88);color:#3A2557;font-family:'Noto Serif SC',serif;border:1.5px solid rgba(255,255,255,.95)}
+.field::placeholder{color:#8A78A8}
+.field:focus-visible{outline:2px solid #BFDCFF;outline-offset:2px}
+.chip:focus-visible,.cta:focus-visible{outline:2px solid #fff;outline-offset:3px}
+@keyframes cardOut{to{opacity:0;transform:translateY(-120px) scale(.2);filter:blur(10px)}}
+.card-out{animation:cardOut 1s cubic-bezier(.6,0,.4,1) forwards;pointer-events:none}
+@keyframes gather{0%{opacity:0;transform:rotate(var(--a)) translateX(var(--r)) scale(.6)}20%{opacity:.95}50%{transform:rotate(calc(var(--a) + 70deg)) translateX(calc(var(--r) * .55)) scale(1)}85%{opacity:.9}100%{opacity:0;transform:rotate(calc(var(--a) + 150deg)) translateX(0) scale(.4)}}
+.gather{position:absolute;width:4px;height:4px;margin:-2px 0 0 -2px;border-radius:50%;background:#fff;box-shadow:0 0 5px 2px rgba(255,255,255,.85),0 0 14px 5px var(--c);transform-origin:2px 2px;opacity:0;animation:gather 2s cubic-bezier(.4,0,.3,1) forwards}
+@keyframes dropForm{0%{opacity:0;filter:blur(14px) brightness(1.8);transform:scale(.6)}55%{opacity:1;filter:blur(3px) brightness(1.4)}100%{opacity:1;filter:blur(0) brightness(1);transform:scale(1)}}
+.drop-form{opacity:0;transform-origin:50% 64%;animation:dropForm 1.3s cubic-bezier(.3,.7,.3,1) .9s forwards}
+@keyframes hangUp{to{transform:translateY(-196px)}}
+.hang-up{animation:hangUp 1.4s cubic-bezier(.5,0,.2,1) 2.4s forwards}
+@keyframes thread{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+.thread{position:absolute;width:1px;background:linear-gradient(180deg,rgba(255,240,248,0),rgba(255,240,248,.9));transform-origin:50% 0;transform:scaleY(0);animation:thread 1s ease 3.3s forwards}
+@keyframes sway{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+.sw{transform-origin:50% 0;animation:sway 5s ease-in-out 3.8s infinite}
+@keyframes reveal{from{opacity:0;filter:blur(8px);transform:translateY(12px)}to{opacity:1;filter:blur(0);transform:none}}
+.rv{opacity:0;animation:reveal 1.1s cubic-bezier(.2,.8,.2,1) forwards}
+@keyframes petalFall{0%{opacity:0;transform:translate(0,0) rotate(0)}15%{opacity:.95}100%{opacity:0;transform:translate(var(--dx),300px) rotate(300deg)}}
+.petal{position:absolute;width:11px;height:7px;border-radius:70% 0 70% 0;background:linear-gradient(135deg,#FFF0F6,#F3A0C6);opacity:0;animation:petalFall 4s ease-in forwards}
+</style>
+</head>
+<body>
+<div class="backdrop" aria-hidden="true"></div>
+<div id="stage">
+  <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(34,20,64,.62) 0%,rgba(52,30,86,.42) 50%,rgba(70,38,96,.66) 100%)"></div>
+
+  <header class="glass" style="position:absolute;z-index:3;left:16px;right:16px;top:18px;display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:26px">
+    <a href="amber.html" aria-label="回首页" style="width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;color:#4B2F6E">
+      <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"></path></svg>
+    </a>
+    <div style="display:flex;flex-direction:column">
+      <span class="cold" style="font-family:'ZCOOL QingKe HuangYou',sans-serif;font-size:24px;line-height:1.1">封存一滴</span>
+      <span style="font-family:'Playfair Display',serif;font-style:italic;font-size:13px;color:#E6E0FF">Seal a moment</span>
+    </div>
+  </header>
+
+  <form id="card" class="glass" aria-label="写下这一刻" style="position:absolute;left:16px;right:16px;top:96px;bottom:24px;border-radius:30px;padding:18px;box-sizing:border-box;display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:baseline;justify-content:space-between">
+      <span id="today" class="cold" style="font-family:'Playfair Display',serif;font-style:italic;font-weight:700;font-size:22px"></span>
+      <span id="nth" style="font-size:13px;color:#E6E0FF"></span>
+    </div>
+    <label style="display:flex;flex-direction:column;gap:6px">
+      <span style="font-size:13px;letter-spacing:.1em;color:#EDE6FF">给这一刻取个名字</span>
+      <input id="title" class="field" type="text" maxlength="80" placeholder="比如：琥珀开屏终于定稿" style="height:48px;padding:0 16px;font-size:16px;font-weight:600">
+    </label>
+    <label style="flex:1;display:flex;flex-direction:column;gap:6px;min-height:0">
+      <span style="font-size:13px;letter-spacing:.1em;color:#EDE6FF">想封存的话</span>
+      <textarea id="content" class="field" placeholder="写下此刻的心情，它会被封进琥珀里……" style="flex:1;min-height:120px;padding:14px 16px;font-size:15px;line-height:1.8;resize:none"></textarea>
+    </label>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <span style="font-size:13px;letter-spacing:.1em;color:#EDE6FF">类别</span>
+      <div id="tags" role="radiogroup" aria-label="类别" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <span style="font-size:13px;letter-spacing:.1em;color:#EDE6FF">有多珍贵</span>
+      <div id="imps" role="radiogroup" aria-label="珍贵程度" style="display:flex;gap:8px"></div>
+    </div>
+    <p id="err" class="hidden" role="alert" style="margin:0;padding:8px 12px;border-radius:12px;background:rgba(255,220,232,.92);color:#8A2E55;font-size:13px"></p>
+    <button type="submit" id="submit" class="cta" style="all:unset;cursor:pointer;box-sizing:border-box;height:56px;border-radius:999px;background:linear-gradient(100deg,#F6C1D8 0%,#D9C2F4 55%,#BFDCFF 100%);border:2px solid rgba(255,255,255,.95);box-shadow:0 8px 26px rgba(160,140,230,.45),inset 0 2px 8px rgba(255,255,255,.7);display:flex;align-items:center;justify-content:center;font-family:'ZCOOL QingKe HuangYou',sans-serif;font-size:22px;letter-spacing:.2em;color:#3A2557">封存</button>
+  </form>
+
+  <div id="sealed" class="hidden"></div>
+</div>
+
+<script>
+(function () {
+  var API = '/api/tang';
+  var TAGS = { diary: '日记', anchor: '锚点', message: '留言', milestone: '里程碑', treasure: '珍藏', treasured: '珍藏', letter: '情书', note: '便签' };
+  var IMPS = [[5, '平常'], [8, '重要'], [10, '刻骨铭心']];
+  var IMGS = [['dr-pink', 2.59], ['dr-lav', 2.38], ['dr-blue', 2.28], ['dr-orn', 3.14], ['dr-orn2', 3.29]];
+  var $ = function (id) { return document.getElementById(id); };
+  var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  var stage = $('stage');
+  function fit() { stage.style.transform = 'scale(' + Math.min(window.innerWidth / 390, window.innerHeight / 844) + ')'; }
+  window.addEventListener('resize', fit); fit();
+
+  var d = new Date();
+  $('today').textContent = d.getFullYear() + ' · ' + ('0' + (d.getMonth() + 1)).slice(-2) + ' · ' + ('0' + d.getDate()).slice(-2);
+
+  var tag = 'diary', imp = 5, tagList = ['diary', 'anchor', 'message'], count = 0;
+  function chips(el, list, cur, onPick) {
+    el.innerHTML = list.map(function (c) {
+      var on = c[0] === cur;
+      return '<button type="button" role="radio" class="chip" aria-checked="' + on + '" data-v="' + esc(c[0]) + '" style="all:unset;cursor:pointer;box-sizing:border-box;height:36px;padding:0 14px;border-radius:999px;display:flex;align-items:center;font-size:13px;background:' + (on ? 'rgba(255,255,255,.9)' : 'rgba(255,255,255,.12)') + ';color:' + (on ? '#4B2F6E' : '#fff') + ';border:1.5px solid rgba(255,255,255,.7)">' + esc(c[1]) + '</button>';
+    }).join('');
+    el.querySelectorAll('.chip').forEach(function (b) { b.addEventListener('click', function () { onPick(b.getAttribute('data-v')); }); });
+  }
+  function renderTags() { chips($('tags'), tagList.map(function (t) { return [t, TAGS[t] || t]; }), tag, function (v) { tag = v; renderTags(); }); }
+  function renderImps() { chips($('imps'), IMPS.map(function (x) { return [String(x[0]), x[1]]; }), String(imp), function (v) { imp = +v; renderImps(); }); }
+  renderTags(); renderImps();
+
+  // 类别照棠予酿里真的有的来，用得最多的排前面
+  fetch(API + '/memories?limit=1000', { credentials: 'include' })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (body) {
+      if (!body) return;
+      var list = Array.isArray(body) ? body : (body.memories || []), n = {};
+      count = list.length;
+      list.forEach(function (m) { if (m.tag) n[m.tag] = (n[m.tag] || 0) + 1; });
+      var keys = Object.keys(n).sort(function (a, b) { return n[b] - n[a]; });
+      if (keys.length) { tagList = keys; if (keys.indexOf(tag) < 0) tag = keys[0]; renderTags(); }
+      $('nth').textContent = '第 ' + (count + 1) + ' 滴';
+    })
+    .catch(function () {});
+
+  function showError(msg) { $('err').textContent = msg; $('err').classList.remove('hidden'); }
+
+  $('card').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var title = $('title').value.trim(), content = $('content').value.trim();
+    if (!title || !content) { showError('名字和想封存的话都要写哦'); return; }
+    $('err').classList.add('hidden');
+    $('submit').disabled = true; $('submit').textContent = '封存中…';
+    fetch(API + '/write_memory', {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: title, content: content, tag: tag, importance: imp })
+    })
+      .then(function (r) {
+        return r.text().then(function (t) {
+          var j = null; try { j = JSON.parse(t); } catch (_) {}
+          if (!r.ok || (j && (j.ok === false || j.error))) throw new Error((j && (j.error || j.detail)) || ('HTTP ' + r.status));
+          return j;
+        });
+      })
+      .then(function () { playSeal(title); })
+      .catch(function (err) {
+        $('submit').disabled = false; $('submit').textContent = '封存';
+        showError('没有存进去：' + err.message + '。写的字还在，可以再按一次。');
+      });
+  });
+
+  function playSeal(title) {
+    var im = IMGS[Math.floor(Math.random() * IMGS.length)];
+    $('card').classList.add('card-out');
+    var dust = '';
+    for (var k = 0; k < 16; k++) {
+      var a = k / 16 * 360 + (k % 2) * 17;
+      dust += '<span class="gather" style="left:195px;top:420px;--a:' + a + 'deg;--r:' + (90 + (k % 4) * 30) + 'px;--c:' + ['rgba(160,200,255,.6)', 'rgba(210,180,255,.6)', 'rgba(255,185,225,.55)'][k % 3] + ';animation-delay:' + (0.1 + (k % 5) * 0.12).toFixed(2) + 's"></span>';
+    }
+    var petals = [[120, -40, 3.2], [170, 30, 3.4], [230, -20, 3.5], [270, 40, 3.7], [90, 20, 3.9], [300, -30, 4.1], [150, -50, 4.3], [250, 10, 4.5]]
+      .map(function (p) { return '<span class="petal" aria-hidden="true" style="left:' + p[0] + 'px;top:250px;--dx:' + p[1] + 'px;animation-delay:' + p[2] + 's"></span>'; }).join('');
+    var s = $('sealed');
+    s.innerHTML = '<div aria-hidden="true">' + dust + '</div>' +
+      '<div class="hang-up" style="position:absolute;left:0;right:0;top:300px;display:flex;justify-content:center">' +
+      '<span class="thread" aria-hidden="true" style="left:195px;top:-110px;height:112px"></span>' +
+      '<div class="sw"><div class="drop-form amber-drop ' + im[0] + '" style="width:64px;height:' + Math.round(64 * im[1]) + 'px"></div></div></div>' + petals +
+      '<section role="status" style="position:absolute;left:24px;right:24px;top:470px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center">' +
+      '<span class="rv cold" style="font-family:\'Playfair Display\',serif;font-style:italic;font-size:18px;animation-delay:3.6s">Sealed in amber.</span>' +
+      '<span class="rv cold" style="font-family:\'Noto Serif SC\',serif;font-weight:600;font-size:24px;letter-spacing:.08em;line-height:1.4;animation-delay:3.9s">' + esc(title) + '</span>' +
+      '<span class="rv" style="font-size:13px;line-height:1.7;color:#EDE6FF;animation-delay:4.3s">' + (count ? '第 ' + (count + 1) + ' 滴' : '这一滴') + '已挂上枝头<br>熟透以后，会落进琥珀匣</span>' +
+      '<div class="rv" style="margin-top:18px;display:flex;gap:10px;animation-delay:4.7s">' +
+      '<a href="amber.html" class="cta" style="box-sizing:border-box;height:48px;padding:0 22px;border-radius:999px;background:rgba(255,255,255,.88);color:#4B2F6E;font-size:15px;font-weight:500;display:flex;align-items:center;text-decoration:none">回到枝头</a>' +
+      '<a href="amber-seal.html" class="cta" style="box-sizing:border-box;height:48px;padding:0 22px;border-radius:999px;border:1.5px solid rgba(255,255,255,.85);color:#fff;font-size:15px;display:flex;align-items:center;text-decoration:none">再封存一滴</a></div></section>';
+    s.classList.remove('hidden');
+  }
+})();
+</script>
+</body>
+</html>
